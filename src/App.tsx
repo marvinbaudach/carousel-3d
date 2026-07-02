@@ -1,11 +1,26 @@
 import { useState } from 'react';
+import styled from 'styled-components';
 import { Carousel3D } from './components/Carousel3D';
 import { LoadingScreen } from './components/LoadingScreen';
+import { GlobalStyle } from './GlobalStyle';
 import { useImagePreloader } from './hooks/useImagePreloader';
 import { IMAGES } from './data/images';
-import './App.css';
 
 const IMAGE_URLS = IMAGES.map((img) => img.url);
+
+const Stage = styled.main`
+  position: fixed;
+  inset: 0;
+  background: #05070c;
+  overflow: hidden;
+
+  & canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    touch-action: none; /* drag must not collide with page scroll */
+  }
+`;
 
 export default function App() {
   const { progress, done } = useImagePreloader(IMAGE_URLS);
@@ -16,7 +31,8 @@ export default function App() {
   if (done && !mountScene) setMountScene(true);
 
   return (
-    <main className="stage">
+    <Stage>
+      <GlobalStyle />
       {mountScene && <Carousel3D />}
 
       {showLoader && (
@@ -26,6 +42,6 @@ export default function App() {
           onExited={() => setShowLoader(false)}
         />
       )}
-    </main>
+    </Stage>
   );
 }

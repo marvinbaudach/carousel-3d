@@ -30,13 +30,16 @@ interface RingProps {
 }
 
 function Ring({ onSelect, selectedUrl, paused }: RingProps) {
-  const { groupRef, wasDrag } = useCarouselRotation({ autoSpin: 0.12, paused });
+  const { groupRef, tiltRef, wasDrag } = useCarouselRotation({
+    autoSpin: 0.12,
+    paused,
+  });
   const step = (Math.PI * 2) / IMAGES.length;
 
   return (
-    // Outer group tilts the ring so the far side (and the back sides of the
-    // images) becomes visible. Inner group handles the Y rotation.
-    <group rotation={[-0.32, 0, 0]}>
+    // Outer group tilts the ring (driven by vertical drag) so the far side and
+    // the back sides of the images come into view. Inner group spins on Y.
+    <group ref={tiltRef}>
       <group ref={groupRef}>
         {IMAGES.map((img, i) => (
           <CarouselItem

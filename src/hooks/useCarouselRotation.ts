@@ -13,18 +13,24 @@ interface Options {
   wheelSensitivity?: number;
   /** When it returns true the ring holds still (e.g. a hero card is open). */
   paused?: () => boolean;
+  /** Initial tilt of the ring (radians around X). */
+  initialTilt?: number;
+  /** Pixel -> radians conversion for vertical drag tilting. */
+  tiltSensitivity?: number;
 }
 
 // Beyond this pixel movement a gesture counts as a drag, not a click.
 const CLICK_THRESHOLD = 6;
+// Tilt limits so the ring never flips fully over.
+const MIN_TILT = -1.3;
+const MAX_TILT = 0.3;
 
 /**
- * Drives the Y rotation of the ring group.
- *
- * The whole animation runs in `useFrame` (R3F's rAF) and writes directly to
- * `group.rotation.y` — no React state per frame, hence no stutter.
- * Modes: drag with inertia, mouse wheel and idle auto-spin. `wasDrag()` lets
- * callers tell a real click apart from the end of a drag.
+ * Drives the ring: horizontal drag spins it (Y), vertical drag freely tilts it
+ * (X). The whole animation runs in `useFrame` (R3F's rAF) and writes directly
+ * to the group transforms — no React state per frame, hence no stutter.
+ * Modes: drag with inertia, drag-to-tilt, mouse wheel and idle auto-spin.
+ * `wasDrag()` lets callers tell a real click apart from the end of a drag.
  */
 export function useCarouselRotation({
   autoSpin = 0.12,
@@ -32,15 +38,20 @@ export function useCarouselRotation({
   friction = 0.06,
   wheelSensitivity = 0.0016,
   paused,
+  initialTilt = -0.32,
+  tiltSensitivity = 0.005,
 }: Options = {}) {
   const groupRef = useRef<Group>(null);
+  const tiltRef = useRef<Group>(null);
   const gl = useThree((s) => s.gl);
 
   // State kept in refs so re-renders never touch the animation.
   const rotation = useRef(0);
   const velocity = useRef(autoSpin);
+  const tilt = useRef(initialTilt);
   const dragging = useRef(false);
   const lastX = useRef(0);
+  const lastY = useRef(0);
   const lastMoveTime = useRef(0);
   const moved = useRef(0);
   // Keep the latest `paused` callback so listeners never capture a stale one.
@@ -54,6 +65,7 @@ export function useCarouselRotation({
       dragging.current = true;
       moved.current = 0;
       lastX.current = e.clientX;
+      lastY.current = e.clientY;
       lastMoveTime.current = performance.now();
       velocity.current = 0;
       el.setPointerCapture(e.pointerId);
@@ -64,15 +76,24 @@ export function useCarouselRotation({
       if (!dragging.current) return;
       const now = performance.now();
       const dx = e.clientX - lastX.current;
+      const dy = e.clientY - lastY.current;
       const dt = Math.max((now - lastMoveTime.current) / 1000, 1 / 240);
 
-      moved.current += Math.abs(dx);
+      moved.current += Math.abs(dx) + Math.abs(dy);
+
+      // Horizontal drag spins the ring (with inertia) ...
       const deltaAngle = dx * dragSensitivity;
       rotation.current += deltaAngle;
-      // Remember instantaneous velocity for the later roll-out.
-      velocity.current = deltaAngle / dt;
+      velocity.current = deltaAngle / dt; // instantaneous velocity for roll-out
+
+      // ... vertical drag freely tilts it, clamped so it never flips over.
+      tilt.current = Math.min(
+        MAX_TILT,
+        Math.max(MIN_TILT, tilt.current - dy * tiltSensitivity),
+      );
 
       lastX.current = e.clientX;
+      lastY.current = e.clientY;
       lastMoveTime.current = now;
     };
 
@@ -104,7 +125,7 @@ export function useCarouselRotation({
       el.removeEventListener('wheel', onWheel);
       el.style.cursor = '';
     };
-  }, [gl, dragSensitivity, wheelSensitivity]);
+  }, [gl, dragSensitivity, wheelSensitivity, tiltSensitivity]);
 
   /** True when the last gesture moved far enough to count as a drag. */
   const wasDrag = () => moved.current > CLICK_THRESHOLD;
@@ -125,7 +146,10 @@ export function useCarouselRotation({
     if (groupRef.current) {
       groupRef.current.rotation.y = rotation.current;
     }
+    if (tiltRef.current) {
+      tiltRef.current.rotation.x = tilt.current;
+    }
   });
 
-  return { groupRef, wasDrag };
+  return { groupRef, tiltRef, wasDrag };
 }
