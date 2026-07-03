@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Canvas } from '@react-three/fiber';
 import {
   EffectComposer,
@@ -16,6 +16,7 @@ import { CarouselItem } from './CarouselItem';
 import { Dust } from './Dust';
 import { HeroCard, type HeroStart } from './HeroCard';
 import { useCarouselRotation } from '../hooks/useCarouselRotation';
+import { useIsMobile } from '../hooks/useIsMobile';
 import { IMAGES } from '../data/images';
 
 // Panel dimensions in world units (4:5 aspect ratio).
@@ -23,6 +24,11 @@ const PANEL_W = 2.4;
 const PANEL_H = 3.0;
 // Radius chosen so the panels do not overlap.
 const RADIUS = (PANEL_W * IMAGES.length) / (2 * Math.PI) + 0.6;
+
+// Fog distances, tuned for the wide-screen camera; CameraRig scales them when
+// the camera pulls back on portrait screens.
+const FOG_NEAR = RADIUS + 2;
+const FOG_FAR = RADIUS * 2 + 8;
 
 // Front-and-center pose the hero card flies to (between ring front and camera).
 const HERO_Z = RADIUS + 4.5;
@@ -66,6 +72,7 @@ function Ring({ onSelect, selectedUrl, paused }: RingProps) {
 }
 
 export function Carousel3D() {
+  const isMobile = useIsMobile();
   const [selected, setSelected] = useState<{ url: string; start: HeroStart } | null>(
     null,
   );
@@ -109,19 +116,24 @@ export function Carousel3D() {
 
   return (
     <Canvas
-      dpr={[1, 2]}
+      dpr={[1, isMobile ? 1.5 : 2]}
       camera={{ position: [0, 0, RADIUS + 9], fov: 40 }}
-      gl={{ antialias: true }}
+      gl={{ antialias: !isMobile }}
       onPointerMissed={requestClose}
     >
       <color attach="background" args={['#05070c']} />
-      <fog attach="fog" args={['#05070c', RADIUS + 2, RADIUS * 2 + 8]} />
+      <fog attach="fog" args={['#05070c', FOG_NEAR, FOG_FAR]} />
 
       <ambientLight intensity={0.6} />
       <Environment preset="night" />
 
-      <CameraRig baseZ={RADIUS + 9} />
-      <Dust radius={RADIUS} />
+      <CameraRig
+        radius={RADIUS}
+        fogNear={FOG_NEAR}
+        fogFar={FOG_FAR}
+        parallax={!isMobile}
+      />
+      <Dust radius={RADIUS} count={isMobile ? 180 : 500} />
 
       <Ring
         onSelect={open}
@@ -140,25 +152,43 @@ export function Carousel3D() {
         />
       )}
 
-      <EffectComposer>
-        <DepthOfField
-          target={[0, 0, focusZ]}
-          focalLength={0.02}
-          bokehScale={2}
-          height={1080}
-        />
-        <Bloom
-          intensity={0.7}
-          luminanceThreshold={0.55}
-          luminanceSmoothing={0.3}
-          mipmapBlur
-        />
-        <ChromaticAberration
-          blendFunction={BlendFunction.NORMAL}
-          offset={aberration}
-        />
-        <Noise premultiply blendFunction={BlendFunction.OVERLAY} opacity={0.12} />
-        <Vignette eskil={false} offset={0.25} darkness={0.85} />
+      {/* Mobile GPUs drop the costly depth-of-field, chromatic aberration and
+          grain passes; bloom + vignette keep the cinematic look cheaply. */}
+      <EffectComposer key={isMobile ? 'mobile' : 'desktop'}>
+        {[
+          !isMobile && (
+            <DepthOfField
+              key="dof"
+              target={[0, 0, focusZ]}
+              focalLength={0.02}
+              bokehScale={2}
+              height={1080}
+            />
+          ),
+          <Bloom
+            key="bloom"
+            intensity={0.7}
+            luminanceThreshold={0.55}
+            luminanceSmoothing={0.3}
+            mipmapBlur
+          />,
+          !isMobile && (
+            <ChromaticAberration
+              key="aberration"
+              blendFunction={BlendFunction.NORMAL}
+              offset={aberration}
+            />
+          ),
+          !isMobile && (
+            <Noise
+              key="noise"
+              premultiply
+              blendFunction={BlendFunction.OVERLAY}
+              opacity={0.12}
+            />
+          ),
+          <Vignette key="vignette" eskil={false} offset={0.25} darkness={0.85} />,
+        ].filter(Boolean) as ReactElement[]}
       </EffectComposer>
     </Canvas>
   );
