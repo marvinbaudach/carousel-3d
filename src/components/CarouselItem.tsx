@@ -75,10 +75,11 @@ export function CarouselItem({
     const mat = img.material as unknown as ImageMaterial;
     const glassMat = glassRef.current?.material as MeshPhysicalMaterial | undefined;
 
-    // Apply max anisotropic filtering once the texture is available so tilted
-    // panels stay sharp instead of smearing at glancing angles.
+    // Anisotropic filtering keeps tilted panels sharp instead of smearing at
+    // glancing angles. Capped at 8: going to 16 is barely visible here but
+    // measurably slower on integrated GPUs (16 textures, lots of coverage).
     if (!anisotropySet.current && mat.map) {
-      mat.map.anisotropy = maxAnisotropy;
+      mat.map.anisotropy = Math.min(8, maxAnisotropy);
       mat.map.needsUpdate = true;
       anisotropySet.current = true;
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import styled from 'styled-components';
 import { Carousel3D } from './components/Carousel3D';
+import { FpsMeter } from './components/FpsMeter';
 import { LoadingScreen } from './components/LoadingScreen';
 import { GlobalStyle } from './GlobalStyle';
 import { useImagePreloader } from './hooks/useImagePreloader';
@@ -34,6 +35,7 @@ export default function App() {
     <Stage>
       <GlobalStyle />
       {mountScene && <Carousel3D />}
+      <FpsMeter />
 
       {showLoader && (
         <LoadingScreen

@@ -9,7 +9,7 @@ import {
   Vignette,
 } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
-import { Environment } from '@react-three/drei';
+import { Environment, PerformanceMonitor } from '@react-three/drei';
 import { Vector2, Vector3 } from 'three';
 import { CameraRig } from './CameraRig';
 import { CarouselItem } from './CarouselItem';
@@ -80,6 +80,14 @@ export function Carousel3D() {
   );
   const [closing, setClosing] = useState(false);
 
+  // Adaptive quality: integrated GPUs are fill-rate bound, so the render
+  // resolution is the main lever. PerformanceMonitor samples the frame rate
+  // and walks dpr between the bounds; persistent decline additionally drops
+  // the expensive depth-of-field pass.
+  const maxDpr = isMobile ? 1.5 : 1.75;
+  const [dpr, setDpr] = useState(Math.min(maxDpr, 1.5));
+  const [degraded, setDegraded] = useState(false);
+
   const heroTarget = useMemo(() => new Vector3(0, 0, HERO_Z), []);
   // Tiny constant color fringe for a cinematic, lens-like finish.
   const aberration = useMemo(() => new Vector2(0.0008, 0.0008), []);
@@ -118,13 +126,23 @@ export function Carousel3D() {
 
   return (
     <Canvas
-      dpr={[1, isMobile ? 1.5 : 2]}
+      dpr={dpr}
       camera={{ position: [0, 0, RADIUS + 9], fov: 40 }}
-      gl={{ antialias: !isMobile }}
+      // Canvas MSAA is wasted work: EffectComposer renders offscreen anyway,
+      // and the bloom/noise/vignette stack hides the aliasing it would fix.
+      gl={{ antialias: false }}
       onPointerMissed={requestClose}
     >
       <color attach="background" args={['#05070c']} />
       <fog attach="fog" args={['#05070c', FOG_NEAR, FOG_FAR]} />
+
+      <PerformanceMonitor
+        // Step the resolution up/down with the measured frame rate.
+        onChange={({ factor }) => setDpr(1 + factor * (maxDpr - 1))}
+        // Repeated declines: give up on depth of field entirely.
+        onFallback={() => setDegraded(true)}
+        flipflops={3}
+      />
 
       <ambientLight intensity={0.6} />
       <Environment preset="night" />
@@ -154,17 +172,22 @@ export function Carousel3D() {
         />
       )}
 
-      {/* Mobile GPUs drop the costly depth-of-field, chromatic aberration and
-          grain passes; bloom + vignette keep the cinematic look cheaply. */}
-      <EffectComposer key={isMobile ? 'mobile' : 'desktop'}>
+      {/* Mobile GPUs and degraded desktops drop the costly depth-of-field
+          pass; bloom + vignette keep the cinematic look cheaply.
+          multisampling=0: MSAA on the composer's offscreen buffers is
+          expensive on integrated GPUs and invisible under the effect stack. */}
+      <EffectComposer
+        key={`${isMobile ? 'mobile' : 'desktop'}-${degraded ? 'lo' : 'hi'}`}
+        multisampling={0}
+      >
         {[
-          !isMobile && (
+          !isMobile && !degraded && (
             <DepthOfField
               key="dof"
               target={[0, 0, focusZ]}
               focalLength={0.02}
               bokehScale={2}
-              height={1080}
+              height={720}
             />
           ),
           <Bloom
