@@ -112,6 +112,15 @@ export function CarouselItem({
       return;
     }
 
+    // Settled: pin the panel to its ring slot every frame. The entrance branch
+    // above only lands the panel here on its final frame, so if startup jank
+    // makes the clock jump straight past the entrance window (common while the
+    // textures upload and the post-processing shaders compile), the panels
+    // would otherwise stay frozen wherever the fly-out left them — collapsed
+    // near the center. Setting it here keeps the arrangement frame-rate
+    // independent.
+    group.position.set(x, 0, z);
+
     // World position determines closeness to the camera (camera looks along +Z).
     group.getWorldPosition(worldPos);
     // facing: 1 = right up front (near), 0 = at the back of the ring.
