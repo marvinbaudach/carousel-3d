@@ -1,8 +1,15 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
-import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
-import type { Group, Mesh } from 'three';
+import {
+  DoubleSide,
+  MathUtils,
+  Quaternion,
+  SRGBColorSpace,
+  Vector3,
+  VideoTexture,
+} from 'three';
+import type { Group, Mesh, Texture, Vector2 } from 'three';
 
 /** World-space transform captured from the clicked ring panel. */
 export interface HeroStart {
@@ -13,6 +20,10 @@ export interface HeroStart {
 
 interface HeroCardProps {
   url: string;
+  /** Small (already prefetched) loop that starts the instant the hero opens. */
+  video: string;
+  /** 720p variant that takes over once it has buffered. */
+  videoHd: string;
   start: HeroStart;
   /** Front-and-center pose the card flies to. */
   targetPosition: Vector3;
@@ -47,8 +58,36 @@ function easeInOutCubic(t: number): number {
  * expressed in plain world space. The pivot group sits at the card's top edge;
  * the inner group hangs the card down from it.
  */
+type ImageMaterial = {
+  map: Texture | null;
+  /** Texture dimensions the shader uses for its cover-fit math. */
+  imageBounds: Vector2;
+};
+
+function createLoop(src: string): { el: HTMLVideoElement; tex: VideoTexture } {
+  const el = document.createElement('video');
+  el.src = src;
+  el.muted = true;
+  el.loop = true;
+  el.playsInline = true;
+  el.preload = 'auto';
+  el.crossOrigin = 'anonymous';
+  const tex = new VideoTexture(el);
+  tex.colorSpace = SRGBColorSpace;
+  return { el, tex };
+}
+
+function disposeLoop(loop: { el: HTMLVideoElement; tex: VideoTexture }) {
+  loop.el.pause();
+  loop.el.removeAttribute('src');
+  loop.el.load();
+  loop.tex.dispose();
+}
+
 export function HeroCard({
   url,
+  video,
+  videoHd,
   start,
   targetPosition,
   targetScale,
@@ -59,12 +98,57 @@ export function HeroCard({
   const innerRef = useRef<Group>(null);
   const imgRef = useRef<Mesh>(null);
   const progress = useRef(0);
+  // Two-tier playback: the small (prefetched, instantly playable) loop starts
+  // right away, the 720p variant buffers in parallel and takes over seamlessly.
+  const sd = useRef<{ el: HTMLVideoElement; tex: VideoTexture } | null>(null);
+  const hd = useRef<{ el: HTMLVideoElement; tex: VideoTexture } | null>(null);
+  const hdLive = useRef(false);
+
+  useEffect(() => {
+    if (!video) return;
+    sd.current = createLoop(video);
+    sd.current.el.play().catch((err) => {
+      console.warn('Hero video was blocked:', err);
+    });
+    if (videoHd) hd.current = createLoop(videoHd);
+    hdLive.current = false;
+    return () => {
+      if (sd.current) disposeLoop(sd.current);
+      if (hd.current) disposeLoop(hd.current);
+      sd.current = null;
+      hd.current = null;
+    };
+  }, [video, videoHd]);
 
   useFrame((_, delta) => {
     const pivot = pivotRef.current;
     const inner = innerRef.current;
     const img = imgRef.current;
     if (!pivot || !inner || !img) return;
+
+    // Promote HD once it can play through: continue at the SD position so
+    // the handover is invisible, then retire the SD decoder.
+    if (!hdLive.current && hd.current && sd.current && hd.current.el.readyState >= 4) {
+      hd.current.el.currentTime = sd.current.el.currentTime;
+      hd.current.el.play().catch(() => {
+        /* keep SD if HD playback is rejected */
+      });
+      hdLive.current = true;
+      sd.current.el.pause();
+    }
+
+    // Swap the still for whichever tier is active once a frame is decodable;
+    // force a texture upload per rendered frame (requestVideoFrameCallback is
+    // unreliable for video elements that are not in the DOM).
+    const vs = hdLive.current ? hd.current : sd.current;
+    if (vs && vs.el.readyState >= 2) {
+      vs.tex.needsUpdate = true;
+      const mat = img.material as unknown as ImageMaterial;
+      if (mat.map !== vs.tex) {
+        mat.map = vs.tex;
+        mat.imageBounds.set(vs.el.videoWidth, vs.el.videoHeight);
+      }
+    }
 
     const dir = closing ? -1 : 1;
     progress.current = MathUtils.clamp(

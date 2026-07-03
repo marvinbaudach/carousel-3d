@@ -1,12 +1,21 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
-import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
-import type { Group, Mesh, MeshPhysicalMaterial, Texture } from 'three';
+import {
+  DoubleSide,
+  MathUtils,
+  Quaternion,
+  SRGBColorSpace,
+  Vector3,
+  VideoTexture,
+} from 'three';
+import type { Group, Mesh, MeshPhysicalMaterial, Texture, Vector2 } from 'three';
 import type { HeroStart } from './HeroCard';
 
 interface CarouselItemProps {
   url: string;
+  /** Video loop that replaces the still while the panel is hovered. */
+  video: string;
   /** Angular position on the ring (radians). */
   angle: number;
   radius: number;
@@ -29,6 +38,8 @@ type ImageMaterial = {
   grayscale: number;
   zoom: number;
   map: Texture | null;
+  /** Texture dimensions the shader uses for its cover-fit math. */
+  imageBounds: Vector2;
 };
 
 const worldPos = new Vector3();
@@ -43,6 +54,7 @@ const GLASS_OPACITY = 0.16;
 
 export function CarouselItem({
   url,
+  video,
   angle,
   radius,
   width,
@@ -56,12 +68,58 @@ export function CarouselItem({
   const groupRef = useRef<Group>(null);
   const imgRef = useRef<Mesh>(null);
   const glassRef = useRef<Mesh>(null);
+  const canvasEl = useThree((s) => s.gl.domElement);
   const maxAnisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const anisotropySet = useRef(false);
   const entranceStart = useRef<number | null>(null);
   // True on the frame the panel stops being hidden, so it can snap back to full
   // opacity instead of fading in and leaving a transparent gap after the hero.
   const wasHidden = useRef(false);
+
+  // Hover video: element + texture exist from mount on so the browser can
+  // prefetch the clip in the background (posters are already cached by the
+  // time the scene mounts) — hovering then starts instantly. Decoding only
+  // happens while a video plays, and only the hovered panel ever plays,
+  // keeping iGPUs happy.
+  const hovered = useRef(false);
+  const videoState = useRef<{ el: HTMLVideoElement; tex: VideoTexture } | null>(null);
+  // Original poster texture, so the panel can swap back on hover-out.
+  const poster = useRef<{ map: Texture; w: number; h: number } | null>(null);
+
+  const startVideo = () => {
+    hovered.current = true;
+    videoState.current?.el.play().catch((err) => {
+      // Autoplay rejection: the panel keeps its still, but say why.
+      console.warn('Hover video was blocked:', err);
+    });
+  };
+
+  const stopVideo = () => {
+    hovered.current = false;
+    videoState.current?.el.pause();
+  };
+
+  // Create (and prefetch) the video on mount; release the decoder and GPU
+  // texture when the panel unmounts.
+  useEffect(() => {
+    const el = document.createElement('video');
+    el.src = video;
+    el.muted = true;
+    el.loop = true;
+    el.playsInline = true;
+    el.preload = 'auto';
+    el.crossOrigin = 'anonymous';
+    const tex = new VideoTexture(el);
+    tex.colorSpace = SRGBColorSpace;
+    videoState.current = { el, tex };
+    return () => {
+      el.pause();
+      el.removeAttribute('src');
+      el.load();
+      tex.dispose();
+      videoState.current = null;
+    };
+  }, [video]);
 
   // Position on the ring; the group faces outward toward the viewer.
   const x = Math.sin(angle) * radius;
@@ -84,8 +142,33 @@ export function CarouselItem({
       anisotropySet.current = true;
     }
 
+    // Swap between the poster still and the hover video. The video texture
+    // only goes live once a frame is decodable, so there is no black flash.
+    const vs = videoState.current;
+    // Force a texture upload per rendered frame while the video plays.
+    // three relies on requestVideoFrameCallback, which browsers do not
+    // reliably fire for video elements that are not in the DOM — without
+    // this the panel would freeze on the video's first frame.
+    if (vs && !vs.el.paused && vs.el.readyState >= 2) {
+      vs.tex.needsUpdate = true;
+    }
+    if (hovered.current && !hidden && vs && vs.el.readyState >= 2) {
+      if (mat.map !== vs.tex) {
+        if (!poster.current && mat.map) {
+          const img = mat.map.image as { width: number; height: number };
+          poster.current = { map: mat.map, w: img.width, h: img.height };
+        }
+        mat.map = vs.tex;
+        mat.imageBounds.set(vs.el.videoWidth, vs.el.videoHeight);
+      }
+    } else if (!hovered.current && poster.current && mat.map !== poster.current.map) {
+      mat.map = poster.current.map;
+      mat.imageBounds.set(poster.current.w, poster.current.h);
+    }
+
     // While the hero copy is flying, fade this panel (photo + glass) out.
     if (hidden) {
+      stopVideo();
       mat.opacity = MathUtils.lerp(mat.opacity, 0, 0.2);
       if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, 0, 0.2);
       wasHidden.current = true;
@@ -177,10 +260,22 @@ export function CarouselItem({
         scale={[width, height]}
         onClick={interactive ? handleClick : undefined}
         onPointerOver={
-          interactive ? () => (document.body.style.cursor = 'pointer') : undefined
+          interactive
+            ? () => {
+                // The rotation hook keeps cursor:grab on the canvas itself,
+                // which overrides document.body — so set it on the canvas.
+                canvasEl.style.cursor = 'pointer';
+                startVideo();
+              }
+            : undefined
         }
         onPointerOut={
-          interactive ? () => (document.body.style.cursor = '') : undefined
+          interactive
+            ? () => {
+                canvasEl.style.cursor = 'grab';
+                stopVideo();
+              }
+            : undefined
         }
       />
 

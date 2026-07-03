@@ -57,6 +57,7 @@ function Ring({ onSelect, selectedUrl, paused }: RingProps) {
           <CarouselItem
             key={img.id}
             url={img.url}
+            video={img.video}
             angle={i * step}
             radius={RADIUS}
             width={PANEL_W}
@@ -164,6 +165,8 @@ export function Carousel3D() {
       {selected && (
         <HeroCard
           url={selected.url}
+          video={IMAGES.find((img) => img.url === selected.url)?.video ?? ''}
+          videoHd={IMAGES.find((img) => img.url === selected.url)?.videoHd ?? ''}
           start={selected.start}
           targetPosition={heroTarget}
           targetScale={HERO_SCALE}
