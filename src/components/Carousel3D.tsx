@@ -3,12 +3,17 @@ import { Canvas } from '@react-three/fiber';
 import {
   EffectComposer,
   Bloom,
+  ChromaticAberration,
   DepthOfField,
+  Noise,
   Vignette,
 } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import { Environment } from '@react-three/drei';
-import { Vector3 } from 'three';
+import { Vector2, Vector3 } from 'three';
+import { CameraRig } from './CameraRig';
 import { CarouselItem } from './CarouselItem';
+import { Dust } from './Dust';
 import { HeroCard, type HeroStart } from './HeroCard';
 import { useCarouselRotation } from '../hooks/useCarouselRotation';
 import { IMAGES } from '../data/images';
@@ -52,6 +57,7 @@ function Ring({ onSelect, selectedUrl, paused }: RingProps) {
             hidden={img.url === selectedUrl}
             onSelect={onSelect}
             wasDrag={wasDrag}
+            entranceDelay={i * 0.06}
           />
         ))}
       </group>
@@ -66,6 +72,8 @@ export function Carousel3D() {
   const [closing, setClosing] = useState(false);
 
   const heroTarget = useMemo(() => new Vector3(0, 0, HERO_Z), []);
+  // Tiny constant color fringe for a cinematic, lens-like finish.
+  const aberration = useMemo(() => new Vector2(0.0008, 0.0008), []);
 
   const open = (url: string, start: HeroStart) => {
     if (selected) return; // one hero at a time
@@ -112,6 +120,9 @@ export function Carousel3D() {
       <ambientLight intensity={0.6} />
       <Environment preset="night" />
 
+      <CameraRig baseZ={RADIUS + 9} />
+      <Dust radius={RADIUS} />
+
       <Ring
         onSelect={open}
         selectedUrl={selected?.url ?? null}
@@ -142,6 +153,11 @@ export function Carousel3D() {
           luminanceSmoothing={0.3}
           mipmapBlur
         />
+        <ChromaticAberration
+          blendFunction={BlendFunction.NORMAL}
+          offset={aberration}
+        />
+        <Noise premultiply blendFunction={BlendFunction.OVERLAY} opacity={0.12} />
         <Vignette eskil={false} offset={0.25} darkness={0.85} />
       </EffectComposer>
     </Canvas>

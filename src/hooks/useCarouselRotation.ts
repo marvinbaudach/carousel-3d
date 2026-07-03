@@ -21,9 +21,10 @@ interface Options {
 
 // Beyond this pixel movement a gesture counts as a drag, not a click.
 const CLICK_THRESHOLD = 6;
-// Tilt limits so the ring never flips fully over.
-const MIN_TILT = -1.3;
-const MAX_TILT = 0.3;
+// Tilt limits so the ring never flips fully over (balanced around the initial
+// tilt so dragging up or down both have room).
+const MIN_TILT = -1.0;
+const MAX_TILT = 0.7;
 
 /**
  * Drives the ring: horizontal drag spins it (Y), vertical drag freely tilts it
@@ -87,9 +88,10 @@ export function useCarouselRotation({
       velocity.current = deltaAngle / dt; // instantaneous velocity for roll-out
 
       // ... vertical drag freely tilts it, clamped so it never flips over.
+      // Drag down -> ring tips down (top toward viewer), matching the gesture.
       tilt.current = Math.min(
         MAX_TILT,
-        Math.max(MIN_TILT, tilt.current - dy * tiltSensitivity),
+        Math.max(MIN_TILT, tilt.current + dy * tiltSensitivity),
       );
 
       lastX.current = e.clientX;

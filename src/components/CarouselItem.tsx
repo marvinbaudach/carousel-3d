@@ -18,6 +18,8 @@ interface CarouselItemProps {
   onSelect: (url: string, start: HeroStart) => void;
   /** Guard so the end of a drag is not treated as a click. */
   wasDrag: () => boolean;
+  /** Per-panel delay (seconds) for the staggered entrance fly-out. */
+  entranceDelay: number;
 }
 
 type ImageMaterial = {
@@ -29,6 +31,9 @@ type ImageMaterial = {
 
 const worldPos = new Vector3();
 
+// Duration of the one-time entrance fly-out per panel.
+const ENTRANCE_DURATION = 0.9;
+
 export function CarouselItem({
   url,
   angle,
@@ -38,16 +43,18 @@ export function CarouselItem({
   hidden,
   onSelect,
   wasDrag,
+  entranceDelay,
 }: CarouselItemProps) {
   const ref = useRef<Mesh>(null);
   const maxAnisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const anisotropySet = useRef(false);
+  const entranceStart = useRef<number | null>(null);
 
   // Position on the ring; the plane faces outward toward the viewer.
   const x = Math.sin(angle) * radius;
   const z = Math.cos(angle) * radius;
 
-  useFrame(() => {
+  useFrame((state) => {
     const mesh = ref.current;
     if (!mesh) return;
 
@@ -64,6 +71,26 @@ export function CarouselItem({
     // While the hero copy is flying, fade this panel out of the ring.
     if (hidden) {
       mat.opacity = MathUtils.lerp(mat.opacity, 0, 0.2);
+      return;
+    }
+
+    // One-time entrance: panels fly out from the center to their ring slot,
+    // staggered and scaling up as they arrive.
+    const now = state.clock.elapsedTime;
+    if (entranceStart.current === null) entranceStart.current = now;
+    const p = MathUtils.clamp(
+      (now - entranceStart.current - entranceDelay) / ENTRANCE_DURATION,
+      0,
+      1,
+    );
+    if (p < 1) {
+      const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+      mesh.position.set(x * e, 0, z * e);
+      const s = 0.5 + 0.5 * e;
+      mesh.scale.set(width * s, height * s, 1);
+      mat.opacity = e;
+      mat.grayscale = 0;
+      mat.zoom = 1;
       return;
     }
 
