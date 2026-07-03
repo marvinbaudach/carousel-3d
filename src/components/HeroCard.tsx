@@ -25,10 +25,21 @@ interface HeroCardProps {
   onClosed: () => void;
 }
 
-const TRANSITION = 0.6; // seconds for a full open/close
+const OPEN_TIME = 0.75; // seconds for the dramatic fly-in
+const CLOSE_TIME = 0.5; // snappier fly-back
 const IDENTITY = new Quaternion();
 // Peak forward swing (radians) at mid-flight, as if grabbed at the top edge.
 const MAX_HINGE = 0.8;
+// Peak yaw swing (radians) at mid-flight: the card corkscrews slightly toward
+// the side of the ring it launched from, so the flight reads as a swoop
+// rather than a straight slide.
+const MAX_YAW = 0.45;
+// World-units the flight path arcs upward at mid-flight.
+const ARC_LIFT = 0.55;
+// How far position/scale punch past the target near the end of the flight
+// before settling (fraction of the full travel). Reversed on close it reads
+// as a small anticipation pop before the card flies back.
+const OVERSHOOT = 0.06;
 const UP = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 
@@ -51,6 +62,7 @@ const _target = new Vector3();
 const _up = new Vector3();
 const _qBase = new Quaternion();
 const _hinge = new Quaternion();
+const _yaw = new Quaternion();
 
 // Ease that starts and ends gently for an elegant flight.
 function easeInOutCubic(t: number): number {
@@ -94,11 +106,20 @@ export function HeroCard({
 
     const dir = closing ? -1 : 1;
     progress.current = MathUtils.clamp(
-      progress.current + (dir * delta) / TRANSITION,
+      progress.current + (dir * delta) / (closing ? CLOSE_TIME : OPEN_TIME),
       0,
       1,
     );
     const t = easeInOutCubic(progress.current);
+    // Flourish envelope: 0 at both ends, 1 at mid-flight — every extra move
+    // (arc, yaw) is scaled by it, so start and landing poses stay exact.
+    const swing = Math.sin(Math.PI * t);
+    // Late overshoot: punches past the target in the last stretch of the
+    // flight and settles back to exactly 1 at t = 1.
+    const tPunch =
+      t + Math.sin(Math.PI * Math.max(0, (t - 0.55) / 0.45)) * OVERSHOOT;
+    // Which side of the ring the card launched from drives the yaw direction.
+    const side = Math.sign(start.position.x) || 1;
 
     // Largest size (keeping the panel's aspect) that fits the visible frustum
     // at the hero's depth, with a margin. Evaluated per frame because the
@@ -108,9 +129,12 @@ export function HeroCard({
     const h = Math.min(vp.height * FIT, (vp.width * FIT) / cardAspect);
     _target.set(h * cardAspect, h, 1);
 
-    // Card center + size interpolate from the ring slot to the hero pose.
-    _pos.lerpVectors(start.position, targetPosition, t);
-    _scale.lerpVectors(start.scale, _target, t);
+    // Card center + size interpolate from the ring slot to the hero pose,
+    // with a late overshoot (tPunch) and an upward arc so the flight swoops
+    // instead of sliding on a straight line.
+    _pos.lerpVectors(start.position, targetPosition, tPunch);
+    _pos.y += swing * ARC_LIFT;
+    _scale.lerpVectors(start.scale, _target, tPunch);
     const halfH = _scale.y / 2;
 
     // Base orientation eases from the tilted ring pose to facing the camera.
@@ -118,12 +142,14 @@ export function HeroCard({
 
     // Hinge about the top edge: swing toward the viewer, peaking mid-flight and
     // settling flat, so it reads as being pulled by the top.
-    _hinge.setFromAxisAngle(X_AXIS, -Math.sin(Math.PI * t) * MAX_HINGE);
+    _hinge.setFromAxisAngle(X_AXIS, -swing * MAX_HINGE);
+    // Yaw corkscrew toward the launch side, also peaking mid-flight.
+    _yaw.setFromAxisAngle(UP, side * swing * MAX_YAW);
 
     // Pivot sits at the top edge (card center + up * halfH, in base orientation).
     _up.copy(UP).applyQuaternion(_qBase);
     pivot.position.copy(_pos).addScaledVector(_up, halfH);
-    pivot.quaternion.copy(_qBase).multiply(_hinge);
+    pivot.quaternion.copy(_qBase).multiply(_yaw).multiply(_hinge);
 
     // Inner group hangs the card down from the pivot; the image mesh carries
     // its size (aspect stays constant, so imperative scaling never distorts).
