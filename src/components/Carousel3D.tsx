@@ -4,7 +4,6 @@ import {
   EffectComposer,
   Bloom,
   ChromaticAberration,
-  DepthOfField,
   Noise,
   Vignette,
 } from '@react-three/postprocessing';
@@ -13,17 +12,18 @@ import { Environment, PerformanceMonitor } from '@react-three/drei';
 import { Vector2, Vector3 } from 'three';
 import { CameraRig } from './CameraRig';
 import { CarouselItem } from './CarouselItem';
+import { PerfProbe } from './PerfHud';
 import { Dust } from './Dust';
 import { HeroCard, type HeroStart } from './HeroCard';
 import { useCarouselRotation } from '../hooks/useCarouselRotation';
 import { useIsMobile } from '../hooks/useIsMobile';
-import { IMAGES } from '../data/images';
+import { DASHBOARDS } from '../dashboards';
 
 // Panel dimensions in world units (4:5 aspect ratio).
 const PANEL_W = 2.4;
 const PANEL_H = 3.0;
 // Radius chosen so the panels do not overlap.
-const RADIUS = (PANEL_W * IMAGES.length) / (2 * Math.PI) + 0.6;
+const RADIUS = (PANEL_W * DASHBOARDS.length) / (2 * Math.PI) + 0.6;
 
 // Fog distances, tuned for the wide-screen camera; CameraRig scales them when
 // the camera pulls back on portrait screens.
@@ -35,34 +35,33 @@ const FOG_FAR = RADIUS * 2 + 8;
 const HERO_Z = RADIUS + 4.5;
 
 interface RingProps {
-  onSelect: (url: string, start: HeroStart) => void;
-  selectedUrl: string | null;
+  onSelect: (id: string, start: HeroStart) => void;
+  selectedId: string | null;
   paused: () => boolean;
 }
 
-function Ring({ onSelect, selectedUrl, paused }: RingProps) {
-  const interactive = selectedUrl === null;
+function Ring({ onSelect, selectedId, paused }: RingProps) {
+  const interactive = selectedId === null;
   const { groupRef, tiltRef, wasDrag } = useCarouselRotation({
     autoSpin: 0.12,
     paused,
   });
-  const step = (Math.PI * 2) / IMAGES.length;
+  const step = (Math.PI * 2) / DASHBOARDS.length;
 
   return (
     // Outer group tilts the ring (driven by vertical drag) so the far side and
-    // the back sides of the images come into view. Inner group spins on Y.
+    // the back sides of the panels come into view. Inner group spins on Y.
     <group ref={tiltRef}>
       <group ref={groupRef}>
-        {IMAGES.map((img, i) => (
+        {DASHBOARDS.map((dashboard, i) => (
           <CarouselItem
-            key={img.id}
-            url={img.url}
-            video={img.video}
+            key={dashboard.id}
+            dashboard={dashboard}
             angle={i * step}
             radius={RADIUS}
             width={PANEL_W}
             height={PANEL_H}
-            hidden={img.url === selectedUrl}
+            hidden={dashboard.id === selectedId}
             onSelect={onSelect}
             wasDrag={wasDrag}
             entranceDelay={i * 0.06}
@@ -76,26 +75,24 @@ function Ring({ onSelect, selectedUrl, paused }: RingProps) {
 
 export function Carousel3D() {
   const isMobile = useIsMobile();
-  const [selected, setSelected] = useState<{ url: string; start: HeroStart } | null>(
+  const [selected, setSelected] = useState<{ id: string; start: HeroStart } | null>(
     null,
   );
   const [closing, setClosing] = useState(false);
 
   // Adaptive quality: integrated GPUs are fill-rate bound, so the render
   // resolution is the main lever. PerformanceMonitor samples the frame rate
-  // and walks dpr between the bounds; persistent decline additionally drops
-  // the expensive depth-of-field pass.
+  // and walks dpr between the bounds.
   const maxDpr = isMobile ? 1.5 : 1.75;
   const [dpr, setDpr] = useState(Math.min(maxDpr, 1.5));
-  const [degraded, setDegraded] = useState(false);
 
   const heroTarget = useMemo(() => new Vector3(0, 0, HERO_Z), []);
   // Tiny constant color fringe for a cinematic, lens-like finish.
   const aberration = useMemo(() => new Vector2(0.0008, 0.0008), []);
 
-  const open = (url: string, start: HeroStart) => {
+  const open = (id: string, start: HeroStart) => {
     if (selected) return; // one hero at a time
-    setSelected({ url, start });
+    setSelected({ id, start });
     setClosing(false);
   };
   const requestClose = () => {
@@ -122,11 +119,8 @@ export function Carousel3D() {
     };
   }, [selected, closing]);
 
-  // Focus the depth of field on the hero while it is open, on the ring otherwise.
-  const focusZ = selected ? HERO_Z : RADIUS;
-
-  const selectedImage = selected
-    ? IMAGES.find((img) => img.url === selected.url)
+  const selectedDashboard = selected
+    ? DASHBOARDS.find((d) => d.id === selected.id)
     : undefined;
 
   return (
@@ -144,11 +138,9 @@ export function Carousel3D() {
       <PerformanceMonitor
         // Step the resolution up/down with the measured frame rate.
         onChange={({ factor }) => setDpr(1 + factor * (maxDpr - 1))}
-        // Repeated declines: give up on depth of field entirely.
-        onFallback={() => setDegraded(true)}
-        flipflops={3}
       />
 
+      <PerfProbe />
       <ambientLight intensity={0.6} />
       <Environment preset="night" />
 
@@ -162,15 +154,13 @@ export function Carousel3D() {
 
       <Ring
         onSelect={open}
-        selectedUrl={selected?.url ?? null}
+        selectedId={selected?.id ?? null}
         paused={() => selected !== null}
       />
 
-      {selected && (
+      {selected && selectedDashboard && (
         <HeroCard
-          url={selected.url}
-          video={selectedImage?.video ?? ''}
-          videoHd={selectedImage?.videoHd ?? ''}
+          dashboard={selectedDashboard}
           start={selected.start}
           targetPosition={heroTarget}
           closing={closing}
@@ -178,24 +168,13 @@ export function Carousel3D() {
         />
       )}
 
-      {/* Mobile GPUs and degraded desktops drop the costly depth-of-field
-          pass; bloom + vignette keep the cinematic look cheaply.
-          multisampling=0: MSAA on the composer's offscreen buffers is
-          expensive on integrated GPUs and invisible under the effect stack. */}
-      <EffectComposer
-        key={`${isMobile ? 'mobile' : 'desktop'}-${degraded ? 'lo' : 'hi'}`}
-        multisampling={0}
-      >
+      {/* No depth of field: the dashboards are text, and text does not
+          forgive bokeh — depth comes from the fog plus the back panels'
+          dimming/desaturation instead. multisampling=0: MSAA on the
+          composer's offscreen buffers is expensive on integrated GPUs and
+          invisible under the effect stack. */}
+      <EffectComposer key={isMobile ? 'mobile' : 'desktop'} multisampling={0}>
         {[
-          !isMobile && !degraded && (
-            <DepthOfField
-              key="dof"
-              target={[0, 0, focusZ]}
-              focalLength={0.02}
-              bokehScale={2}
-              height={720}
-            />
-          ),
           <Bloom
             key="bloom"
             intensity={0.7}

@@ -42,7 +42,7 @@ export function useCarouselRotation({
   autoSpin = 0.12,
   dragSensitivity = 0.005,
   friction = 0.06,
-  wheelSensitivity = 0.0016,
+  wheelSensitivity = 0.004,
   paused,
   initialTilt = -0.32,
   tiltSensitivity = 0.005,

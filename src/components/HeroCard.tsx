@@ -1,14 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
 import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
-import type { Group, Mesh } from 'three';
-import {
-  createVideoLoop,
-  disposeVideoLoop,
-  type ImageMaterial,
-  type VideoLoop,
-} from '../utils/videoLoop';
+import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
+import { GlassPlate, GLASS_OPACITY } from './GlassPlate';
+import { createDashboardTexture, type Dashboard } from '../dashboards';
 
 /** World-space transform captured from the clicked ring panel. */
 export interface HeroStart {
@@ -18,11 +14,8 @@ export interface HeroStart {
 }
 
 interface HeroCardProps {
-  url: string;
-  /** Small (already prefetched) loop that starts the instant the hero opens. */
-  video: string;
-  /** 720p variant that takes over once it has buffered. */
-  videoHd: string;
+  /** The dashboard to render, at hero resolution with its animation replayed. */
+  dashboard: Dashboard;
   start: HeroStart;
   /** Front-and-center position the card flies to; its size is computed from
       the camera frustum there so every edge stays on screen. */
@@ -39,9 +32,18 @@ const MAX_HINGE = 0.8;
 const UP = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 
+// Hero canvas resolution (4:5) — double the ring panels, so it stays crisp.
+const TEX_W = 1024;
+const TEX_H = 1280;
+
 // Fraction of the visible frustum (at the hero's depth) the card may fill,
 // so all four edges sit comfortably inside the frame.
 const FIT = 0.88;
+
+// Glass opacity once the card faces the viewer head-on: at that angle the
+// white sheen sits on the whole reading surface, so it thins out during the
+// flight (from the ring plates' GLASS_OPACITY) instead of milking the charts.
+const HERO_GLASS_OPACITY = 0.06;
 
 const _pos = new Vector3();
 const _scale = new Vector3();
@@ -63,9 +65,7 @@ function easeInOutCubic(t: number): number {
  * the inner group hangs the card down from it.
  */
 export function HeroCard({
-  url,
-  video,
-  videoHd,
+  dashboard,
   start,
   targetPosition,
   closing,
@@ -74,28 +74,14 @@ export function HeroCard({
   const pivotRef = useRef<Group>(null);
   const innerRef = useRef<Group>(null);
   const imgRef = useRef<Mesh>(null);
+  const glassRef = useRef<Mesh>(null);
   const progress = useRef(0);
-  // Two-tier playback: the small (prefetched, instantly playable) loop starts
-  // right away, the 720p variant buffers in parallel and takes over seamlessly.
-  const sd = useRef<VideoLoop | null>(null);
-  const hd = useRef<VideoLoop | null>(null);
-  const hdLive = useRef(false);
+  // The hero animates for as long as it is open: the intro replays during the
+  // fly-in and the live elements keep moving afterwards.
+  const openedAt = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (!video) return;
-    sd.current = createVideoLoop(video);
-    sd.current.el.play().catch((err) => {
-      console.warn('Hero video was blocked:', err);
-    });
-    if (videoHd) hd.current = createVideoLoop(videoHd);
-    hdLive.current = false;
-    return () => {
-      if (sd.current) disposeVideoLoop(sd.current);
-      if (hd.current) disposeVideoLoop(hd.current);
-      sd.current = null;
-      hd.current = null;
-    };
-  }, [video, videoHd]);
+  const dash = useMemo(() => createDashboardTexture(dashboard, TEX_W, TEX_H), [dashboard]);
+  useEffect(() => () => dash.dispose(), [dash]);
 
   useFrame((state, delta) => {
     const pivot = pivotRef.current;
@@ -103,29 +89,8 @@ export function HeroCard({
     const img = imgRef.current;
     if (!pivot || !inner || !img) return;
 
-    // Promote HD once it can play through: continue at the SD position so
-    // the handover is invisible, then retire the SD decoder.
-    if (!hdLive.current && hd.current && sd.current && hd.current.el.readyState >= 4) {
-      hd.current.el.currentTime = sd.current.el.currentTime;
-      hd.current.el.play().catch(() => {
-        /* keep SD if HD playback is rejected */
-      });
-      hdLive.current = true;
-      sd.current.el.pause();
-    }
-
-    // Swap the still for whichever tier is active once a frame is decodable;
-    // force a texture upload per rendered frame (requestVideoFrameCallback is
-    // unreliable for video elements that are not in the DOM).
-    const vs = hdLive.current ? hd.current : sd.current;
-    if (vs && vs.el.readyState >= 2) {
-      vs.tex.needsUpdate = true;
-      const mat = img.material as unknown as ImageMaterial;
-      if (mat.map !== vs.tex) {
-        mat.map = vs.tex;
-        mat.imageBounds.set(vs.el.videoWidth, vs.el.videoHeight);
-      }
-    }
+    if (openedAt.current === null) openedAt.current = state.clock.elapsedTime;
+    dash.render(state.clock.elapsedTime - openedAt.current);
 
     const dir = closing ? -1 : 1;
     progress.current = MathUtils.clamp(
@@ -164,6 +129,17 @@ export function HeroCard({
     // its size (aspect stays constant, so imperative scaling never distorts).
     inner.position.set(0, -halfH, 0);
     img.scale.set(_scale.x, _scale.y, 1);
+    // The glass slab (unit-sized geometry) tracks the card, so the panel
+    // keeps its plate through the whole flight — no glass/no-glass jump.
+    const glass = glassRef.current;
+    if (glass) {
+      glass.scale.set(_scale.x, _scale.y, 1);
+      (glass.material as MeshPhysicalMaterial).opacity = MathUtils.lerp(
+        GLASS_OPACITY,
+        HERO_GLASS_OPACITY,
+        t,
+      );
+    }
 
     if (closing && progress.current === 0) onClosed();
   });
@@ -173,7 +149,7 @@ export function HeroCard({
       <group ref={innerRef}>
         <Image
           ref={imgRef}
-          url={url}
+          texture={dash.tex}
           scale={[start.scale.x, start.scale.y]}
           transparent
           toneMapped={false}
@@ -181,6 +157,7 @@ export function HeroCard({
           radius={0.06}
           onClick={(e) => e.stopPropagation()}
         />
+        <GlassPlate width={1} height={1} meshRef={glassRef} />
       </group>
     </group>
   );

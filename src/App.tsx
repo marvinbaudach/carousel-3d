@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Carousel3D } from './components/Carousel3D';
-import { FpsMeter } from './components/FpsMeter';
+import { PerfHud } from './components/PerfHud';
 import { LoadingScreen } from './components/LoadingScreen';
 import { GlobalStyle } from './GlobalStyle';
-import { useImagePreloader } from './hooks/useImagePreloader';
-import { IMAGES } from './data/images';
 
-const IMAGE_URLS = IMAGES.map((img) => img.url);
+// The dashboards are generated locally (no assets to fetch), so "loading" is
+// a staged boot sequence that gives the pulse loader one full beat before the
+// iris hands the screen center over to the blooming ring.
+const BOOT_MS = 1600;
 
 const Stage = styled.main`
   position: fixed;
@@ -24,25 +25,22 @@ const Stage = styled.main`
 `;
 
 export default function App() {
-  const { progress, done } = useImagePreloader(IMAGE_URLS);
+  const [done, setDone] = useState(false);
   const [showLoader, setShowLoader] = useState(true);
-  // Mount the carousel only once images are cached -> no stutter.
-  const [mountScene, setMountScene] = useState(false);
 
-  if (done && !mountScene) setMountScene(true);
+  useEffect(() => {
+    const id = setTimeout(() => setDone(true), BOOT_MS);
+    return () => clearTimeout(id);
+  }, []);
 
   return (
     <Stage>
       <GlobalStyle />
-      {mountScene && <Carousel3D />}
-      <FpsMeter />
+      {done && <Carousel3D />}
+      <PerfHud />
 
       {showLoader && (
-        <LoadingScreen
-          progress={progress}
-          done={done}
-          onExited={() => setShowLoader(false)}
-        />
+        <LoadingScreen done={done} onExited={() => setShowLoader(false)} />
       )}
     </Stage>
   );

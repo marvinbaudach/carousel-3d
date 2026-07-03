@@ -1,21 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
 import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
-import type { Group, Mesh, MeshPhysicalMaterial, Texture } from 'three';
+import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
 import type { HeroStart } from './HeroCard';
-import {
-  createVideoLoop,
-  disposeVideoLoop,
-  uploadVideoFrame,
-  type ImageMaterial,
-  type VideoLoop,
-} from '../utils/videoLoop';
+import { GlassPlate, GLASS_OPACITY } from './GlassPlate';
+import { createDashboardTexture, SETTLED_T, type Dashboard } from '../dashboards';
 
 interface CarouselItemProps {
-  url: string;
-  /** Video loop that replaces the still while the panel is hovered. */
-  video: string;
+  /** The animated dashboard this panel renders. */
+  dashboard: Dashboard;
   /** Angular position on the ring (radians). */
   angle: number;
   radius: number;
@@ -24,7 +18,7 @@ interface CarouselItemProps {
   /** Hide this panel while its hero copy is on screen. */
   hidden: boolean;
   /** Click -> open the hero card starting from this panel's world transform. */
-  onSelect: (url: string, start: HeroStart) => void;
+  onSelect: (id: string, start: HeroStart) => void;
   /** Guard so the end of a drag is not treated as a click. */
   wasDrag: () => boolean;
   /** Per-panel delay (seconds) for the staggered entrance fly-out. */
@@ -33,19 +27,26 @@ interface CarouselItemProps {
   interactive: boolean;
 }
 
+/** Shape of drei's Image shader material, as far as this component needs it. */
+type ImageMaterial = {
+  opacity: number;
+  grayscale: number;
+  zoom: number;
+};
+
 const worldPos = new Vector3();
+
+// Ring panel canvas resolution (4:5, matching the panel geometry). 768 wide
+// keeps the chart text crisp on hidpi screens where a front panel can cover
+// well over 512 device pixels.
+const TEX_W = 768;
+const TEX_H = 960;
 
 // Duration of the one-time entrance fly-out per panel.
 const ENTRANCE_DURATION = 0.9;
-// Thickness of the glass plate sitting in front of each photo, giving the
-// panels real depth instead of looking like flat sheets.
-const GLASS_THICKNESS = 0.16;
-// Base transparency of the glass; front panels get a touch clearer.
-const GLASS_OPACITY = 0.16;
 
 export function CarouselItem({
-  url,
-  video,
+  dashboard,
   angle,
   radius,
   width,
@@ -61,45 +62,31 @@ export function CarouselItem({
   const glassRef = useRef<Mesh>(null);
   const canvasEl = useThree((s) => s.gl.domElement);
   const maxAnisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
-  const anisotropySet = useRef(false);
   const entranceStart = useRef<number | null>(null);
   // True on the frame the panel stops being hidden, so it can snap back to full
   // opacity instead of fading in and leaving a transparent gap after the hero.
   const wasHidden = useRef(false);
 
-  // Hover video: element + texture exist from mount on so the browser can
-  // prefetch the clip in the background (posters are already cached by the
-  // time the scene mounts) — hovering then starts instantly. Decoding only
-  // happens while a video plays, and only the hovered panel ever plays,
-  // keeping iGPUs happy.
+  // The dashboard is rendered once in its settled state; while hovered it is
+  // redrawn per frame from t=0, replaying the intro and running the live
+  // motion. Only the hovered panel ever redraws/uploads, keeping iGPUs happy.
+  const dash = useMemo(() => createDashboardTexture(dashboard, TEX_W, TEX_H), [dashboard]);
+  // Hover state; the frame loop stamps hoverStart from the shared clock on
+  // the first animated frame (pointer events have no access to it).
   const hovered = useRef(false);
-  const videoState = useRef<VideoLoop | null>(null);
-  // Original poster texture, so the panel can swap back on hover-out.
-  const poster = useRef<{ map: Texture; w: number; h: number } | null>(null);
+  const hoverStart = useRef<number | null>(null);
 
-  const startVideo = () => {
-    hovered.current = true;
-    videoState.current?.el.play().catch((err) => {
-      // Autoplay rejection: the panel keeps its still, but say why.
-      console.warn('Hover video was blocked:', err);
-    });
-  };
-
-  const stopVideo = () => {
-    hovered.current = false;
-    videoState.current?.el.pause();
-  };
-
-  // Create (and prefetch) the video on mount; release the decoder and GPU
-  // texture when the panel unmounts.
   useEffect(() => {
-    const loop = createVideoLoop(video);
-    videoState.current = loop;
-    return () => {
-      disposeVideoLoop(loop);
-      videoState.current = null;
-    };
-  }, [video]);
+    dash.tex.anisotropy = Math.min(8, maxAnisotropy);
+    return () => dash.dispose();
+  }, [dash, maxAnisotropy]);
+
+  const stopAnimation = () => {
+    hovered.current = false;
+    if (hoverStart.current === null) return;
+    hoverStart.current = null;
+    dash.render(SETTLED_T); // freeze back into the settled look
+  };
 
   // Position on the ring; the group faces outward toward the viewer.
   const x = Math.sin(angle) * radius;
@@ -113,36 +100,15 @@ export function CarouselItem({
     const mat = img.material as unknown as ImageMaterial;
     const glassMat = glassRef.current?.material as MeshPhysicalMaterial | undefined;
 
-    // Anisotropic filtering keeps tilted panels sharp instead of smearing at
-    // glancing angles. Capped at 8: going to 16 is barely visible here but
-    // measurably slower on integrated GPUs (16 textures, lots of coverage).
-    if (!anisotropySet.current && mat.map) {
-      mat.map.anisotropy = Math.min(8, maxAnisotropy);
-      mat.map.needsUpdate = true;
-      anisotropySet.current = true;
+    // Hover animation: replay the dashboard from its intro, then live motion.
+    if (hovered.current && !hidden) {
+      if (hoverStart.current === null) hoverStart.current = state.clock.elapsedTime;
+      dash.render(state.clock.elapsedTime - hoverStart.current);
     }
 
-    // Swap between the poster still and the hover video. The video texture
-    // only goes live once a frame is decodable, so there is no black flash.
-    const vs = videoState.current;
-    if (vs) uploadVideoFrame(vs);
-    if (hovered.current && !hidden && vs && vs.el.readyState >= 2) {
-      if (mat.map !== vs.tex) {
-        if (!poster.current && mat.map) {
-          const still = mat.map.image as { width: number; height: number };
-          poster.current = { map: mat.map, w: still.width, h: still.height };
-        }
-        mat.map = vs.tex;
-        mat.imageBounds.set(vs.el.videoWidth, vs.el.videoHeight);
-      }
-    } else if (!hovered.current && poster.current && mat.map !== poster.current.map) {
-      mat.map = poster.current.map;
-      mat.imageBounds.set(poster.current.w, poster.current.h);
-    }
-
-    // While the hero copy is flying, fade this panel (photo + glass) out.
+    // While the hero copy is flying, fade this panel (dashboard + glass) out.
     if (hidden) {
-      stopVideo();
+      stopAnimation();
       mat.opacity = MathUtils.lerp(mat.opacity, 0, 0.2);
       if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, 0, 0.2);
       wasHidden.current = true;
@@ -172,11 +138,9 @@ export function CarouselItem({
 
     // Settled: pin the panel to its ring slot every frame. The entrance branch
     // above only lands the panel here on its final frame, so if startup jank
-    // makes the clock jump straight past the entrance window (common while the
-    // textures upload and the post-processing shaders compile), the panels
-    // would otherwise stay frozen wherever the fly-out left them — collapsed
-    // near the center. Setting it here keeps the arrangement frame-rate
-    // independent.
+    // makes the clock jump straight past the entrance window, the panels would
+    // otherwise stay frozen wherever the fly-out left them — collapsed near
+    // the center. Setting it here keeps the arrangement frame-rate independent.
     group.position.set(x, 0, z);
 
     // World position determines closeness to the camera (camera looks along +Z).
@@ -185,7 +149,7 @@ export function CarouselItem({
     const facing = (worldPos.z / radius + 1) / 2;
     const eased = Math.pow(MathUtils.clamp(facing, 0, 1), 1.5);
 
-    // Back images: darker, desaturated and slightly zoomed out -> depth.
+    // Back panels: darker, desaturated and slightly zoomed out -> depth.
     // Minimum opacity kept higher so the back sides stay recognizable.
     const targetOpacity = 0.4 + eased * 0.6;
     const targetGray = (1 - eased) * 0.7;
@@ -204,7 +168,7 @@ export function CarouselItem({
       if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, GLASS_OPACITY, 0.15);
     }
 
-    // Front images slightly larger -> "focus" feel (scales the whole group).
+    // Front panels slightly larger -> "focus" feel (scales the whole group).
     const focus = 1 + eased * 0.08;
     group.scale.set(focus, focus, 1);
   });
@@ -219,14 +183,14 @@ export function CarouselItem({
     const quaternion = new Quaternion();
     const scale = new Vector3();
     img.matrixWorld.decompose(position, quaternion, scale);
-    onSelect(url, { position, quaternion, scale });
+    onSelect(dashboard.id, { position, quaternion, scale });
   };
 
   return (
     <group ref={groupRef} position={[x, 0, z]} rotation={[0, angle, 0]}>
       <Image
         ref={imgRef}
-        url={url}
+        texture={dash.tex}
         transparent
         toneMapped={false}
         side={DoubleSide}
@@ -239,7 +203,7 @@ export function CarouselItem({
                 // The rotation hook keeps cursor:grab on the canvas itself,
                 // which overrides document.body — so set it on the canvas.
                 canvasEl.style.cursor = 'pointer';
-                startVideo();
+                hovered.current = true;
               }
             : undefined
         }
@@ -247,36 +211,13 @@ export function CarouselItem({
           interactive
             ? () => {
                 canvasEl.style.cursor = 'grab';
-                stopVideo();
+                stopAnimation();
               }
             : undefined
         }
       />
 
-      {/* Glass plate in front of the photo: real thickness plus a glossy,
-          environment-reflecting surface. No transmission pass, so it stays
-          cheap. raycast disabled so clicks reach the photo behind it. */}
-      <mesh
-        ref={glassRef}
-        position={[0, 0, GLASS_THICKNESS / 2 + 0.01]}
-        raycast={() => null}
-      >
-        <boxGeometry args={[width, height, GLASS_THICKNESS]} />
-        <meshPhysicalMaterial
-          color="#ffffff"
-          transparent
-          opacity={GLASS_OPACITY}
-          roughness={0.05}
-          metalness={0}
-          clearcoat={1}
-          clearcoatRoughness={0.1}
-          ior={1.5}
-          reflectivity={1}
-          transmission={0}
-          envMapIntensity={2.6}
-          depthWrite={false}
-        />
-      </mesh>
+      <GlassPlate width={width} height={height} meshRef={glassRef} />
     </group>
   );
 }

@@ -1,32 +1,47 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled, { css, keyframes } from 'styled-components';
 
 interface LoadingScreenProps {
-  progress: number; // 0..1
   done: boolean;
   onExited: () => void;
 }
 
-// Continuous, GPU-friendly spins. Decoupled from load progress so the motion
-// stays perfectly smooth no matter how the percentage jumps.
-const spin = keyframes`
-  to { transform: rotate(360deg); }
+// One heartbeat, drawn left to right (viewBox 0 0 360 100). The same path
+// string drives the SVG, the glowing draw-loop and the traveling dot.
+const BEAT_PATH =
+  'M0 50 H96 L108 50 L116 38 L124 50 L138 50 L147 12 L159 84 L168 50 L204 50 L214 42 L224 50 H360';
+const BEAT_SECONDS = 2.2;
+
+// The bright segment sweeps the path once per cycle (pathLength is
+// normalized to 1, so these numbers are path fractions).
+const dash = keyframes`
+  from { stroke-dashoffset: 1.22; }
+  to { stroke-dashoffset: 0; }
 `;
-const spinReverse = keyframes`
-  to { transform: rotate(-360deg); }
+// The head dot rides the same path, in sync with the sweep.
+const travel = keyframes`
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
 `;
-// The background lights breathe slowly, so the illumination drifts in brightness.
+// The background lights breathe slowly, so the illumination drifts.
 const breathe = keyframes`
   0%, 100% { opacity: 0.55; transform: scale(1); }
   50% { opacity: 0.9; transform: scale(1.12); }
 `;
-// Quick "locked in" pulse once loading completes.
+// Quick "locked in" pulse once the boot completes.
 const completePulse = keyframes`
   0% { transform: scale(1); }
-  45% { transform: scale(1.08); }
+  45% { transform: scale(1.07); }
   100% { transform: scale(1); }
 `;
+// Progress fill sweeping in during boot.
+const grow = keyframes`
+  from { width: 4%; }
+  to { width: 88%; }
+`;
 
+// Exit: an iris that collapses into the exact point the carousel panels
+// bloom out of — the loader hands the center of the screen to the scene.
 const Screen = styled.div<{ $leaving: boolean }>`
   position: fixed;
   inset: 0;
@@ -35,18 +50,12 @@ const Screen = styled.div<{ $leaving: boolean }>`
   align-items: center;
   justify-content: center;
   background: #05070c;
-  opacity: ${(p) => (p.$leaving ? 0 : 1)};
-  /* Implode toward the center where the carousel blooms out. */
-  transform: ${(p) => (p.$leaving ? 'scale(0.2)' : 'scale(1)')};
+  clip-path: ${(p) => (p.$leaving ? 'circle(0% at 50% 50%)' : 'circle(141% at 50% 50%)')};
   pointer-events: ${(p) => (p.$leaving ? 'none' : 'auto')};
-  transition:
-    opacity 0.85s cubic-bezier(0.7, 0, 0.84, 0),
-    transform 0.85s cubic-bezier(0.7, 0, 0.84, 0);
+  transition: clip-path 0.9s cubic-bezier(0.7, 0, 0.84, 0);
   overflow: hidden;
 `;
 
-// Soft, unevenly placed glows that gently breathe -> a background that is lit
-// slightly differently across the screen instead of a flat colour.
 const Glow = styled.div<{ $x: string; $y: string; $color: string; $delay: string }>`
   position: absolute;
   width: 80vmax;
@@ -64,113 +73,176 @@ const Glow = styled.div<{ $x: string; $y: string; $color: string; $delay: string
   }
 `;
 
-const Loader = styled.div`
+const Column = styled.div<{ $leaving: boolean }>`
   position: relative;
-  width: 170px;
-  height: 170px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+  transform: ${(p) => (p.$leaving ? 'scale(0.82)' : 'scale(1)')};
+  transition: transform 0.9s cubic-bezier(0.7, 0, 0.84, 0);
 `;
 
-// A comet-tail gradient ring: a conic gradient masked into a thin ring, so the
-// colour fades from transparent to a bright head. Spinning it reads as a clean,
-// elegant rotating circle.
-const CometRing = styled.div<{
-  $size: number;
-  $thickness: number;
-  $duration: string;
-  $gradient: string;
-  $reverse?: boolean;
-}>`
-  position: absolute;
-  width: ${(p) => p.$size}px;
-  height: ${(p) => p.$size}px;
-  border-radius: 50%;
-  background: conic-gradient(from 0deg, ${(p) => p.$gradient});
-  mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - ${(p) => p.$thickness}px),
-    #000 calc(100% - ${(p) => p.$thickness}px)
-  );
-  -webkit-mask: radial-gradient(
-    farthest-side,
-    transparent calc(100% - ${(p) => p.$thickness}px),
-    #000 calc(100% - ${(p) => p.$thickness}px)
-  );
-  animation: ${(p) => (p.$reverse ? spinReverse : spin)} ${(p) => p.$duration}
-    linear infinite;
+const Beat = styled.div`
+  position: relative;
+  width: min(340px, 72vw);
 
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
+  svg {
+    display: block;
+    width: 100%;
+    overflow: visible;
   }
 `;
 
-// Center: percentage, with a soft completion pulse.
-const Core = styled.div<{ $done: boolean }>`
-  position: relative;
-  display: flex;
-  align-items: baseline;
+const BasePath = styled.path`
+  fill: none;
+  stroke: rgba(57, 135, 229, 0.16);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+`;
+
+const DrawPath = styled.path`
+  fill: none;
+  stroke: #3987e5;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.22 0.78;
+  stroke-dashoffset: 1.22;
+  filter: drop-shadow(0 0 7px rgba(57, 135, 229, 0.85));
+  animation: ${dash} ${BEAT_SECONDS}s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    stroke-dasharray: none;
+  }
+`;
+
+const Dot = styled.div`
+  position: absolute;
+  inset: 0;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #b7d3f6;
+  box-shadow:
+    0 0 10px 2px rgba(134, 182, 239, 0.9),
+    0 0 28px 8px rgba(57, 135, 229, 0.45);
+  offset-path: path('${BEAT_PATH}');
+  animation: ${travel} ${BEAT_SECONDS}s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    display: none;
+  }
+`;
+
+const Wordmark = styled.div<{ $done: boolean }>`
   color: #f4f7fb;
-  font-variant-numeric: tabular-nums;
+  font-size: 2.1rem;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  margin-left: 0.5em; /* optically recenter the tracked-out text */
   ${(p) =>
     p.$done &&
     css`
-      animation: ${completePulse} 0.6s ease;
+      animation: ${completePulse} 0.55s ease;
     `}
 `;
 
-const PercentNum = styled.span`
-  font-size: 2.3rem;
+const Sub = styled.div`
+  color: #898781;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.4em;
+  margin-left: 0.4em;
 `;
 
-const PercentSign = styled.span`
-  font-size: 0.95rem;
-  opacity: 0.55;
-  margin-left: 2px;
+const BarTrack = styled.div`
+  width: 240px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 `;
 
-export function LoadingScreen({ progress, done, onExited }: LoadingScreenProps) {
+const BarFill = styled.div<{ $done: boolean }>`
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #3987e5, #9085e9);
+  animation: ${grow} 1.5s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+  ${(p) =>
+    p.$done &&
+    css`
+      animation: none;
+      width: 100%;
+      transition: width 0.35s ease;
+    `}
+`;
+
+const Pct = styled.div`
+  color: #52616e;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.18em;
+`;
+
+export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
   const [leaving, setLeaving] = useState(false);
-  const pct = Math.round(progress * 100);
+  const [pct, setPct] = useState(0);
+  const pctRef = useRef(0);
 
-  // Brief hold at 100% (lets the completion pulse read), then implode.
+  // Eased percentage: climbs toward 92 while booting, snaps to 100 on done.
+  useEffect(() => {
+    let raf = 0;
+    const tick = () => {
+      const target = done ? 100 : 92;
+      pctRef.current += (target - pctRef.current) * (done ? 0.2 : 0.045);
+      const next = Math.round(pctRef.current);
+      setPct((prev) => (prev === next ? prev : next));
+      if (pctRef.current < 99.6) raf = requestAnimationFrame(tick);
+      else setPct(100);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [done]);
+
+  // Brief hold at 100% (lets the completion pulse read), then iris out.
   useEffect(() => {
     if (!done) return;
-    const t = window.setTimeout(() => setLeaving(true), 320);
+    const t = window.setTimeout(() => setLeaving(true), 420);
     return () => window.clearTimeout(t);
   }, [done]);
 
   return (
     <Screen
       $leaving={leaving}
-      onTransitionEnd={() => leaving && onExited()}
+      onTransitionEnd={(e) => {
+        if (leaving && e.target === e.currentTarget) onExited();
+      }}
       aria-hidden={leaving}
     >
-      <Glow $x="32%" $y="30%" $color="rgba(70, 150, 130, 0.35)" $delay="0s" />
-      <Glow $x="72%" $y="66%" $color="rgba(80, 110, 200, 0.3)" $delay="-3s" />
-      <Glow $x="55%" $y="45%" $color="rgba(150, 100, 210, 0.22)" $delay="-6s" />
+      <Glow $x="30%" $y="32%" $color="rgba(57, 135, 229, 0.28)" $delay="0s" />
+      <Glow $x="72%" $y="64%" $color="rgba(144, 133, 233, 0.22)" $delay="-3s" />
+      <Glow $x="55%" $y="45%" $color="rgba(25, 158, 112, 0.14)" $delay="-6s" />
 
-      <Loader>
-        <CometRing
-          $size={168}
-          $thickness={4}
-          $duration="2.4s"
-          $gradient="rgba(111, 227, 196, 0) 0deg, rgba(111, 227, 196, 0.1) 140deg, #6aa6ff 320deg, #eaf6f1 360deg"
-        />
-        <CometRing
-          $size={120}
-          $thickness={3}
-          $duration="3.2s"
-          $reverse
-          $gradient="rgba(185, 140, 255, 0) 0deg, rgba(185, 140, 255, 0.12) 150deg, #b98cff 330deg, #eaf6f1 360deg"
-        />
-        <Core $done={done}>
-          <PercentNum>{pct}</PercentNum>
-          <PercentSign>%</PercentSign>
-        </Core>
-      </Loader>
+      <Column $leaving={leaving}>
+        <Beat>
+          <svg viewBox="0 0 360 100" aria-hidden>
+            <BasePath d={BEAT_PATH} />
+            <DrawPath d={BEAT_PATH} pathLength={1} />
+          </svg>
+          <Dot />
+        </Beat>
+
+        <Wordmark $done={done}>PULSE</Wordmark>
+        <Sub>ANALYTICS · BOOT SEQUENCE</Sub>
+
+        <BarTrack>
+          <BarFill $done={done} />
+        </BarTrack>
+        <Pct>{pct}%</Pct>
+      </Column>
     </Screen>
   );
 }
