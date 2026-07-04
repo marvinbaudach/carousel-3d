@@ -1,20 +1,22 @@
 import { CanvasTexture, SRGBColorSpace } from 'three';
 import {
   areaChart,
-  barChart,
-  funnel,
+  debtClock,
   hBarChart,
-  heatmap,
   lineChart,
+  nukeMap,
   statTiles,
-  ticker,
+  weatherForecast,
 } from './charts';
 import type { Frame } from './draw';
 import { SERIES } from './theme';
+import { live } from '../data/store';
 
 export interface Dashboard {
   id: string;
   title: string;
+  /** True for panels that keep moving while idle — re-rendered on ticks. */
+  live?: boolean;
   draw: (f: Frame) => void;
 }
 
@@ -26,192 +28,298 @@ export const SETTLED_T = 9.7;
 
 const [blue, aqua, yellow, , violet, , magenta, orange] = SERIES;
 
-/** The twelve panels of the ring — one fictional SaaS analytics suite. */
-export const DASHBOARDS: Dashboard[] = [
+const degrees = (v: number) => `${v.toFixed(1)}°C`;
+
+/**
+ * Estimated nuclear warhead inventories (Federation of American Scientists,
+ * 2025 status). No live API exists for this — estimates change yearly.
+ */
+const NUKE_STATES = [
+  { name: 'Russia', lon: 60, lat: 60, count: 5449 },
+  { name: 'United States', lon: -98, lat: 39, count: 5277 },
+  { name: 'China', lon: 104, lat: 35, count: 600 },
+  { name: 'France', lon: 2.5, lat: 46.5, count: 290 },
+  { name: 'United Kingdom', lon: -1.5, lat: 53, count: 225 },
+  { name: 'India', lon: 79, lat: 22, count: 180 },
+  { name: 'Pakistan', lon: 69, lat: 30, count: 170 },
+  { name: 'Israel', lon: 35.2, lat: 31.5, count: 90 },
+  { name: 'North Korea', lon: 127, lat: 40, count: 50 },
+];
+const NUKE_TOTAL = NUKE_STATES.reduce((sum, s) => sum + s.count, 0);
+
+/**
+ * The panel pool — live public data (US Treasury, World Bank, ECB,
+ * Open-Meteo, Wikimedia). Every config is built inside `draw`, so a panel
+ * picks up its dataset on the very next frame after the fetcher fills the
+ * store; until then it falls back to the seeded demo series. Each page load
+ * shows a random selection (see DASHBOARDS below).
+ */
+const POOL: Dashboard[] = [
   {
-    id: 'mrr',
-    title: 'Monthly Recurring Revenue',
-    draw: (f) =>
+    id: 'city-temp',
+    title: 'Daily High · Zurich vs Geneva',
+    draw: (f) => {
+      const w = live.weather;
       lineChart(f, {
-        label: 'Recurring Revenue',
-        value: 248_000,
-        unit: '€',
-        delta: 8.2,
+        label: 'Daily High · 14 Days',
+        value: w?.zurichHigh ?? 21.4,
+        unit: '',
+        fmt: degrees,
+        delta: null,
         seed: 11,
         series: [
-          { name: 'Product', color: blue },
-          { name: 'Services', color: aqua },
+          { name: 'Zurich', color: blue, data: w?.lineZurich },
+          { name: 'Geneva', color: aqua, data: w?.lineGeneva },
         ],
-        ticks: ['0', '150k', '300k'],
-      }),
+        ticks: w?.tempTicks ?? ['10°', '20°', '30°'],
+        xLabels: ['-13d', '-9d', '-4d', 'today'],
+      });
+    },
   },
   {
-    id: 'active-users',
-    title: 'Active Users',
-    draw: (f) =>
-      areaChart(f, {
-        label: 'Active Users',
-        value: 84_200,
-        delta: 12.4,
-        seed: 23,
-        color: blue,
-        ticks: ['0', '50k', '100k'],
-      }),
-  },
-  {
-    id: 'latency',
-    title: 'API Latency',
-    draw: (f) =>
-      ticker(f, {
-        label: 'API Latency · p95',
-        unit: ' ms',
-        base: 90,
-        amplitude: 95,
-        threshold: 165,
-        thresholdLabel: 'SLO 165 ms',
-        color: violet,
-        seed: 37,
-        ticks: ['90', '140', '190'],
-      }),
-  },
-  {
-    id: 'regions',
-    title: 'Revenue by Region',
-    draw: (f) =>
+    id: 'military',
+    title: 'Military Spending · Top 10',
+    draw: (f) => {
+      const m = live.military;
       hBarChart(f, {
-        label: 'Revenue by Region',
-        value: 1_240_000,
-        delta: 5.1,
-        color: aqua,
-        rows: [
-          { name: 'Europe', v: 486_000 },
-          { name: 'North America', v: 402_000 },
-          { name: 'Asia Pacific', v: 214_000 },
-          { name: 'LATAM', v: 86_000 },
-          { name: 'Middle East', v: 52_000 },
+        label: `Military Spend · ${m?.year ?? '2024'}`,
+        value: m?.total ?? 1.6e12,
+        delta: null,
+        color: orange,
+        unit: '$',
+        rows: m?.rows ?? [
+          { name: 'United States', v: 9.97e11 },
+          { name: 'China', v: 3.14e11 },
+          { name: 'Russia', v: 1.49e11 },
+          { name: 'Germany', v: 8.8e10 },
+          { name: 'India', v: 8.6e10 },
         ],
+      });
+    },
+  },
+  {
+    id: 'us-debt',
+    title: 'US National Debt',
+    live: true,
+    draw: (f) => {
+      const d = live.debt;
+      debtClock(f, {
+        label: 'US National Debt',
+        latest: d?.latest ?? 39.4e12,
+        latestMs: d?.latestMs ?? Date.now() - 86_400_000,
+        ratePerMs: d?.ratePerMs ?? 0.06,
+        yoyPct: d?.yoyPct ?? 5.8,
+        series: d?.series ?? [0.1, 0.16, 0.24, 0.3, 0.35, 0.44, 0.5, 0.58, 0.66, 0.75, 0.83, 0.9],
+        ticks: d?.ticks ?? ['$37T', '$38T', '$39T'],
+        color: yellow,
+        isLive: !!d,
+      });
+    },
+  },
+  {
+    id: 'nukes',
+    title: 'Nuclear Warheads Worldwide',
+    draw: (f) =>
+      nukeMap(f, {
+        label: 'Nuclear Warheads',
+        total: NUKE_TOTAL,
+        states: NUKE_STATES,
+        world: live.worldMap,
+        source: 'FAS 2025 estimate',
       }),
   },
   {
-    id: 'funnel',
-    title: 'Conversion Funnel',
-    draw: (f) =>
-      funnel(f, {
-        label: 'Conversion Funnel',
-        value: 4.8,
-        delta: 0.6,
-        stages: [
-          { name: 'Visited', v: 1 },
-          { name: 'Signed up', v: 0.46 },
-          { name: 'Activated', v: 0.28 },
-          { name: 'Subscribed', v: 0.11 },
-          { name: 'Retained 90d', v: 0.048 },
-        ],
-      }),
+    id: 'swiss-pop',
+    title: 'Swiss Population · 100 Years',
+    draw: (f) => {
+      const p = live.swissPop;
+      areaChart(f, {
+        label: 'Swiss Population · since 1920',
+        value: p?.latest ?? 9_092_000,
+        fmt: (v) => `${(v / 1e6).toFixed(2)}M`,
+        delta: p?.yoyPct ?? 0.8,
+        seed: 19,
+        color: magenta,
+        data: p?.series,
+        ticks: p?.ticks ?? ['4M', '6.5M', '9M'],
+        xLabels: p?.xLabels ?? ['1920', '1955', '1990', 'today'],
+      });
+    },
   },
   {
-    id: 'engagement',
-    title: 'Engagement Heatmap',
-    draw: (f) =>
-      heatmap(f, {
-        label: 'Engagement · by hour',
-        value: 0.68,
-        delta: 3.4,
-        seed: 53,
-      }),
+    id: 'world-pop',
+    title: 'World Population · 2000 Years',
+    draw: (f) => {
+      const p = live.worldPop;
+      areaChart(f, {
+        label: 'World Population · 2000 Years',
+        value: p?.latest ?? 8.23e9,
+        fmt: (v) => `${(v / 1e9).toFixed(2)}B`,
+        delta: p?.yoyPct ?? 0.9,
+        seed: 29,
+        color: blue,
+        data: p?.series,
+        ticks: p?.ticks ?? ['0B', '4B', '8B'],
+        xLabels: p?.xLabels ?? ['Year 0', '675', '1350', 'today'],
+      });
+    },
+  },
+  {
+    id: 'chf-fx',
+    title: 'Franc Strength · 1 Year',
+    draw: (f) => {
+      const fx = live.fx;
+      lineChart(f, {
+        label: 'CHF vs EUR & USD · 1y',
+        value: fx?.usdNow ?? 1.26,
+        unit: '',
+        fmt: (v) => `$${v.toFixed(3)}`,
+        delta: fx?.usdYoyPct ?? 4.2,
+        seed: 31,
+        series: [
+          { name: 'USD per CHF', color: violet, data: fx?.usd },
+          { name: 'EUR per CHF', color: aqua, data: fx?.eur },
+        ],
+        ticks: fx?.ticks ?? ['-2%', '+1%', '+4%'],
+        xLabels: ['-12mo', '-8mo', '-4mo', 'now'],
+      });
+    },
+  },
+  {
+    id: 'forecast',
+    title: 'Zurich · 7-Day Forecast',
+    draw: (f) => {
+      const w = live.weather;
+      weatherForecast(f, {
+        label: 'Zurich · 7-Day Forecast',
+        current: w?.currentTemp ?? 18,
+        days:
+          w?.forecast ??
+          [
+            { day: 'Today', code: 1, min: 14, max: 24 },
+            { day: 'Sat', code: 0, min: 15, max: 27 },
+            { day: 'Sun', code: 3, min: 16, max: 25 },
+            { day: 'Mon', code: 61, min: 13, max: 20 },
+            { day: 'Tue', code: 95, min: 12, max: 19 },
+            { day: 'Wed', code: 2, min: 13, max: 22 },
+            { day: 'Thu', code: 0, min: 15, max: 26 },
+          ],
+      });
+    },
   },
   {
     id: 'kpis',
-    title: 'Executive Overview',
-    draw: (f) =>
+    title: 'Global Overview',
+    live: true,
+    draw: (f) => {
+      const d = live.debt;
+      const wp = live.worldPop;
+      const sp = live.swissPop;
+      const w = live.weather;
       statTiles(f, {
-        label: 'Executive Overview',
+        label: 'Global Overview',
         tiles: [
-          { name: 'Revenue', value: 1_240_000, fmt: (v) => `€${(v / 1e6).toFixed(2)}M`, delta: 8.2, color: blue, seed: 61 },
-          { name: 'Customers', value: 3_420, fmt: (v) => `${Math.round(v).toLocaleString('en-US')}`, delta: 4.7, color: aqua, seed: 67 },
-          { name: 'Churn', value: 2.1, fmt: (v) => `${v.toFixed(1)}%`, delta: -0.4, color: magenta, seed: 71 },
-          { name: 'NPS', value: 62, fmt: (v) => `${Math.round(v)}`, delta: 6.0, color: violet, seed: 73 },
+          {
+            name: 'US Debt',
+            value: d?.latest ?? 39.4e12,
+            fmt: (v) => `$${(v / 1e12).toFixed(1)}T`,
+            delta: d?.yoyPct ?? 5.8,
+            color: yellow,
+            seed: 61,
+            data: d?.series,
+          },
+          {
+            name: 'World Pop.',
+            value: wp?.latest ?? 8.23e9,
+            fmt: (v) => `${(v / 1e9).toFixed(2)}B`,
+            delta: wp?.yoyPct ?? 0.9,
+            color: blue,
+            seed: 67,
+            data: wp?.series,
+          },
+          {
+            name: 'Swiss Pop.',
+            value: sp?.latest ?? 9_092_000,
+            fmt: (v) => `${(v / 1e6).toFixed(2)}M`,
+            delta: sp?.yoyPct ?? 0.8,
+            color: magenta,
+            seed: 71,
+            data: sp?.series,
+          },
+          {
+            name: 'Zurich now',
+            value: w?.currentTemp ?? 18,
+            fmt: degrees,
+            delta: w?.highDeltaPct ?? 2.0,
+            color: aqua,
+            seed: 73,
+            data: w?.lineZurich,
+          },
         ],
-      }),
+      });
+    },
   },
   {
-    id: 'orders',
-    title: 'Orders per Month',
-    draw: (f) =>
-      barChart(f, {
-        label: 'Orders',
-        value: 18_400,
-        delta: 6.8,
-        seed: 83,
-        color: yellow,
-        ticks: ['0', '1k', '2k'],
-      }),
-  },
-  {
-    id: 'retention',
-    title: 'Retention vs Churn',
-    draw: (f) =>
-      lineChart(f, {
-        label: 'Retention Cohorts',
-        value: 91_400,
-        unit: '',
-        delta: 2.3,
-        seed: 89,
-        series: [
-          { name: 'Retained', color: violet },
-          { name: 'At risk', color: magenta },
-        ],
-        ticks: ['0', '50k', '100k'],
-      }),
-  },
-  {
-    id: 'traffic',
-    title: 'Traffic Sources',
-    draw: (f) =>
+    id: 'wiki',
+    title: 'Wikipedia · Top Articles',
+    draw: (f) => {
+      const wk = live.wiki;
       hBarChart(f, {
-        label: 'Traffic Sources',
-        value: 412_000,
-        delta: 9.9,
+        label: 'Wikipedia · Top Today',
+        value: wk?.topViews ?? 412_000,
+        delta: null,
         color: blue,
-        rows: [
-          { name: 'Organic search', v: 168_000 },
-          { name: 'Direct', v: 112_000 },
-          { name: 'Referral', v: 64_000 },
-          { name: 'Social', v: 44_000 },
-          { name: 'Paid', v: 24_000 },
+        unit: '',
+        rows: wk?.rows ?? [
+          { name: 'Deaths in 2026', v: 168_000 },
+          { name: 'ChatGPT', v: 112_000 },
+          { name: 'Bitcoin', v: 64_000 },
+          { name: 'Germany', v: 44_000 },
+          { name: 'World War II', v: 24_000 },
         ],
-      }),
+      });
+    },
   },
   {
-    id: 'signups',
-    title: 'Weekly Signups',
-    draw: (f) =>
-      barChart(f, {
-        label: 'Signups',
-        value: 2_840,
-        delta: 11.2,
-        seed: 97,
-        color: aqua,
-        ticks: ['0', '150', '300'],
-      }),
-  },
-  {
-    id: 'infra',
-    title: 'Cluster Load',
-    draw: (f) =>
-      ticker(f, {
-        label: 'Cluster Load',
-        unit: '%',
-        base: 34,
-        amplitude: 52,
-        threshold: 78,
-        thresholdLabel: 'scale-out 78%',
-        color: orange,
-        seed: 101,
-        ticks: ['30', '55', '80'],
-      }),
+    id: 'swiss-trends',
+    title: 'Swiss Trends · Wikipedia',
+    draw: (f) => {
+      const s = live.swiss;
+      hBarChart(f, {
+        label: 'Swiss Trends · Wikipedia',
+        value: s?.topViews ?? 4_100,
+        delta: null,
+        color: magenta,
+        unit: '',
+        rows: s?.rows ?? [
+          { name: 'Fussball-WM 2026', v: 3_800 },
+          { name: 'Lamine Yamal', v: 3_500 },
+          { name: 'Vladimir Petković', v: 3_200 },
+          { name: 'Roger Federer', v: 2_400 },
+          { name: 'Schweiz', v: 1_900 },
+        ],
+      });
+    },
   },
 ];
+
+const RING_SIZE = 10;
+
+function shuffled<T>(list: T[]): T[] {
+  const a = [...list];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * Each page load draws a fresh random selection and order from the pool, so
+ * revisiting the ring stays interesting. Evaluated once at module load — the
+ * ring radius derives from this length.
+ */
+export const DASHBOARDS: Dashboard[] = shuffled(POOL).slice(0, RING_SIZE);
 
 export interface DashboardTexture {
   tex: CanvasTexture;

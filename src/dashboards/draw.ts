@@ -54,13 +54,17 @@ export function stagger(t: number, i: number, gap = 0.05, dur = 0.6): number {
 
 export function fmtCompact(v: number, unit = ''): string {
   const s =
-    v >= 1_000_000
-      ? `${(v / 1_000_000).toFixed(1)}M`
-      : v >= 10_000
-        ? `${(v / 1000).toFixed(0)}k`
-        : v >= 1000
-          ? `${(v / 1000).toFixed(1)}k`
-          : `${Math.round(v)}`;
+    v >= 1e12
+      ? `${(v / 1e12).toFixed(2)}T`
+      : v >= 1e9
+        ? `${(v / 1e9).toFixed(1)}B`
+        : v >= 1_000_000
+          ? `${(v / 1_000_000).toFixed(1)}M`
+          : v >= 10_000
+            ? `${(v / 1000).toFixed(0)}k`
+            : v >= 1000
+              ? `${(v / 1000).toFixed(1)}k`
+              : `${Math.round(v)}`;
   return unit + s;
 }
 

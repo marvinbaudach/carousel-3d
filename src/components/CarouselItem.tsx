@@ -6,6 +6,7 @@ import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
 import type { HeroStart } from './HeroCard';
 import { GlassPlate, GLASS_OPACITY } from './GlassPlate';
 import { createDashboardTexture, SETTLED_T, type Dashboard } from '../dashboards';
+import { onLiveUpdate } from '../data/store';
 
 interface CarouselItemProps {
   /** The animated dashboard this panel renders. */
@@ -80,6 +81,17 @@ export function CarouselItem({
     dash.tex.anisotropy = Math.min(8, maxAnisotropy);
     return () => dash.dispose();
   }, [dash, maxAnisotropy]);
+
+  // Refresh the settled render when live data lands. Price ticks only touch
+  // the two socket-fed panels, so idle texture uploads stay at ~2/second.
+  useEffect(
+    () =>
+      onLiveUpdate((kind) => {
+        if (kind === 'tick' && !dashboard.live) return;
+        if (!hovered.current) dash.render(SETTLED_T);
+      }),
+    [dash, dashboard.live],
+  );
 
   const stopAnimation = () => {
     hovered.current = false;

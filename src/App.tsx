@@ -4,10 +4,11 @@ import { Carousel3D } from './components/Carousel3D';
 import { PerfHud } from './components/PerfHud';
 import { LoadingScreen } from './components/LoadingScreen';
 import { GlobalStyle } from './GlobalStyle';
+import { loadLiveData } from './data/sources';
 
-// The dashboards are generated locally (no assets to fetch), so "loading" is
-// a staged boot sequence that gives the pulse loader one full beat before the
-// iris hands the screen center over to the blooming ring.
+// "Loading" is a staged boot sequence: it gives the pulse loader one full
+// beat before the iris hands the screen center over to the blooming ring,
+// while the live-data fetches race ahead in the background.
 const BOOT_MS = 1600;
 
 const Stage = styled.main`
@@ -29,6 +30,9 @@ export default function App() {
   const [showLoader, setShowLoader] = useState(true);
 
   useEffect(() => {
+    // Fire off the public-API fetches and the price socket during the boot
+    // beat, so most panels already hold real data when the ring blooms.
+    loadLiveData();
     const id = setTimeout(() => setDone(true), BOOT_MS);
     return () => clearTimeout(id);
   }, []);
