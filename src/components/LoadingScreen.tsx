@@ -6,23 +6,6 @@ interface LoadingScreenProps {
   onExited: () => void;
 }
 
-// One heartbeat, drawn left to right (viewBox 0 0 360 100). The same path
-// string drives the SVG, the glowing draw-loop and the traveling dot.
-const BEAT_PATH =
-  'M0 50 H96 L108 50 L116 38 L124 50 L138 50 L147 12 L159 84 L168 50 L204 50 L214 42 L224 50 H360';
-const BEAT_SECONDS = 2.2;
-
-// The bright segment sweeps the path once per cycle (pathLength is
-// normalized to 1, so these numbers are path fractions).
-const dash = keyframes`
-  from { stroke-dashoffset: 1.22; }
-  to { stroke-dashoffset: 0; }
-`;
-// The head dot rides the same path, in sync with the sweep.
-const travel = keyframes`
-  from { offset-distance: 0%; }
-  to { offset-distance: 100%; }
-`;
 // The background lights breathe slowly, so the illumination drifts.
 const breathe = keyframes`
   0%, 100% { opacity: 0.55; transform: scale(1); }
@@ -81,60 +64,6 @@ const Column = styled.div<{ $leaving: boolean }>`
   gap: 26px;
   transform: ${(p) => (p.$leaving ? 'scale(0.82)' : 'scale(1)')};
   transition: transform 0.9s cubic-bezier(0.7, 0, 0.84, 0);
-`;
-
-const Beat = styled.div`
-  position: relative;
-  width: min(340px, 72vw);
-
-  svg {
-    display: block;
-    width: 100%;
-    overflow: visible;
-  }
-`;
-
-const BasePath = styled.path`
-  fill: none;
-  stroke: rgba(57, 135, 229, 0.16);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-`;
-
-const DrawPath = styled.path`
-  fill: none;
-  stroke: #3987e5;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 0.22 0.78;
-  stroke-dashoffset: 1.22;
-  filter: drop-shadow(0 0 7px rgba(57, 135, 229, 0.85));
-  animation: ${dash} ${BEAT_SECONDS}s linear infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-    stroke-dasharray: none;
-  }
-`;
-
-const Dot = styled.div`
-  position: absolute;
-  inset: 0;
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #b7d3f6;
-  box-shadow:
-    0 0 10px 2px rgba(134, 182, 239, 0.9),
-    0 0 28px 8px rgba(57, 135, 229, 0.45);
-  offset-path: path('${BEAT_PATH}');
-  animation: ${travel} ${BEAT_SECONDS}s linear infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    display: none;
-  }
 `;
 
 const Wordmark = styled.div<{ $done: boolean }>`
@@ -227,14 +156,6 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       <Glow $x="55%" $y="45%" $color="rgba(25, 158, 112, 0.14)" $delay="-6s" />
 
       <Column $leaving={leaving}>
-        <Beat>
-          <svg viewBox="0 0 360 100" aria-hidden>
-            <BasePath d={BEAT_PATH} />
-            <DrawPath d={BEAT_PATH} pathLength={1} />
-          </svg>
-          <Dot />
-        </Beat>
-
         <Wordmark $done={done}>PULSE</Wordmark>
         <Sub>ANALYTICS · BOOT SEQUENCE</Sub>
 

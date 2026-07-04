@@ -3,7 +3,7 @@ import type { Mesh } from 'three';
 
 // Thickness of the glass plate sitting in front of each dashboard, giving the
 // panels real depth instead of looking like flat sheets.
-export const GLASS_THICKNESS = 0.16;
+export const GLASS_THICKNESS = 0.08;
 // Base transparency of the glass; front panels get a touch clearer.
 export const GLASS_OPACITY = 0.16;
 
