@@ -613,6 +613,34 @@ export const WORLD_POP_FALLBACK: TrendSeries = trend(
 
 // ---------------------------------------------------------------------------
 
+export interface LiveFeed {
+  /** Uplink station code on the loading screen's route strip. */
+  code: string;
+  /** Data provider, as displayed on the loading screen. */
+  source: string;
+  /** Where the provider's API lives, as displayed on the loading screen. */
+  city: string;
+  /** What the feed delivers, as displayed on the loading screen. */
+  item: string;
+  load: () => Promise<void>;
+}
+
+/**
+ * The single source of truth for every live fetch AND for the loading
+ * screen's feed list — add or remove a fetcher here and the boot sequence
+ * stays in sync with what the panels actually load.
+ */
+export const LIVE_FEEDS: LiveFeed[] = [
+  { code: 'ZRH', source: 'OPEN-METEO', city: 'ZÜRICH', item: '7-day forecast', load: loadWeather },
+  { code: 'SFO', source: 'WIKIMEDIA', city: 'SAN FRANCISCO', item: 'top pageviews', load: loadWiki },
+  { code: 'SFO', source: 'WIKIMEDIA', city: 'SAN FRANCISCO', item: 'swiss trends', load: loadSwissTrends },
+  { code: 'WAS', source: 'US TREASURY', city: 'WASHINGTON', item: 'national debt', load: loadDebt },
+  { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'military spend', load: loadMilitary },
+  { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'population', load: loadPopulation },
+  { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'homicide rate', load: loadHomicide },
+  { code: 'SIN', source: 'COINGECKO', city: 'SINGAPORE', item: 'gold spot · CHF', load: loadGold },
+];
+
 let started = false;
 
 /** Kick off all sources; each panel fills in as its dataset arrives. */
@@ -623,19 +651,15 @@ export function loadLiveData(): void {
   live.worldMap = WORLD;
   // Heartbeat for the "live" panels (debt clock): re-render once a second.
   setInterval(() => emitLiveUpdate('tick'), 1000);
-  const sources: [string, () => Promise<void>][] = [
-    ['weather', loadWeather],
-    ['wiki', loadWiki],
-    ['swiss', loadSwissTrends],
-    ['debt', loadDebt],
-    ['military', loadMilitary],
-    ['population', loadPopulation],
-    ['homicide', loadHomicide],
-    ['gold', loadGold],
-  ];
-  sources.forEach(([name, run]) => {
-    run()
+  LIVE_FEEDS.forEach((feed) => {
+    feed
+      .load()
       .then(() => emitLiveUpdate('data'))
-      .catch((err) => console.warn(`[live-data] ${name} failed, panel keeps demo data`, err));
+      .catch((err) =>
+        console.warn(
+          `[live-data] ${feed.source} ${feed.item} failed, panel keeps demo data`,
+          err,
+        ),
+      );
   });
 }
