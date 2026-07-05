@@ -64,6 +64,10 @@ function Ring({
     autoSpin: 0.12,
     paused,
     hand,
+    // The visual lift of the front row is sin(tilt) * radius, so the start
+    // tilt shrinks on big rings — otherwise a 30-panel ring opens with the
+    // front row shoved to the top of the frame.
+    initialTilt: -0.32 * Math.min(1, DEFAULT_RADIUS / radius),
   });
   // Memoized so the slot objects keep their identity across unrelated
   // re-renders — CarouselItem detects a formation switch by slot identity.
