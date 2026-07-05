@@ -1,4 +1,4 @@
-// The eight dashboard archetypes. Each draws a complete panel (surface,
+// The dashboard renderers. Each draws a complete panel (surface,
 // header, chart) into a Frame; `t` replays the intro and drives the live
 // motion afterwards, so hovering a panel feels like it wakes up.
 
@@ -17,7 +17,7 @@ import {
   stagger,
   type Frame,
 } from './draw';
-import { CRITICAL, FONT, GOOD, GRID, INK, INK_SECONDARY, MUTED, SEQ, SERIES } from './theme';
+import { CRITICAL, FONT, GOOD, GRID, INK, INK_SECONDARY, MUTED, SERIES } from './theme';
 
 const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
 
@@ -228,115 +228,6 @@ export function hBarChart(f: Frame, cfg: HBarCfg): void {
   });
 }
 
-export interface HeatCfg {
-  label: string;
-  value: number;
-  delta: number | null;
-  fmt?: (v: number) => string;
-  seed: number;
-  /** 7 rows x 12 cols, 0..1. Wins over the seeded fallback grid. */
-  grid?: number[][];
-  dayLabels?: string[];
-}
-
-/** Weekday x hour activity grid on the sequential ramp, cells staggering in. */
-export function heatmap(f: Frame, cfg: HeatCfg): void {
-  const { ctx, u, t, w, h } = f;
-  drawSurface(f);
-  const fmt = cfg.fmt ?? ((v: number) => `${(v * 100).toFixed(0)}%`);
-  const top = drawHeader(f, cfg.label, cfg.value, fmt, cfg.delta);
-  const pad = 36 * u;
-  const days = cfg.dayLabels ?? ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  const cols = 12;
-  const gap = 5 * u;
-  const labelW = 26 * u;
-  const cw = (w - 2 * pad - labelW - gap * (cols - 1)) / cols;
-  const ch = (h - 70 * u - (top + 16 * u) - gap * 6) / 7;
-  const rand = rng2d(cfg.seed);
-
-  ctx.font = `400 ${13 * u}px ${FONT}`;
-  for (let row = 0; row < 7; row++) {
-    const y = top + 16 * u + row * (ch + gap);
-    ctx.fillStyle = MUTED;
-    ctx.fillText(days[row], pad, y + ch / 2 + 5 * u);
-    for (let col = 0; col < cols; col++) {
-      const i = row * cols + col;
-      const p = stagger(t, i, 0.012, 0.5);
-      if (p <= 0) continue;
-      let v = cfg.grid ? Math.min(1, Math.max(0, cfg.grid[row][col])) : rand(row, col);
-      // Live shimmer on the fake grid only — real measurements stay honest.
-      if (!cfg.grid && t > 1.6 && (row * 31 + col * 17) % 23 === 0) {
-        v = Math.min(1, v + 0.25 * (0.5 + 0.5 * Math.sin(t * 2 + i)));
-      }
-      const step = SEQ[Math.min(SEQ.length - 1, Math.floor(v * SEQ.length))];
-      const x = pad + labelW + col * (cw + gap);
-      ctx.globalAlpha = p;
-      ctx.fillStyle = step;
-      roundRect(ctx, x, y, cw, ch, 3 * u);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    }
-  }
-  ctx.fillStyle = MUTED;
-  ctx.fillText('00', pad + labelW, h - 46 * u);
-  ctx.textAlign = 'right';
-  ctx.fillText('24h', w - pad, h - 46 * u);
-  ctx.textAlign = 'left';
-}
-
-function rng2d(seed: number): (a: number, b: number) => number {
-  return (a, b) => {
-    const r = rngOnce(seed + a * 131 + b * 7);
-    // Shape toward "work hours": center columns run hotter.
-    const bias = 1 - Math.abs(b - 6.5) / 8;
-    return Math.min(1, r * 0.55 + bias * 0.45);
-  };
-}
-
-function rngOnce(seed: number): number {
-  let x = Math.imul(seed ^ 0x9e3779b9, 0x85ebca6b);
-  x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35);
-  return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
-}
-
-export interface FunnelCfg {
-  label: string;
-  value: number;
-  delta: number | null;
-  fmt?: (v: number) => string;
-  stages: { name: string; v: number }[];
-}
-
-/** Conversion funnel on the ordinal blue ramp, stage percentages counting. */
-export function funnel(f: Frame, cfg: FunnelCfg): void {
-  const { ctx, u, t, w, h } = f;
-  drawSurface(f);
-  const fmt = cfg.fmt ?? ((v: number) => `${v.toFixed(1)}%`);
-  const top = drawHeader(f, cfg.label, cfg.value, fmt, cfg.delta);
-  const pad = 36 * u;
-  const rows = cfg.stages.length;
-  const rowH = (h - 56 * u - (top + 8 * u)) / rows;
-  // Ordinal steps: darkest -> lighter, all clear of the surface.
-  const steps = [SEQ[1], SEQ[2], SEQ[3], SEQ[4], SEQ[6]];
-
-  cfg.stages.forEach((s, i) => {
-    const p = stagger(t, i, 0.09);
-    const y = top + 8 * u + rowH * i;
-    const bw = (w - 2 * pad) * s.v * p;
-    ctx.fillStyle = steps[i % steps.length];
-    roundRect(ctx, pad, y + rowH * 0.3, bw, rowH * 0.52, 4 * u);
-    ctx.fill();
-    ctx.fillStyle = INK_SECONDARY;
-    ctx.font = `500 ${16 * u}px ${FONT}`;
-    ctx.fillText(s.name, pad, y + rowH * 0.22);
-    ctx.fillStyle = INK;
-    ctx.font = `600 ${16 * u}px ${FONT}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(`${(s.v * 100 * p).toFixed(0)}%`, w - pad, y + rowH * 0.22);
-    ctx.textAlign = 'left';
-  });
-}
-
 export interface TilesCfg {
   label: string;
   tiles: {
@@ -398,130 +289,6 @@ export function statTiles(f: Frame, cfg: TilesCfg): void {
     linePath(ctx, data, x + ip, x + tw - ip, y + th - 52 * u, y + th - 14 * u, p);
     ctx.stroke();
   });
-}
-
-export interface TickerCfg {
-  label: string;
-  fmt: (v: number) => string;
-  tickFmt: (v: number) => string;
-  color: string;
-  seed: number;
-  /** Synth fallback range, used until the price socket delivers. */
-  base: number;
-  amplitude: number;
-  threshold?: { v: number; label: string };
-  /** Live price buffer; with >= 2 samples the panel draws real trades. */
-  feed?: { samples(): number[] };
-}
-
-/** Live streaming line: real trades from the feed, synth noise until then. */
-export function ticker(f: Frame, cfg: TickerCfg): void {
-  const { ctx, u, t } = f;
-  drawSurface(f);
-
-  const buf = cfg.feed?.samples() ?? [];
-  const isLive = buf.length >= 2;
-
-  // Smooth value noise for the fallback: broad nodes carry the shape, a faint
-  // second octave adds life without turning the line into a zigzag.
-  const speed = 3.2; // data points per second
-  const window = 40;
-  const head = t * speed + window;
-  const noise = (k: number, scale: number, salt: number) => {
-    const kk = k / scale;
-    const a = rngOnce(cfg.seed + salt + Math.floor(kk));
-    const b = rngOnce(cfg.seed + salt + Math.floor(kk) + 1);
-    const frac = kk - Math.floor(kk);
-    const s = frac * frac * (3 - 2 * frac);
-    return a + (b - a) * s;
-  };
-  const sample = (k: number) =>
-    cfg.base + (0.8 * noise(k, 7, 0) + 0.2 * noise(k, 2.2, 1000)) * cfg.amplitude;
-
-  // Real trades sit in a padded min/max window so small moves stay readable;
-  // the synth fallback keeps its fixed base..base+amplitude scale.
-  let series: number[];
-  let lo: number;
-  let hi: number;
-  if (isLive) {
-    series = buf;
-    const min = Math.min(...buf);
-    const max = Math.max(...buf);
-    const padV = Math.max((max - min) * 0.25, buf[buf.length - 1] * 0.0003);
-    lo = min - padV;
-    hi = max + padV;
-  } else {
-    const steps = 90;
-    series = Array.from({ length: steps + 1 }, (_, i) =>
-      sample(head - window + (window * i) / steps),
-    );
-    lo = cfg.base;
-    hi = cfg.base + cfg.amplitude;
-  }
-  const current = series[series.length - 1];
-  const ticks = [lo, (lo + hi) / 2, hi].map(cfg.tickFmt);
-
-  const top = drawHeader(f, cfg.label, current, cfg.fmt, null, undefined);
-  // Live badge instead of a delta: this chart is about "now".
-  const pad = 36 * u;
-  ctx.fillStyle = isLive ? GOOD : MUTED;
-  ctx.beginPath();
-  ctx.arc(pad + 7 * u, top - 38 * u, 4.5 * u * (0.8 + 0.2 * Math.sin(t * 4)), 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = INK_SECONDARY;
-  ctx.font = `600 ${15 * u}px ${FONT}`;
-  ctx.fillText(isLive ? 'LIVE' : 'SYNC', pad + 20 * u, top - 33 * u);
-
-  const r = plotRect(f, top + 8 * u);
-  drawGrid(f, r.y0, r.y1, ticks.length);
-
-  const normY = (v: number) => r.y1 - ((r.y1 - r.y0 - 20 * u) * (v - lo)) / (hi - lo);
-
-  // Threshold line + label, drawn only while it falls inside the window.
-  if (cfg.threshold && cfg.threshold.v >= lo && cfg.threshold.v <= hi) {
-    const ty = normY(cfg.threshold.v);
-    ctx.strokeStyle = CRITICAL;
-    ctx.setLineDash([6 * u, 6 * u]);
-    ctx.lineWidth = 1.5 * u;
-    ctx.beginPath();
-    ctx.moveTo(r.x0, ty);
-    ctx.lineTo(r.x1, ty);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = CRITICAL;
-    ctx.font = `500 ${14 * u}px ${FONT}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(cfg.threshold.label, r.x1, ty - 8 * u);
-    ctx.textAlign = 'left';
-  }
-
-  // The series itself, sweeping in from the left while the intro plays.
-  const p = easeOut(t / 1.2);
-  const last = Math.max(1, Math.round((series.length - 1) * p));
-  ctx.strokeStyle = cfg.color;
-  ctx.lineWidth = 2.5 * u;
-  ctx.lineJoin = 'round';
-  ctx.beginPath();
-  for (let i = 0; i <= last; i++) {
-    const x = r.x0 + ((r.x1 - r.x0) * i) / (series.length - 1);
-    const y = normY(series[i]);
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-  const hx = r.x0 + ((r.x1 - r.x0) * last) / (series.length - 1);
-  ctx.fillStyle = cfg.color;
-  ctx.beginPath();
-  ctx.arc(hx, normY(series[last]), 5 * u, 0, Math.PI * 2);
-  ctx.fill();
-
-  drawGridLabels(f, r.y0, r.y1, ticks);
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${14 * u}px ${FONT}`;
-  ctx.fillText('-60s', r.x0, r.y1 + 24 * u);
-  ctx.textAlign = 'right';
-  ctx.fillText('now', r.x1, r.y1 + 24 * u);
-  ctx.textAlign = 'left';
 }
 
 export interface DebtClockCfg {

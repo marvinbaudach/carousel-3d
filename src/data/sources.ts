@@ -103,21 +103,32 @@ interface WikiTop {
 
 const WIKI_SKIP = /^(Main_Page|Special:|Wikipedia:|Portal:|File:|Help:|Talk:)/;
 
+const WIKI_API = 'https://wikimedia.org/api/rest_v1/metrics/pageviews';
+
+/** UTC yyyy/mm/dd path segment, `daysAgo` days back. */
+function wikiDatePath(daysAgo: number): string {
+  const d = new Date(Date.now() - daysAgo * 86_400_000);
+  return (
+    `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/` +
+    String(d.getUTCDate()).padStart(2, '0')
+  );
+}
+
+/** Human article title, ellipsized to fit a panel row. */
+function wikiTitle(article: string): string {
+  const name = article.replaceAll('_', ' ');
+  return name.length > 22 ? `${name.slice(0, 21)}…` : name;
+}
+
 async function loadWiki(): Promise<void> {
   const rows = await cached('wiki', 3 * 60 * MIN, async () => {
-    const d = new Date(Date.now() - 86_400_000);
-    const url =
-      'https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/' +
-      `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/` +
-      `${String(d.getUTCDate()).padStart(2, '0')}`;
-    const data = await fetchJson<WikiTop>(url);
+    const data = await fetchJson<WikiTop>(
+      `${WIKI_API}/top/en.wikipedia/all-access/${wikiDatePath(1)}`,
+    );
     return data.items[0].articles
       .filter((a) => !WIKI_SKIP.test(a.article))
       .slice(0, 5)
-      .map((a) => {
-        const name = a.article.replaceAll('_', ' ');
-        return { name: name.length > 22 ? `${name.slice(0, 21)}…` : name, v: a.views };
-      });
+      .map((a) => ({ name: wikiTitle(a.article), v: a.views }));
   });
 
   live.wiki = { rows, topViews: rows[0]?.v ?? 0 };
@@ -138,13 +149,10 @@ async function loadSwissTrends(): Promise<void> {
   const rows = await cached('swiss', 3 * 60 * MIN, async () => {
     let data: WikiCountry | null = null;
     for (const daysAgo of [2, 3]) {
-      const d = new Date(Date.now() - daysAgo * 86_400_000);
-      const url =
-        'https://wikimedia.org/api/rest_v1/metrics/pageviews/top-per-country/CH/all-access/' +
-        `${d.getUTCFullYear()}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/` +
-        `${String(d.getUTCDate()).padStart(2, '0')}`;
       try {
-        data = await fetchJson<WikiCountry>(url);
+        data = await fetchJson<WikiCountry>(
+          `${WIKI_API}/top-per-country/CH/all-access/${wikiDatePath(daysAgo)}`,
+        );
         break;
       } catch {
         // Not published yet — try one day earlier.
@@ -154,10 +162,7 @@ async function loadSwissTrends(): Promise<void> {
     return data.items[0].articles
       .filter((a) => !a.article.includes(':') && !WIKI_MAIN.has(a.article))
       .slice(0, 5)
-      .map((a) => {
-        const name = a.article.replaceAll('_', ' ');
-        return { name: name.length > 22 ? `${name.slice(0, 21)}…` : name, v: a.views_ceil };
-      });
+      .map((a) => ({ name: wikiTitle(a.article), v: a.views_ceil }));
   });
 
   live.swiss = { rows, topViews: rows[0]?.v ?? 0 };

@@ -16,7 +16,7 @@ import {
 } from './theme';
 
 /** Deterministic PRNG so every panel shows the same data on every visit. */
-export function rng(seed: number): () => number {
+function rng(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a |= 0;
