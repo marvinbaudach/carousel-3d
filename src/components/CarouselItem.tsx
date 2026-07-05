@@ -46,13 +46,14 @@ const TEX_H = 960;
 // Duration of the one-time entrance fly-out per panel.
 const ENTRANCE_DURATION = 0.9;
 
-// Hover press: the glass plate tilts toward the cursor as if pushed down on
-// one side, pivoting on its center like a plate resting on a ball joint.
-// Max tilt per axis (radians); kept small so the dipping edge only barely
-// sinks past the dashboard plane.
-const TILT_X = 0.055; // vertical cursor offset -> rotation around x
-const TILT_Y = 0.07; // horizontal cursor offset -> rotation around y
-const PRESS_SINK = 0.02; // slight overall sink while pressed (world units)
+// Hover press: the cursor side of the panel gets pushed down (away from the
+// viewer) while the edge opposite the cursor stays put — the panel pivots on
+// that far edge, so it reads as being pressed, not as spinning around its
+// center. Max tilt per axis (radians) — deliberately tiny: the press should
+// add life, not read as a playful 3D rotation.
+const TILT_X = 0.03; // vertical cursor offset -> rotation around x
+const TILT_Y = 0.035; // horizontal cursor offset -> rotation around y
+const PRESS_SINK = 0.015; // the glass settles slightly onto the panel too
 // Small gap between the dashboard image and the glass plate's back face.
 const GLASS_GAP = 0.01;
 
@@ -146,35 +147,42 @@ export function CarouselItem({
       return;
     }
 
-    // Hover press: tilt the glass plate toward the cursor, pivoting on its
-    // center — the edge under the pointer dips down onto the dashboard while
-    // the opposite edge lifts, plus a slight overall sink for contact. The
-    // tilt keeps following the pointer as it moves across the panel.
+    // Hover press: tilt the whole panel toward the cursor. Combined with the
+    // sink below, the panel pivots on the edge opposite the cursor — only the
+    // cursor side moves, down and away; nothing swings toward the viewer. The
+    // glass rides along and additionally settles slightly onto the dashboard.
     press.current = MathUtils.lerp(press.current, hovered.current ? 1 : 0, 0.18);
     const pressed = press.current;
+    // Positive rotation.x lifts the top edge toward the viewer, so the
+    // cursor side (pointer.y = +1 at the top) needs the negative direction.
+    group.rotation.x = MathUtils.lerp(
+      group.rotation.x,
+      -pointer.current.y * TILT_X * pressed,
+      0.15,
+    );
+    group.rotation.y = MathUtils.lerp(
+      group.rotation.y,
+      angle + pointer.current.x * TILT_Y * pressed,
+      0.15,
+    );
     const glass = glassRef.current;
     if (glass) {
-      // Positive rotation.x lifts the top edge toward the viewer, so the
-      // cursor side (pointer.y = +1 at the top) needs the negative direction.
-      glass.rotation.x = MathUtils.lerp(
-        glass.rotation.x,
-        -pointer.current.y * TILT_X * pressed,
-        0.15,
-      );
-      glass.rotation.y = MathUtils.lerp(
-        glass.rotation.y,
-        pointer.current.x * TILT_Y * pressed,
-        0.15,
-      );
       glass.position.z = GLASS_GAP + GLASS_THICKNESS / 2 - pressed * PRESS_SINK;
     }
+
+    // Push the panel back by exactly the distance the far edge would have
+    // swung forward, turning the center-pivot rotation into an edge-pivot
+    // press: the edge opposite the cursor stays fixed in space.
+    const sink =
+      (height / 2) * Math.abs(Math.sin(group.rotation.x)) +
+      (width / 2) * Math.abs(Math.sin(group.rotation.y - angle));
 
     // Settled: pin the panel to its ring slot every frame. The entrance branch
     // above only lands the panel here on its final frame, so if startup jank
     // makes the clock jump straight past the entrance window, the panels would
     // otherwise stay frozen wherever the fly-out left them — collapsed near
     // the center. Setting it here keeps the arrangement frame-rate independent.
-    group.position.set(x, 0, z);
+    group.position.set(x - Math.sin(angle) * sink, 0, z - Math.cos(angle) * sink);
 
     // World position determines closeness to the camera (camera looks along +Z).
     group.getWorldPosition(worldPos);

@@ -440,27 +440,54 @@ async function loadHomicide(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Paleoclimate: atmospheric CO2 and global temperature over 10,000 years.
-// Holocene values are ice-core reconstructions (EPICA Dome C / Law Dome for
-// CO2; Marcott et al. 2013 for temperature), spliced with the modern
-// instrumental record (Mauna Loa CO2; global surface-temperature anomaly).
-// Bundled — the point is the 10k-year shape, not a live reading.
+// Paleoclimate: Antarctic temperature anomaly over 800,000 years from the
+// EPICA Dome C / Vostok ice cores. The record's sawtooth is eight glacial
+// cycles — temperature swinging ~-8 °C (ice ages) to ~+2.5 °C (interglacials);
+// the shaded bands are the glacial periods. CO2 kept in the anchors for the
+// ice-age threshold but no longer plotted. Bundled — the point is the shape.
 
-// [years before today, CO2 ppm, temperature anomaly °C vs 1961–1990]
+// [thousands of years before today, CO2 ppm, Antarctic temp anomaly °C]
 const CLIMATE_ANCHORS: [number, number, number][] = [
-  [10000, 265, -0.2],
-  [8000, 260, 0.3], // Holocene climatic optimum
-  [6000, 265, 0.4],
-  [4000, 270, 0.2],
-  [2000, 275, 0.0],
-  [1000, 279, 0.05],
-  [300, 280, -0.35], // ~1700, Little Ice Age
-  [175, 285, -0.3], // ~1850, pre-industrial
-  [125, 296, -0.2],
-  [75, 311, -0.05],
-  [50, 331, 0.0],
-  [25, 361, 0.35],
-  [0, 421, 1.1], // today
+  [800, 220, -4],
+  [780, 210, -5],
+  [740, 250, -1], // MIS 19 interglacial
+  [710, 200, -6],
+  [680, 245, -2], // MIS 17
+  [650, 200, -6],
+  [620, 260, 0], // MIS 15
+  [590, 235, -3],
+  [570, 270, 0.5],
+  [530, 215, -4],
+  [500, 250, -1], // MIS 13
+  [480, 225, -4],
+  [450, 190, -8], // deep glacial
+  [430, 210, -5],
+  [410, 285, 1.5], // MIS 11 interglacial
+  [380, 205, -5],
+  [350, 195, -7],
+  [337, 240, -3],
+  [325, 300, 2.5], // MIS 9 — highest natural CO2
+  [300, 250, -1],
+  [280, 210, -5],
+  [250, 190, -7],
+  [240, 245, -2],
+  [215, 275, 1], // MIS 7
+  [200, 240, -2],
+  [190, 220, -4],
+  [150, 190, -7.5], // glacial
+  [135, 200, -6],
+  [125, 287, 2], // Eemian interglacial (MIS 5e)
+  [115, 260, 0],
+  [100, 190, -7],
+  [80, 225, -4.5],
+  [65, 230, -4],
+  [50, 190, -6.5],
+  [30, 200, -6],
+  [18, 185, -8], // Last Glacial Maximum
+  [11, 265, -0.5], // end of the last ice age
+  [1, 280, 0.2], // pre-industrial Holocene
+  [0.2, 300, 0.5],
+  [0, 420, 1.2], // today — Mauna Loa
 ];
 
 /** Linear-interpolate sorted [x, y] points at x (clamped at the ends). */
@@ -478,27 +505,28 @@ function interpAt(points: [number, number][], x: number): number {
   return last[1];
 }
 
+const CLIMATE_SPAN_KYR = 800;
+
 function climatePanel(): NonNullable<typeof live.climate> {
-  // interpAt needs x (years-ago) ascending; anchors list it descending.
+  // interpAt needs x (kyr-ago) ascending; anchors list it descending.
   const co2Pts = CLIMATE_ANCHORS.map(([ya, co2]) => [ya, co2] as [number, number]).toReversed();
   const tempPts = CLIMATE_ANCHORS.map(([ya, , t]) => [ya, t] as [number, number]).toReversed();
 
-  const n = 90;
+  const n = 220;
   const co2raw: number[] = [];
   const tempraw: number[] = [];
   for (let i = 0; i < n; i++) {
-    const ya = 10000 - (10000 * i) / (n - 1); // 10000 -> 0 (oldest to today)
+    const ya = CLIMATE_SPAN_KYR - (CLIMATE_SPAN_KYR * i) / (n - 1); // oldest -> today
     co2raw.push(interpAt(co2Pts, ya));
     tempraw.push(interpAt(tempPts, ya));
   }
-  const cs = niceScale(Math.min(...co2raw), Math.max(...co2raw), (v) => `${Math.round(v)}`);
-  const tlo = Math.min(...tempraw) - 0.15;
-  const thi = Math.max(...tempraw) + 0.15;
+  const ts = niceScale(Math.min(...tempraw) - 0.5, Math.max(...tempraw) + 0.5, (v) => `${v > 0 ? '+' : ''}${v.toFixed(0)}°`);
   return {
-    co2: norm(co2raw, cs.lo, cs.hi),
-    temp: norm(tempraw, tlo, thi),
-    ticks: cs.ticks,
-    latestCo2: CLIMATE_ANCHORS[CLIMATE_ANCHORS.length - 1][1],
+    temp: norm(tempraw, ts.lo, ts.hi),
+    ticks: ts.ticks,
+    latestTemp: CLIMATE_ANCHORS[CLIMATE_ANCHORS.length - 1][2],
+    // Ice ages: glacial periods sit below ~230 ppm CO2.
+    iceMask: co2raw.map((v, i) => v < 230 && i < n - 3),
   };
 }
 

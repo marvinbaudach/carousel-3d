@@ -50,12 +50,13 @@ export interface LiveData {
   swissPop?: TrendSeries;
   /** World population since 1960 (World Bank). */
   worldPop?: TrendSeries;
-  /** CO2 (ppm) and global temperature over 10,000 years, own scales. */
+  /** Antarctic temperature anomaly over 800,000 years (ice cores). */
   climate?: {
-    co2: number[];
     temp: number[];
     ticks: string[];
-    latestCo2: number;
+    latestTemp: number;
+    /** True where the sample falls in a glacial period (ice age). */
+    iceMask: boolean[];
   };
   /** Gold in CHF/oz vs SNB monetary base, both normalized to own scale. */
   gold?: {

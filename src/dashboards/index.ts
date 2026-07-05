@@ -160,22 +160,20 @@ const POOL: Dashboard[] = [
   },
   {
     id: 'climate',
-    title: 'CO₂ & Temperature · 10,000 Years',
+    title: 'Global Temperature · 800,000 Years',
     draw: (f) => {
       const c = live.climate ?? CLIMATE_PANEL;
       lineChart(f, {
-        label: 'CO₂ & Global Temp · 10k Years',
-        value: c.latestCo2,
+        label: 'Temperature · 800k Years',
+        value: c.latestTemp,
         unit: '',
-        fmt: (v) => `${Math.round(v)} ppm`,
+        fmt: (v) => `${v > 0 ? '+' : ''}${v.toFixed(1)}°C`,
         delta: null,
         seed: 53,
-        series: [
-          { name: 'CO₂ ppm', color: orange, data: c.co2 },
-          { name: 'Temp °C', color: magenta, data: c.temp },
-        ],
+        series: [{ name: 'Temp anomaly °C', color: orange, data: c.temp }],
         ticks: c.ticks,
-        xLabels: ['10k BP', '6.7k BP', '3.3k BP', 'today'],
+        xLabels: ['800k BP', '530k BP', '270k BP', 'today'],
+        shade: { mask: c.iceMask, label: '❄ ice ages' },
       });
     },
   },

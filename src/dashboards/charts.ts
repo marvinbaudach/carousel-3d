@@ -48,6 +48,8 @@ export interface LineCfg {
   series: { name: string; color: string; data?: number[] }[];
   ticks: string[];
   xLabels?: string[];
+  /** Cool vertical bands over samples where mask[i] is true (e.g. ice ages). */
+  shade?: { mask: boolean[]; label: string };
 }
 
 /** Two-series line chart with draw-in, endpoint pulse and direct labels. */
@@ -57,6 +59,30 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   const fmt = cfg.fmt ?? ((v: number) => fmtCompact(v, cfg.unit));
   const top = drawHeader(f, cfg.label, cfg.value, fmt, cfg.delta);
   const r = plotRect(f, top + 26 * u);
+
+  // Shaded bands (behind grid + series): contiguous true-runs of the mask.
+  if (cfg.shade) {
+    const mask = cfg.shade.mask;
+    const n = mask.length;
+    ctx.fillStyle = 'rgba(96,156,224,0.13)';
+    for (let i = 0; i < n; ) {
+      if (!mask[i]) {
+        i++;
+        continue;
+      }
+      let j = i;
+      while (j < n && mask[j]) j++;
+      const x0 = r.x0 + ((r.x1 - r.x0) * (i - 0.5)) / (n - 1);
+      const x1 = r.x0 + ((r.x1 - r.x0) * (j - 0.5)) / (n - 1);
+      ctx.fillRect(x0, r.y0, x1 - x0, r.y1 - r.y0);
+      i = j;
+    }
+    ctx.fillStyle = 'rgba(150,190,235,0.85)';
+    ctx.font = `500 ${13 * u}px ${FONT}`;
+    ctx.textAlign = 'left';
+    ctx.fillText(cfg.shade.label, r.x0 + 6 * u, r.y0 + 16 * u);
+  }
+
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
   drawLegend(f, r.y0 - 10 * u, cfg.series);
 
