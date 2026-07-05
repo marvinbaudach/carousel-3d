@@ -7,46 +7,20 @@ interface LoadingScreenProps {
   onExited: () => void;
 }
 
-// The boot sequence "connects to" exactly the feeds the panels really load —
-// the list lives next to the fetchers (data/sources.ts), so it can't drift.
-// Feeds from the same provider are collapsed into one row ("3 datasets"),
-// so no source ever appears to be listed twice.
-interface FeedGroup {
-  code: string;
-  source: string;
-  city: string;
-  label: string;
-  /** How many of the real feeds this row stands for. */
-  count: number;
-}
+// Where the data stations sit on the globe — the cities of the real APIs in
+// data/sources.ts, so the loader stays honest about its sources.
+const CITY: Record<string, { lat: number; lon: number }> = {
+  ZRH: { lat: 47.4, lon: 8.5 },
+  SFO: { lat: 37.8, lon: -122.4 },
+  WAS: { lat: 38.9, lon: -77.0 },
+};
 
-const GROUPS: FeedGroup[] = (() => {
-  const byProvider = new Map<string, { feed: (typeof LIVE_FEEDS)[number]; items: string[] }>();
-  for (const feed of LIVE_FEEDS) {
-    const key = `${feed.source}|${feed.city}`;
-    const entry = byProvider.get(key);
-    if (entry) entry.items.push(feed.item);
-    else byProvider.set(key, { feed, items: [feed.item] });
-  }
-  return [...byProvider.values()].map(({ feed, items }) => ({
-    code: feed.code,
-    source: feed.source,
-    city: feed.city,
-    label: items.length > 1 ? `${items.length} datasets` : items[0],
-    count: items.length,
-  }));
-})();
-
-// Feeds covered once the first n groups are connected (for the "x/y FEEDS"
-// status line, which keeps counting the real feeds).
-const CUMULATIVE = GROUPS.map((_, i) =>
-  GROUPS.slice(0, i + 1).reduce((sum, g) => sum + g.count, 0),
-);
+const STATIONS = [...new Set(LIVE_FEEDS.map((f) => f.code))].filter((c) => CITY[c]);
 const TOTAL_FEEDS = LIVE_FEEDS.length;
 
-// Distinct uplink stations on the route strip (one dot per station code),
-// in first-appearance order.
-const STATIONS = [...new Set(GROUPS.map((g) => g.code))];
+// How long the dots take to converge into the center once loading is done —
+// they collapse into exactly the point the carousel panels bloom out of.
+const CONVERGE_MS = 750;
 
 const MONO = "ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace";
 
@@ -65,11 +39,6 @@ const completePulse = keyframes`
 const grow = keyframes`
   from { width: 4%; }
   to { width: 88%; }
-`;
-// Expanding ping ring around a station dot when its feed connects.
-const ping = keyframes`
-  from { transform: scale(0.4); opacity: 0.9; }
-  to { transform: scale(2.6); opacity: 0; }
 `;
 
 // Exit: an iris that collapses into the exact point the carousel panels
@@ -105,14 +74,27 @@ const Glow = styled.div<{ $x: string; $y: string; $color: string; $delay: string
   }
 `;
 
+// The globe fills the screen behind the type; the iris clips it on exit.
+const GlobeCanvas = styled.canvas`
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+
+  @media (prefers-reduced-motion: reduce) {
+    display: none;
+  }
+`;
+
 const Column = styled.div<{ $leaving: boolean }>`
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 22px;
+  gap: 20px;
   transform: ${(p) => (p.$leaving ? 'scale(0.82)' : 'scale(1)')};
   transition: transform 0.9s cubic-bezier(0.7, 0, 0.84, 0);
+  pointer-events: none;
 `;
 
 const Wordmark = styled.div<{ $done: boolean }>`
@@ -121,6 +103,7 @@ const Wordmark = styled.div<{ $done: boolean }>`
   font-weight: 700;
   letter-spacing: 0.5em;
   margin-left: 0.5em; /* optically recenter the tracked-out text */
+  text-shadow: 0 0 30px rgba(5, 7, 12, 0.9);
   ${(p) =>
     p.$done &&
     css`
@@ -134,119 +117,16 @@ const Sub = styled.div`
   font-weight: 600;
   letter-spacing: 0.4em;
   margin-left: 0.4em;
+  text-shadow: 0 0 20px rgba(5, 7, 12, 0.9);
 `;
 
-// --- Uplink route strip: one dot per station, lighting up as feeds land. ---
-
-const Route = styled.div`
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  width: 300px;
-  margin-top: 6px;
-`;
-
-const RouteLine = styled.div`
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  top: 4px;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-`;
-
-const Station = styled.div`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
-  width: 20px;
-`;
-
-const Dot = styled.div<{ $on: boolean }>`
-  position: relative;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: ${(p) => (p.$on ? '#3987e5' : 'rgba(255,255,255,0.18)')};
-  box-shadow: ${(p) => (p.$on ? '0 0 10px rgba(57,135,229,0.9)' : 'none')};
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-
-  &::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 1px solid rgba(57, 135, 229, 0.8);
-    ${(p) =>
-      p.$on &&
-      css`
-        animation: ${ping} 0.9s ease-out;
-      `}
-    opacity: 0;
-
-    @media (prefers-reduced-motion: reduce) {
-      animation: none;
-    }
-  }
-`;
-
-const StationCode = styled.div<{ $on: boolean }>`
-  font-family: ${MONO};
-  font-size: 0.58rem;
-  letter-spacing: 0.16em;
-  color: ${(p) => (p.$on ? '#8fb8ec' : '#3a4552')};
-  transition: color 0.2s ease;
-`;
-
-// --- Feed table: every source flips from pending to connected. -------------
-
-const Feed = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  width: min(400px, 92vw);
-  font-family: ${MONO};
-  font-size: 0.66rem;
-  letter-spacing: 0.06em;
-`;
-
-const Row = styled.div<{ $on: boolean }>`
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  color: ${(p) => (p.$on ? '#aab8c5' : '#3a4552')};
-  transition: color 0.45s ease;
-`;
-
-const Source = styled.span`
-  flex: 0 0 92px;
-  color: inherit;
-`;
-
-const City = styled.span`
-  flex: 0 0 100px;
-  color: inherit;
-  opacity: 0.75;
-`;
-
-const Item = styled.span`
-  flex: 1;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  opacity: 0.6;
-`;
-
-const Stat = styled.span<{ $on: boolean }>`
-  flex: 0 0 auto;
-  color: ${(p) => (p.$on ? '#4da06f' : '#2c3542')};
-  transition: color 0.45s ease;
+// Empty space the globe rotates through; the type sits above, progress below.
+const GlobeGap = styled.div`
+  height: min(48vmin, 44vh);
 `;
 
 const BarTrack = styled.div`
-  width: min(400px, 92vw);
+  width: min(340px, 80vw);
   height: 3px;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.08);
@@ -270,7 +150,7 @@ const BarFill = styled.div<{ $done: boolean }>`
 const Status = styled.div`
   display: flex;
   justify-content: space-between;
-  width: min(400px, 92vw);
+  width: min(340px, 80vw);
   color: #52616e;
   font-family: ${MONO};
   font-size: 0.66rem;
@@ -278,30 +158,186 @@ const Status = styled.div`
   letter-spacing: 0.18em;
 `;
 
+/** lat/lon (degrees) -> unit sphere. */
+function toVec(lat: number, lon: number): [number, number, number] {
+  const la = (lat * Math.PI) / 180;
+  const lo = (lon * Math.PI) / 180;
+  return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)];
+}
+
+/** Spherical interpolation between two unit vectors. */
+function slerp(
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number,
+): [number, number, number] {
+  const dot = Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+  const th = Math.acos(dot);
+  if (th < 1e-4) return a;
+  const s = Math.sin(th);
+  const wa = Math.sin((1 - t) * th) / s;
+  const wb = Math.sin(t * th) / s;
+  return [wa * a[0] + wb * b[0], wa * a[1] + wb * b[1], wa * a[2] + wb * b[2]];
+}
+
 export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
   const [leaving, setLeaving] = useState(false);
   const [pct, setPct] = useState(0);
   const pctRef = useRef(0);
-  // How many provider groups have "connected" so far; done snaps them all on.
-  const [connectedCount, setConnectedCount] = useState(0);
+  const [connected, setConnected] = useState(0);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const doneRef = useRef(false);
+  doneRef.current = done;
 
-  // Stagger the group connections across the boot beat — spread over a fixed
-  // window (with a little jitter so it reads as real handshakes, not a
-  // metronome), so the choreography still fits if feeds are added or removed.
+  // Stagger the source counter across the boot beat.
   useEffect(() => {
-    const step = 1250 / GROUPS.length;
-    const timers = GROUPS.map((_, i) =>
+    const step = 1250 / TOTAL_FEEDS;
+    const timers = LIVE_FEEDS.map((_, i) =>
       window.setTimeout(
-        () => setConnectedCount((c) => Math.max(c, i + 1)),
+        () => setConnected((c) => Math.max(c, i + 1)),
         120 + i * step + Math.random() * Math.min(90, step * 0.5),
       ),
     );
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, []);
 
-  const connected = done ? GROUPS.length : connectedCount;
-  // The status line keeps counting the real feeds behind the grouped rows.
-  const connectedFeeds = connected > 0 ? CUMULATIVE[connected - 1] : 0;
+  // The globe: ~1500 dots on a sphere swirling in from the center, rotating;
+  // the data stations pulse and send packets along great-circle arcs. On
+  // `done` everything spirals back into the screen center — the same point
+  // the iris then closes over and the carousel panels bloom out of.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return; // reduced motion: no globe, exit handled by the timer below
+    }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Fibonacci sphere.
+    const N = 1500;
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    const pts: [number, number, number][] = Array.from({ length: N }, (_, i) => {
+      const y = 1 - (2 * (i + 0.5)) / N;
+      const r = Math.sqrt(Math.max(0, 1 - y * y));
+      const a = i * golden;
+      return [Math.sin(a) * r, y, Math.cos(a) * r];
+    });
+    const stations = STATIONS.map((code) => ({
+      code,
+      v: toVec(CITY[code].lat, CITY[code].lon),
+    }));
+    // Great-circle arcs between consecutive stations (loop closed).
+    const arcs = stations.map((s, i) => ({
+      a: s.v,
+      b: stations[(i + 1) % stations.length].v,
+      phase: i / stations.length,
+    }));
+
+    const TILT = 0.42;
+    let raf = 0;
+    let doneAt: number | null = null;
+    let exited = false;
+    const t0 = performance.now();
+
+    const draw = (now: number) => {
+      const t = (now - t0) / 1000;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      const w = canvas.clientWidth;
+      const h = canvas.clientHeight;
+      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+      }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      // Convergence: after done, dots spiral into the center; the loop hands
+      // over to the iris exactly once.
+      if (doneRef.current && doneAt === null) doneAt = now;
+      const conv = doneAt ? Math.min(1, (now - doneAt) / CONVERGE_MS) : 0;
+      const ease = conv * conv * (3 - 2 * conv); // smoothstep
+      if (conv >= 1 && !exited) {
+        exited = true;
+        setLeaving(true);
+      }
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const R = Math.min(w, h) * 0.3 * (1 - ease);
+      // Assembly: dots swirl outward from the center during the first beat.
+      const assemble = Math.min(1, t / 1.1);
+      const aEase = 1 - Math.pow(1 - assemble, 3);
+      const rot = t * 0.32 + (1 - aEase) * 2.2 + ease * 1.6;
+
+      const sinR = Math.sin(rot);
+      const cosR = Math.cos(rot);
+      const sinT = Math.sin(TILT);
+      const cosT = Math.cos(TILT);
+      const project = (p: [number, number, number]) => {
+        const x1 = p[0] * cosR + p[2] * sinR;
+        const z1 = -p[0] * sinR + p[2] * cosR;
+        const y2 = p[1] * cosT - z1 * sinT;
+        const z2 = p[1] * sinT + z1 * cosT;
+        return { x: cx + x1 * R * aEase, y: cy - y2 * R * aEase, z: z2 };
+      };
+
+      // Sphere dots — back ones dim, front ones bright.
+      for (let i = 0; i < N; i++) {
+        const q = project(pts[i]);
+        const depth = (q.z + 1) / 2;
+        const alpha = (0.22 + depth * 0.62) * aEase * (1 - ease * 0.6);
+        ctx.fillStyle = `rgba(122, 165, 224, ${alpha})`;
+        const s = 1.4 + depth * 2.1;
+        ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s);
+      }
+
+      // Arcs with a travelling packet each.
+      for (const arc of arcs) {
+        const head = (t * 0.45 + arc.phase) % 1;
+        for (let k = 0; k <= 44; k++) {
+          const ft = k / 44;
+          const v = slerp(arc.a, arc.b, ft);
+          const lift = 1 + 0.28 * Math.sin(Math.PI * ft);
+          const q = project([v[0] * lift, v[1] * lift, v[2] * lift]);
+          if (q.z < -0.15) continue; // behind the globe
+          const packet = Math.max(0, 1 - Math.abs(ft - head) * 14);
+          const alpha = (0.2 + packet * 0.8) * aEase * (1 - ease);
+          ctx.fillStyle =
+            packet > 0.25
+              ? `rgba(144, 133, 233, ${alpha})`
+              : `rgba(57, 135, 229, ${alpha})`;
+          const s = 2 + packet * 3.4;
+          ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s);
+        }
+      }
+
+      // Stations: bright dot, ping ring, code label on the front side.
+      stations.forEach((st, i) => {
+        const q = project(st.v);
+        if (q.z < -0.05) return;
+        const front = Math.min(1, (q.z + 0.05) / 0.6);
+        const a = front * aEase * (1 - ease);
+        ctx.fillStyle = `rgba(120, 180, 255, ${a})`;
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+        const ring = (t * 0.7 + i * 0.33) % 1;
+        ctx.strokeStyle = `rgba(57, 135, 229, ${(1 - ring) * 0.55 * a})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.arc(q.x, q.y, 4 + ring * 14, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(143, 184, 236, ${0.85 * a})`;
+        ctx.font = `600 11px ${MONO}`;
+        ctx.fillText(st.code, q.x + 9, q.y + 4);
+      });
+
+      if (!exited) raf = requestAnimationFrame(draw);
+    };
+
+    raf = requestAnimationFrame(draw);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   // Eased percentage: climbs toward 92 while booting, snaps to 100 on done.
   useEffect(() => {
@@ -318,12 +354,14 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
     return () => cancelAnimationFrame(raf);
   }, [done]);
 
-  // Brief hold at 100% (lets the completion pulse read), then iris out.
+  // Reduced motion has no converge animation — leave on a short timer.
   useEffect(() => {
-    if (!done) return;
+    if (!done || !window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const t = window.setTimeout(() => setLeaving(true), 420);
     return () => window.clearTimeout(t);
   }, [done]);
+
+  const shown = done ? TOTAL_FEEDS : connected;
 
   return (
     <Screen
@@ -337,43 +375,18 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       <Glow $x="72%" $y="64%" $color="rgba(144, 133, 233, 0.22)" $delay="-3s" />
       <Glow $x="55%" $y="45%" $color="rgba(25, 158, 112, 0.14)" $delay="-6s" />
 
+      <GlobeCanvas ref={canvasRef} aria-hidden />
+
       <Column $leaving={leaving}>
         <Wordmark $done={done}>WORLDPULSE</Wordmark>
         <Sub>GLOBALE DATENQUELLEN WERDEN GELADEN</Sub>
-
-        <Route aria-hidden>
-          <RouteLine />
-          {STATIONS.map((code) => {
-            const on = GROUPS.some((g, i) => g.code === code && i < connected);
-            return (
-              <Station key={code}>
-                <Dot $on={on} />
-                <StationCode $on={on}>{code}</StationCode>
-              </Station>
-            );
-          })}
-        </Route>
-
-        <Feed aria-hidden>
-          {GROUPS.map((group, i) => {
-            const on = i < connected;
-            return (
-              <Row key={`${group.source}-${group.city}`} $on={on}>
-                <Source>{group.source}</Source>
-                <City>{group.city}</City>
-                <Item>{group.label}</Item>
-                <Stat $on={on}>{on ? '✓' : '·'}</Stat>
-              </Row>
-            );
-          })}
-        </Feed>
-
+        <GlobeGap />
         <BarTrack>
           <BarFill $done={done} />
         </BarTrack>
         <Status>
           <span>
-            {done ? TOTAL_FEEDS : connectedFeeds}/{TOTAL_FEEDS} QUELLEN
+            {shown}/{TOTAL_FEEDS} QUELLEN
           </span>
           <span>{pct}%</span>
         </Status>
