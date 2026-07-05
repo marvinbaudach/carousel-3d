@@ -193,11 +193,44 @@ async function loadMilitary(): Promise<void> {
 
 // ---------------------------------------------------------------------------
 // US Treasury "Debt to the Penny" — official daily total public debt. The
-// panel extrapolates between records with the average recent growth rate.
+// panel extrapolates between records with the average recent growth rate;
+// the trend below the clock spans 125 years so today's steepness registers.
 
 interface DebtFeed {
   data: { record_date: string; tot_pub_debt_out_amt: string }[];
 }
+
+/** Treasury "Historical Debt Outstanding" fiscal-year totals. */
+const DEBT_HISTORY: [number, number][] = [
+  [1900, 2.1e9],
+  [1920, 26e9],
+  [1940, 43e9],
+  [1945, 259e9],
+  [1960, 286e9],
+  [1970, 371e9],
+  [1980, 908e9],
+  [1990, 3.23e12],
+  [2000, 5.67e12],
+  [2008, 10.02e12],
+  [2012, 16.43e12],
+  [2016, 19.57e12],
+  [2020, 26.95e12],
+  [2023, 34e12],
+];
+
+function debtTrend(latest: number): { series: number[]; ticks: string[] } {
+  const year = new Date().getFullYear();
+  const series = yearly([...DEBT_HISTORY, [year, latest]]);
+  const lo = 0;
+  const hi = latest;
+  return {
+    series: norm(resample(series, 40), lo, hi),
+    ticks: ticks3(lo, hi, (v) => `$${(v / 1e12).toFixed(0)}T`),
+  };
+}
+
+/** Real-shape fallback: flat for 80 years, then the wall. */
+export const DEBT_TREND_FALLBACK = debtTrend(39.4e12);
 
 async function loadDebt(): Promise<void> {
   const rows = await cached('debt', 60 * MIN, async () => {
@@ -218,19 +251,14 @@ async function loadDebt(): Promise<void> {
   const back = rows[Math.max(0, rows.length - 31)];
   const ratePerMs = (latest.v - back.v) / Math.max(1, latest.t - back.t);
 
-  // One value per month, last 12 months.
-  const byMonth = new Map<string, number>();
-  rows.forEach((r) => byMonth.set(new Date(r.t).toISOString().slice(0, 7), r.v));
-  const monthly = [...byMonth.values()].slice(-12);
-  const mr = range([monthly]);
-
   const yearAgo = rows[0];
+  const trend125 = debtTrend(latest.v);
   live.debt = {
     latest: latest.v,
     latestMs: latest.t,
     ratePerMs,
-    series: norm(monthly, mr.lo, mr.hi),
-    ticks: ticks3(mr.lo, mr.hi, (v) => `$${(v / 1e12).toFixed(1)}T`),
+    series: trend125.series,
+    ticks: trend125.ticks,
     yoyPct: ((latest.v - yearAgo.v) / yearAgo.v) * 100,
   };
 }

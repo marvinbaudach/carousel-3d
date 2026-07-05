@@ -11,7 +11,7 @@ import {
 import type { Frame } from './draw';
 import { SERIES } from './theme';
 import { live } from '../data/store';
-import { SWISS_POP_FALLBACK, WORLD_POP_FALLBACK } from '../data/sources';
+import { DEBT_TREND_FALLBACK, SWISS_POP_FALLBACK, WORLD_POP_FALLBACK } from '../data/sources';
 
 export interface Dashboard {
   id: string;
@@ -88,8 +88,8 @@ const POOL: Dashboard[] = [
         latestMs: d?.latestMs ?? Date.now() - 86_400_000,
         ratePerMs: d?.ratePerMs ?? 0.06,
         yoyPct: d?.yoyPct ?? 5.8,
-        series: d?.series ?? [0.1, 0.16, 0.24, 0.3, 0.35, 0.44, 0.5, 0.58, 0.66, 0.75, 0.83, 0.9],
-        ticks: d?.ticks ?? ['$37T', '$38T', '$39T'],
+        series: d?.series ?? DEBT_TREND_FALLBACK.series,
+        ticks: d?.ticks ?? DEBT_TREND_FALLBACK.ticks,
         color: yellow,
         isLive: !!d,
       });

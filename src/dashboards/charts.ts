@@ -301,7 +301,7 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   ctx.font = `600 ${15 * u}px ${FONT}`;
   ctx.fillText(cfg.isLive ? 'LIVE' : 'SYNC', w - pad - 32 * u, pad + 15 * u);
 
-  // 12-month trend as a gradient area.
+  // 125-year trend as a gradient area: flat for decades, then the wall.
   const r = plotRect(f, pad + 158 * u);
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
   const grad = ctx.createLinearGradient(0, r.y0, 0, r.y1);
@@ -325,7 +325,7 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   ctx.arc(end.x, end.y, 4.5 * u, 0, Math.PI * 2);
   ctx.fill();
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-  xAxisLabels(f, ['-12mo', '-8mo', '-4mo', 'now'], r.x0, r.x1, r.y1);
+  xAxisLabels(f, ['1900', '1940', '1980', 'today'], r.x0, r.x1, r.y1);
 }
 
 export interface ForecastCfg {
