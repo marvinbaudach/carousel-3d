@@ -15,13 +15,6 @@ export interface TrendSeries {
 
 export interface LiveData {
   weather?: {
-    /** Daily highs (14 days, shared scale) for the two-city line chart. */
-    lineZurich: number[];
-    lineGeneva: number[];
-    tempTicks: string[];
-    zurichHigh: number;
-    /** Today's high vs yesterday's, in percent (for the KPI tile chip). */
-    highDeltaPct: number;
     currentTemp: number;
     /** 7-day forecast (today first) with WMO weather codes. */
     forecast: { day: string; code: number; min: number; max: number }[];
@@ -57,14 +50,6 @@ export interface LiveData {
   swissPop?: TrendSeries;
   /** World population since 1960 (World Bank). */
   worldPop?: TrendSeries;
-  /** CHF strength: EUR and USD per CHF as % change over one year (ECB). */
-  fx?: {
-    eur: number[];
-    usd: number[];
-    ticks: string[];
-    usdNow: number;
-    usdYoyPct: number;
-  };
   /** Country outlines for the map panels, keyed by ISO3 country code. */
   worldMap?: { id: string; rings: number[][][] }[];
   /** Intentional homicides per 100k (World Bank, latest year per country). */

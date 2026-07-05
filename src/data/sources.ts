@@ -1,7 +1,7 @@
 // Fetchers for the free, keyless, CORS-enabled public APIs that feed the
 // panels: Open-Meteo (weather), Wikimedia
 // (pageviews), World Bank (military spend, population), the US Treasury
-// (debt) and the ECB via frankfurter.dev (FX). Each fetcher derives the
+// (debt). Each fetcher derives the
 // draw-ready shape, caches it (see cache.ts) and writes it into the store;
 // failures are logged and swallowed so one dead API never takes down the ring.
 
@@ -41,8 +41,8 @@ function resample(series: number[], n: number): number[] {
 }
 
 // ---------------------------------------------------------------------------
-// Open-Meteo forecast — Zurich + Geneva in one request: 14 past daily highs
-// for the line chart, a 7-day forecast for the symbol panel, current temp.
+// Open-Meteo forecast — Zurich: 7-day forecast for the symbol panel plus the
+// current temperature.
 
 interface MeteoLocation {
   daily: {
@@ -57,43 +57,27 @@ interface MeteoLocation {
 const DAY_NAME = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 async function loadWeather(): Promise<void> {
-  const locs = await cached('weather-ch2', 15 * MIN, () =>
-    fetchJson<MeteoLocation[]>(
+  const zurich = await cached('weather-ch3', 15 * MIN, () =>
+    fetchJson<MeteoLocation>(
       'https://api.open-meteo.com/v1/forecast' +
-        '?latitude=47.37,46.20&longitude=8.54,6.14' +
+        '?latitude=47.37&longitude=8.54' +
         '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
         '&current=temperature_2m' +
-        '&timezone=Europe%2FZurich&past_days=14&forecast_days=7',
+        '&timezone=Europe%2FZurich&forecast_days=7',
     ),
   );
-  const [zurich, geneva] = locs;
-
-  // Daily arrays span day -14 .. +6 (21 entries): 1..14 is the 14-day past
-  // window ending today, 14..21 the 7-day forecast starting today.
-  const b14 = zurich.daily.temperature_2m_max.slice(1, 15);
-  const m14 = geneva.daily.temperature_2m_max.slice(1, 15);
-  const r = range([b14, m14]);
-
-  const forecast = zurich.daily.time.slice(14).map((day, i) => ({
-    day: i === 0 ? 'Today' : DAY_NAME[new Date(`${day}T12:00:00`).getDay()],
-    code: zurich.daily.weather_code[14 + i],
-    min: zurich.daily.temperature_2m_min[14 + i],
-    max: zurich.daily.temperature_2m_max[14 + i],
-  }));
 
   live.weather = {
-    lineZurich: norm(b14, r.lo, r.hi),
-    lineGeneva: norm(m14, r.lo, r.hi),
-    tempTicks: ticks3(r.lo, r.hi, (v) => `${v.toFixed(0)}°`),
-    zurichHigh: b14[b14.length - 1],
-    highDeltaPct:
-      ((b14[13] - b14[12]) / Math.max(1, Math.abs(b14[12]))) * 100,
     currentTemp: zurich.current.temperature_2m,
-    forecast,
+    forecast: zurich.daily.time.map((day, i) => ({
+      day: i === 0 ? 'Today' : DAY_NAME[new Date(`${day}T12:00:00`).getDay()],
+      code: zurich.daily.weather_code[i],
+      min: zurich.daily.temperature_2m_min[i],
+      max: zurich.daily.temperature_2m_max[i],
+    })),
   };
 }
 
-const iso = (d: Date) => d.toISOString().slice(0, 10);
 
 // ---------------------------------------------------------------------------
 // Wikimedia — yesterday's most-viewed English Wikipedia articles.
@@ -351,41 +335,6 @@ async function loadPopulation(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// ECB reference rates via frankfurter.dev — CHF strength against EUR and USD
-// over one year, as % change (the franc's classic safe-haven story).
-
-interface FxRange {
-  rates: Record<string, { EUR: number; USD: number }>;
-}
-
-/** Series as % change from its first value. */
-const rel = (s: number[]) => s.map((v) => (v / s[0] - 1) * 100);
-
-async function loadFx(): Promise<void> {
-  const data = await cached('fx-chf', 6 * 60 * MIN, async () => {
-    const start = iso(new Date(Date.now() - 365 * 86_400_000));
-    return fetchJson<FxRange>(
-      `https://api.frankfurter.dev/v1/${start}..?base=CHF&symbols=EUR,USD`,
-    );
-  });
-
-  const days = Object.keys(data.rates).toSorted();
-  const eur = resample(days.map((d) => data.rates[d].EUR), 28);
-  const usd = resample(days.map((d) => data.rates[d].USD), 28);
-  const eurRel = rel(eur);
-  const usdRel = rel(usd);
-  const r = range([eurRel, usdRel]);
-
-  live.fx = {
-    eur: norm(eurRel, r.lo, r.hi),
-    usd: norm(usdRel, r.lo, r.hi),
-    ticks: ticks3(r.lo, r.hi, (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%`),
-    usdNow: usd[usd.length - 1],
-    usdYoyPct: usdRel[usdRel.length - 1],
-  };
-}
-
-// ---------------------------------------------------------------------------
 // World Bank — intentional homicides per 100k: a world choropleth (latest
 // year per country) plus the Switzerland / Germany / US series since 1990.
 
@@ -490,7 +439,6 @@ export function loadLiveData(): void {
     ['debt', loadDebt],
     ['military', loadMilitary],
     ['population', loadPopulation],
-    ['fx', loadFx],
     ['homicide', loadHomicide],
   ];
   sources.forEach(([name, run]) => {

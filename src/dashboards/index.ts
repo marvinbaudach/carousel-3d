@@ -27,9 +27,8 @@ export interface Dashboard {
  */
 export const SETTLED_T = 9.7;
 
-const [blue, aqua, yellow, , violet, , magenta, orange] = SERIES;
+const [blue, aqua, yellow, , , , magenta, orange] = SERIES;
 
-const degrees = (v: number) => `${v.toFixed(1)}°C`;
 
 /**
  * Estimated nuclear warhead inventories (Federation of American Scientists,
@@ -49,34 +48,13 @@ const NUKE_STATES = [
 const NUKE_TOTAL = NUKE_STATES.reduce((sum, s) => sum + s.count, 0);
 
 /**
- * The panel pool — live public data (US Treasury, World Bank, ECB,
+ * The panel pool — live public data (US Treasury, World Bank,
  * Open-Meteo, Wikimedia). Every config is built inside `draw`, so a panel
  * picks up its dataset on the very next frame after the fetcher fills the
  * store; until then it falls back to the seeded demo series. Each page load
  * shows a random selection (see DASHBOARDS below).
  */
 const POOL: Dashboard[] = [
-  {
-    id: 'city-temp',
-    title: 'Daily High · Zurich vs Geneva',
-    draw: (f) => {
-      const w = live.weather;
-      lineChart(f, {
-        label: 'Daily High · 14 Days',
-        value: w?.zurichHigh ?? 21.4,
-        unit: '',
-        fmt: degrees,
-        delta: null,
-        seed: 11,
-        series: [
-          { name: 'Zurich', color: blue, data: w?.lineZurich },
-          { name: 'Geneva', color: aqua, data: w?.lineGeneva },
-        ],
-        ticks: w?.tempTicks ?? ['10°', '20°', '30°'],
-        xLabels: ['-13d', '-9d', '-4d', 'today'],
-      });
-    },
-  },
   {
     id: 'military',
     title: 'Military Spending · Top 10',
@@ -209,27 +187,6 @@ const POOL: Dashboard[] = [
         data: p.series,
         ticks: p.ticks,
         xLabels: p.xLabels,
-      });
-    },
-  },
-  {
-    id: 'chf-fx',
-    title: 'Franc Strength · 1 Year',
-    draw: (f) => {
-      const fx = live.fx;
-      lineChart(f, {
-        label: 'CHF vs EUR & USD · 1y',
-        value: fx?.usdNow ?? 1.26,
-        unit: '',
-        fmt: (v) => `$${v.toFixed(3)}`,
-        delta: fx?.usdYoyPct ?? 4.2,
-        seed: 31,
-        series: [
-          { name: 'USD per CHF', color: violet, data: fx?.usd },
-          { name: 'EUR per CHF', color: aqua, data: fx?.eur },
-        ],
-        ticks: fx?.ticks ?? ['-2%', '+1%', '+4%'],
-        xLabels: ['-12mo', '-8mo', '-4mo', 'now'],
       });
     },
   },
