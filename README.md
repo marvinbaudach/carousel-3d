@@ -1,4 +1,4 @@
-# Pulse
+# Worldpulse
 
 Cinematic 3D analytics carousel — a tilted ring of animated dashboards
 (canvas-rendered charts, KPI tiles, a world map, a live debt clock) orbits in
@@ -12,7 +12,7 @@ most-read Wikipedia articles globally and from Switzerland (Wikimedia). Each
 page load draws a random selection from the pool. Hovering a panel replays its chart animation; clicking flies
 it front-and-center at double resolution.
 
-**Live → [marvinbaudach.github.io/carousel-3d](https://marvinbaudach.github.io/carousel-3d/)**
+**Live → [marvinbaudach.github.io/worldpulse](https://marvinbaudach.github.io/worldpulse/)**
 
 ## Tech
 

@@ -38,7 +38,7 @@ const radiusFor = (count: number) => (PANEL_W * count) / (2 * Math.PI) + 0.6;
 const DEFAULT_RADIUS = radiusFor(DEFAULT_COUNT);
 
 // localStorage key for the persisted panel count.
-const COUNT_KEY = 'pulse-panel-count';
+const COUNT_KEY = 'worldpulse-panel-count';
 
 interface RingProps {
   onSelect: (id: string, start: HeroStart) => void;

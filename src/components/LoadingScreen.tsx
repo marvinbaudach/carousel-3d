@@ -117,7 +117,7 @@ const Column = styled.div<{ $leaving: boolean }>`
 
 const Wordmark = styled.div<{ $done: boolean }>`
   color: #f4f7fb;
-  font-size: 2.1rem;
+  font-size: clamp(1.3rem, 4.5vw, 2.1rem);
   font-weight: 700;
   letter-spacing: 0.5em;
   margin-left: 0.5em; /* optically recenter the tracked-out text */
@@ -338,7 +338,7 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       <Glow $x="55%" $y="45%" $color="rgba(25, 158, 112, 0.14)" $delay="-6s" />
 
       <Column $leaving={leaving}>
-        <Wordmark $done={done}>PULSE</Wordmark>
+        <Wordmark $done={done}>WORLDPULSE</Wordmark>
         <Sub>GLOBALE DATENQUELLEN WERDEN GELADEN</Sub>
 
         <Route aria-hidden>
