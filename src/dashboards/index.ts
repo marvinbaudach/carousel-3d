@@ -176,11 +176,11 @@ const POOL: Dashboard[] = [
   },
   {
     id: 'swiss-pop',
-    title: 'Swiss Population · 100 Years',
+    title: 'Swiss Population · 500 Years',
     draw: (f) => {
       const p = live.swissPop ?? SWISS_POP_FALLBACK;
       areaChart(f, {
-        label: 'Swiss Population · since 1920',
+        label: 'Swiss Population · since 1500',
         value: p.latest,
         fmt: (v) => `${(v / 1e6).toFixed(2)}M`,
         delta: p.yoyPct,

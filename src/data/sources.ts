@@ -256,7 +256,18 @@ async function loadDebt(): Promise<void> {
 // Swiss series is extended back to 1920 with federal census figures so the
 // panel really spans a century.
 
+/**
+ * Swiss population within today's borders: historical estimates up to 1800,
+ * then federal census figures (BFS) until the World Bank series takes over.
+ */
 const CH_CENSUS: [number, number][] = [
+  [1500, 800_000],
+  [1600, 1_000_000],
+  [1700, 1_200_000],
+  [1800, 1_660_000],
+  [1850, 2_392_740],
+  [1880, 2_831_787],
+  [1900, 3_315_443],
   [1920, 3_880_320],
   [1930, 4_066_400],
   [1941, 4_265_703],
@@ -330,7 +341,7 @@ async function loadPopulation(): Promise<void> {
   live.swissPop = trend(
     [...CH_CENSUS, ...points.che],
     (v) => `${(v / 1e6).toFixed(1)}M`,
-    ['1920', '1955', '1990', 'today'],
+    ['1500', '1675', '1850', 'today'],
   );
   live.worldPop = trend(
     [...WORLD_HISTORY, ...points.wld],
@@ -451,7 +462,7 @@ async function loadHomicide(): Promise<void> {
 export const SWISS_POP_FALLBACK: TrendSeries = trend(
   [...CH_CENSUS, [2025, 9_092_436]],
   (v) => `${(v / 1e6).toFixed(1)}M`,
-  ['1920', '1955', '1990', 'today'],
+  ['1500', '1675', '1850', 'today'],
 );
 
 export const WORLD_POP_FALLBACK: TrendSeries = trend(
