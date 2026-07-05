@@ -1,6 +1,7 @@
 import { CanvasTexture, SRGBColorSpace } from 'three';
 import {
   areaChart,
+  choroplethMap,
   debtClock,
   hBarChart,
   lineChart,
@@ -126,6 +127,51 @@ const POOL: Dashboard[] = [
         world: live.worldMap,
         source: 'FAS 2025 estimate',
       }),
+  },
+  {
+    id: 'homicide-map',
+    title: 'Homicide Rate Worldwide',
+    draw: (f) => {
+      const hm = live.homicide;
+      choroplethMap(f, {
+        label: 'Homicide Rate',
+        value: hm?.world ?? 5.6,
+        fmt: (v) => `${v.toFixed(1)} /100k`,
+        valueByIso: hm?.byIso,
+        world: live.worldMap,
+        rows: hm?.rows ?? [
+          { name: 'Jamaica', v: 53.3 },
+          { name: 'South Africa', v: 45.5 },
+          { name: 'Honduras', v: 31.1 },
+          { name: 'Brazil', v: 19.3 },
+          { name: 'Mexico', v: 18.5 },
+        ],
+        rowFmt: (v) => v.toFixed(1),
+        source: 'World Bank · intentional homicides per 100k',
+      });
+    },
+  },
+  {
+    id: 'homicide-trend',
+    title: 'Homicide Rate · CH vs DE vs US',
+    draw: (f) => {
+      const hm = live.homicide;
+      lineChart(f, {
+        label: 'Homicides /100k · since 1990',
+        value: hm?.cheLatest ?? 0.5,
+        unit: '',
+        fmt: (v) => v.toFixed(2),
+        delta: null,
+        seed: 41,
+        series: [
+          { name: 'USA', color: magenta, data: hm?.usa },
+          { name: 'Germany', color: aqua, data: hm?.deu },
+          { name: 'Switzerland', color: blue, data: hm?.che },
+        ],
+        ticks: hm?.ticks ?? ['0', '5', '10'],
+        xLabels: ['1990', '2002', '2013', 'today'],
+      });
+    },
   },
   {
     id: 'swiss-pop',

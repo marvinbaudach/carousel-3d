@@ -67,6 +67,18 @@ export interface LiveData {
   };
   /** Country outlines for the map panels, keyed by ISO3 country code. */
   worldMap?: { id: string; rings: number[][][] }[];
+  /** Intentional homicides per 100k (World Bank, latest year per country). */
+  homicide?: {
+    byIso: Record<string, number>;
+    rows: { name: string; v: number }[];
+    world: number;
+    /** CH vs DE vs US since 1990, shared scale. */
+    che: number[];
+    deu: number[];
+    usa: number[];
+    cheLatest: number;
+    ticks: string[];
+  };
 }
 
 export const live: LiveData = {};

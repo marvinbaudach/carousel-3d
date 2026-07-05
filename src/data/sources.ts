@@ -374,6 +374,75 @@ async function loadFx(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// World Bank — intentional homicides per 100k: a world choropleth (latest
+// year per country) plus the Switzerland / Germany / US series since 1990.
+
+async function loadHomicide(): Promise<void> {
+  const data = await cached('homicide', 24 * 60 * MIN, async () => {
+    const [world, trio, pop] = await Promise.all([
+      fetchJson<[unknown, WorldBankRow[]]>(
+        'https://api.worldbank.org/v2/country/all/indicator/VC.IHR.PSRC.P5' +
+          '?format=json&date=2016:2024&per_page=3000',
+      ),
+      fetchJson<[unknown, WorldBankRow[]]>(
+        'https://api.worldbank.org/v2/country/CHE;DEU;USA/indicator/VC.IHR.PSRC.P5' +
+          '?format=json&date=1990:2024&per_page=400',
+      ),
+      fetchJson<[unknown, WorldBankRow[]]>(
+        'https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL' +
+          '?format=json&date=2023&per_page=400',
+      ),
+    ]);
+    // Micro-states dominate a raw per-capita ranking (three murders on an
+    // island of 40k tops the chart), so the top-5 list requires 1M+ people.
+    const populous = new Set(
+      (pop[1] ?? [])
+        .filter((r) => (r.value ?? 0) >= 1_000_000)
+        .map((r) => r.countryiso3code),
+    );
+
+    const latest = new Map<string, { name: string; v: number; year: string }>();
+    for (const row of world[1] ?? []) {
+      if (row.value === null || row.countryiso3code.length !== 3) continue;
+      const prev = latest.get(row.countryiso3code);
+      if (!prev || row.date > prev.year) {
+        latest.set(row.countryiso3code, { name: row.country.value, v: row.value, year: row.date });
+      }
+    }
+    const series = (iso3: string) =>
+      (trio[1] ?? [])
+        .filter((r) => r.countryiso3code === iso3 && r.value !== null)
+        .toSorted((a, b) => Number(a.date) - Number(b.date))
+        .map((r) => r.value as number);
+    return {
+      byIso: Object.fromEntries([...latest.entries()].map(([iso3, e]) => [iso3, e.v])),
+      world: latest.get('WLD')?.v ?? 5.6,
+      top: [...latest.entries()]
+        .filter(([iso3]) => iso3 !== 'WLD' && populous.has(iso3))
+        .map(([, e]) => ({ name: e.name, v: e.v }))
+        .toSorted((a, b) => b.v - a.v)
+        .slice(0, 5),
+      che: series('CHE'),
+      deu: series('DEU'),
+      usa: series('USA'),
+    };
+  });
+
+  const r = range([data.che, data.deu, data.usa]);
+  r.lo = Math.max(0, r.lo);
+  live.homicide = {
+    byIso: data.byIso,
+    rows: data.top,
+    world: data.world,
+    che: norm(data.che, r.lo, r.hi),
+    deu: norm(data.deu, r.lo, r.hi),
+    usa: norm(data.usa, r.lo, r.hi),
+    cheLatest: data.che[data.che.length - 1] ?? 0.5,
+    ticks: ticks3(r.lo, r.hi, (v) => v.toFixed(1)),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Country outlines (GeoJSON, ~250 kB from a static CDN) for the map panels.
 // Not cached: localStorage quota is precious and the CDN is cache-friendly.
 
@@ -419,6 +488,7 @@ export function loadLiveData(): void {
     ['military', loadMilitary],
     ['population', loadPopulation],
     ['fx', loadFx],
+    ['homicide', loadHomicide],
     ['worldmap', loadWorldMap],
   ];
   sources.forEach(([name, run]) => {

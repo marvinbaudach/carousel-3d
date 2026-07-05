@@ -618,3 +618,85 @@ export function nukeMap(f: Frame, cfg: NukeMapCfg): void {
   ctx.font = `400 ${13 * u}px ${FONT}`;
   ctx.fillText(cfg.source, pad, h - 22 * u);
 }
+
+export interface ChoroplethCfg {
+  label: string;
+  value: number;
+  fmt: (v: number) => string;
+  /** Value per ISO3 country; countries without data stay neutral. */
+  valueByIso?: Record<string, number>;
+  world?: { id: string; rings: number[][][] }[];
+  rows: { name: string; v: number }[];
+  rowFmt: (v: number) => string;
+  source: string;
+}
+
+/**
+ * World choropleth: every country shaded by its value (sqrt ramp against a
+ * high percentile so outliers don't wash out the rest), top-5 list below.
+ */
+export function choroplethMap(f: Frame, cfg: ChoroplethCfg): void {
+  const { ctx, u, t, w, h } = f;
+  drawSurface(f);
+  const top = drawHeader(f, cfg.label, cfg.value, cfg.fmt, null);
+  const pad = 36 * u;
+
+  const mx0 = pad;
+  const mw = w - 2 * pad;
+  const mh = mw / 2;
+  const my0 = top + 4 * u;
+  const px = (lon: number) => mx0 + ((lon + 180) / 360) * mw;
+  const py = (lat: number) => my0 + ((85 - Math.min(85, Math.max(-60, lat))) / 145) * mh;
+
+  const values = Object.values(cfg.valueByIso ?? {}).toSorted((a, b) => a - b);
+  const ref = values.length ? values[Math.floor(values.length * 0.95)] : 1;
+  const p = easeOut(t / 1.1);
+
+  if (cfg.world) {
+    for (const country of cfg.world) {
+      const v = cfg.valueByIso?.[country.id];
+      ctx.fillStyle =
+        v === undefined
+          ? 'rgba(214,222,236,0.06)'
+          : `rgba(208,59,59,${(0.1 + 0.62 * Math.sqrt(Math.min(1, v / ref)) * p).toFixed(2)})`;
+      for (const ring of country.rings) {
+        ctx.beginPath();
+        ring.forEach(([lon, lat], i) => {
+          if (i === 0) ctx.moveTo(px(lon), py(lat));
+          else ctx.lineTo(px(lon), py(lat));
+        });
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  }
+
+  const rows = cfg.rows;
+  const ly0 = my0 + mh + 18 * u;
+  const rowH = (h - 46 * u - ly0) / Math.max(1, rows.length);
+  const barMax = Math.max(...rows.map((r) => r.v), 1);
+  rows.forEach((s, i) => {
+    const rp = stagger(t, i + 4, 0.06);
+    const y = ly0 + rowH * i;
+    ctx.globalAlpha = Math.max(0, rp);
+    ctx.fillStyle = INK_SECONDARY;
+    ctx.font = `500 ${16 * u}px ${FONT}`;
+    ctx.fillText(s.name, pad, y + 15 * u);
+    ctx.fillStyle = INK;
+    ctx.font = `600 ${16 * u}px ${FONT}`;
+    ctx.textAlign = 'right';
+    ctx.fillText(cfg.rowFmt(s.v * Math.max(0, rp)), w - pad, y + 15 * u);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = GRID;
+    roundRect(ctx, pad, y + 24 * u, w - 2 * pad, 7 * u, 3.5 * u);
+    ctx.fill();
+    ctx.fillStyle = CRITICAL;
+    roundRect(ctx, pad, y + 24 * u, Math.max((w - 2 * pad) * (s.v / barMax) * Math.max(0, rp), 7 * u), 7 * u, 3.5 * u);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  ctx.fillStyle = MUTED;
+  ctx.font = `400 ${13 * u}px ${FONT}`;
+  ctx.fillText(cfg.source, pad, h - 22 * u);
+}
