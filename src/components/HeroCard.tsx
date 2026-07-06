@@ -28,6 +28,10 @@ interface HeroCardProps {
       flight path. Back to null, the time-driven open/close takes over from
       wherever the scrub left the card. */
   scrub?: RefObject<number | null>;
+  /** Live pose of the (hidden) ring panel, written every frame. Used instead
+      of `start` when set, so the fly-back lands on the slot's current
+      position even after a formation or count change. */
+  returnPose?: RefObject<HeroStart | null>;
 }
 
 const OPEN_TIME = 0.75; // seconds for the dramatic fly-in
@@ -88,6 +92,7 @@ export function HeroCard({
   closing,
   onClosed,
   scrub,
+  returnPose,
 }: HeroCardProps) {
   const pivotRef = useRef<Group>(null);
   const innerRef = useRef<Group>(null);
@@ -123,6 +128,9 @@ export function HeroCard({
         1,
       );
     }
+    // Ring-side end of the flight: the panel's live pose when available (the
+    // slot may have moved since the click), the click-time capture otherwise.
+    const from = returnPose?.current ?? start;
     const t = easeInOutCubic(progress.current);
     // Flourish envelope: 0 at both ends, 1 at mid-flight — every extra move
     // (arc, yaw) is scaled by it, so start and landing poses stay exact.
@@ -132,26 +140,26 @@ export function HeroCard({
     const tPunch =
       t + Math.sin(Math.PI * Math.max(0, (t - 0.55) / 0.45)) * OVERSHOOT;
     // Which side of the ring the card launched from drives the yaw direction.
-    const side = Math.sign(start.position.x) || 1;
+    const side = Math.sign(from.position.x) || 1;
 
     // Largest size (keeping the panel's aspect) that fits the visible frustum
     // at the hero's depth, with a margin. Evaluated per frame because the
     // camera distance animates (portrait pull-back, parallax).
     const vp = state.viewport.getCurrentViewport(state.camera, targetPosition);
-    const cardAspect = start.scale.x / start.scale.y;
+    const cardAspect = from.scale.x / from.scale.y;
     const h = Math.min(vp.height * FIT, (vp.width * FIT) / cardAspect);
     _target.set(h * cardAspect, h, 1);
 
     // Card center + size interpolate from the ring slot to the hero pose,
     // with a late overshoot (tPunch) and an upward arc so the flight swoops
     // instead of sliding on a straight line.
-    _pos.lerpVectors(start.position, targetPosition, tPunch);
+    _pos.lerpVectors(from.position, targetPosition, tPunch);
     _pos.y += swing * ARC_LIFT;
-    _scale.lerpVectors(start.scale, _target, tPunch);
+    _scale.lerpVectors(from.scale, _target, tPunch);
     const halfH = _scale.y / 2;
 
     // Base orientation eases from the tilted ring pose to facing the camera.
-    _qBase.slerpQuaternions(start.quaternion, IDENTITY, t);
+    _qBase.slerpQuaternions(from.quaternion, IDENTITY, t);
 
     // Hinge about the top edge: swing toward the viewer, peaking mid-flight and
     // settling flat, so it reads as being pulled by the top.

@@ -48,6 +48,7 @@ interface RingProps {
   layout: LayoutMode;
   dashboards: Dashboard[];
   radius: number;
+  returnPose: RefObject<HeroStart | null>;
 }
 
 function Ring({
@@ -58,6 +59,7 @@ function Ring({
   layout,
   dashboards,
   radius,
+  returnPose,
 }: RingProps) {
   const interactive = selectedId === null;
   const { groupRef, tiltRef, wasDrag } = useCarouselRotation({
@@ -95,6 +97,7 @@ function Ring({
             wasDrag={wasDrag}
             entranceDelay={i * 0.06}
             interactive={interactive}
+            reportPose={returnPose}
           />
         ))}
       </group>
@@ -131,6 +134,8 @@ export function Carousel3D() {
   // grabs a panel and hand depth drags it along the hero flight path.
   const handTracking = useHandTracking();
   const scrubRef = useRef<number | null>(null);
+  // Live pose of the hidden ring panel — the hero's fly-back target.
+  const returnPoseRef = useRef<HeroStart | null>(null);
 
   // Adaptive quality: integrated GPUs are fill-rate bound, so the render
   // resolution is the main lever. PerformanceMonitor samples the frame rate
@@ -226,6 +231,7 @@ export function Carousel3D() {
         layout={layout}
         dashboards={dashboards}
         radius={radius}
+        returnPose={returnPoseRef}
       />
 
       {handTracking.status === 'running' && (
@@ -246,6 +252,7 @@ export function Carousel3D() {
           closing={closing}
           onClosed={finishClose}
           scrub={scrubRef}
+          returnPose={returnPoseRef}
         />
       )}
 

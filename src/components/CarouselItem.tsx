@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
 import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
@@ -30,6 +30,10 @@ interface CarouselItemProps {
   entranceDelay: number;
   /** False while a hero is open, so panels stop absorbing click-away taps. */
   interactive: boolean;
+  /** While hidden, the panel writes its live world pose here each frame so
+      the hero copy can fly back to wherever the slot is now — the slot may
+      have moved if the formation or panel count changed meanwhile. */
+  reportPose?: RefObject<HeroStart | null>;
 }
 
 /** Shape of drei's Image shader material, as far as this component needs it. */
@@ -83,6 +87,7 @@ export function CarouselItem({
   wasDrag,
   entranceDelay,
   interactive,
+  reportPose,
 }: CarouselItemProps) {
   const groupRef = useRef<Group>(null);
   const imgRef = useRef<Mesh>(null);
@@ -120,6 +125,15 @@ export function CarouselItem({
     [dash, dashboard.live],
   );
 
+  // Drop the reported pose when this panel unhides or unmounts, so a later
+  // hero (or a shrunken pool) never flies back toward a stale transform.
+  useEffect(() => {
+    if (!hidden || !reportPose) return;
+    return () => {
+      reportPose.current = null;
+    };
+  }, [hidden, reportPose]);
+
   // Formation morph: when the slot changes, the old target is held for a
   // per-index beat (see MORPH_STAGGER) so the flight ripples through the set.
   const slotRef = useRef(slot);
@@ -140,14 +154,10 @@ export function CarouselItem({
     const mat = img.material as unknown as ImageMaterial;
     const glassMat = glassRef.current?.material as MeshPhysicalMaterial | undefined;
 
-    // While the hero copy is flying, fade this panel (dashboard + glass) out.
-    if (hidden) {
-      hovered.current = false;
-      mat.opacity = MathUtils.lerp(mat.opacity, 0, 0.2);
-      if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, 0, 0.2);
-      wasHidden.current = true;
-      return;
-    }
+    // While the hero copy is on screen the panel is invisible, but it keeps
+    // flying toward its slot below, so formation or count changes made with
+    // the hero open still move it to the right place.
+    if (hidden) hovered.current = false;
 
     const now = state.clock.elapsedTime;
 
@@ -238,6 +248,27 @@ export function CarouselItem({
     const targetZoom = 1 + (1 - eased) * 0.15;
     // Pressed glass catches a touch more light, selling the contact.
     const targetGlass = GLASS_OPACITY + pressed * 0.08;
+    if (hidden) {
+      // Fade out under the hero copy and report the live pose so the hero
+      // flies back to the slot's current position, not the click-time one.
+      mat.opacity = MathUtils.lerp(mat.opacity, 0, 0.2);
+      if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, 0, 0.2);
+      wasHidden.current = true;
+      if (reportPose) {
+        img.updateWorldMatrix(true, false);
+        reportPose.current ??= {
+          position: new Vector3(),
+          quaternion: new Quaternion(),
+          scale: new Vector3(),
+        };
+        img.matrixWorld.decompose(
+          reportPose.current.position,
+          reportPose.current.quaternion,
+          reportPose.current.scale,
+        );
+      }
+      return;
+    }
     if (wasHidden.current) {
       // Just returned from the hero: snap to the settled look, no fade-in gap.
       mat.opacity = targetOpacity;
