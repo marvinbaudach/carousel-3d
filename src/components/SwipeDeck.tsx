@@ -13,12 +13,15 @@ const Stack = styled.div`
   overflow: hidden;
 `;
 
+// Fill the available area rather than locking the panel's 4:5 shape: on a tall
+// phone that left big empty bands top and bottom. The chart renderers adapt to
+// whatever aspect the card takes; width is capped so it stays sane on tablets.
 const Card = styled.div`
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(92vw, 66vh);
-  aspect-ratio: 768 / 960;
+  width: min(94vw, 560px);
+  height: 96%;
   border-radius: 18px;
   overflow: hidden;
   touch-action: none;
