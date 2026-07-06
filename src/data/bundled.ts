@@ -635,6 +635,32 @@ export const CASHLESS_COMPARE = compareSeries(
   { sweLatest: 8 },
 );
 
+// Marriages and divorces in Germany per 1,000 inhabitants (Destatis /
+// historical statistics; early years and war-era spikes rounded). Marriages
+// fall by half across the century; divorces climb, peak around 2004 and have
+// declined since — so "ever more divorces" no longer holds.
+export const DE_FAMILY = compareSeries(
+  [
+    { name: 'Heiraten', pts: [[1900, 8.5], [1920, 14.5], [1933, 9.7], [1950, 10.7], [1960, 9.4], [1970, 7.4], [1980, 6.3], [1990, 6.5], [2000, 5.1], [2010, 4.7], [2022, 4.4]] },
+    { name: 'Scheidungen', pts: [[1900, 0.15], [1920, 0.6], [1933, 0.8], [1950, 1.5], [1960, 0.9], [1970, 1.3], [1980, 1.6], [1990, 1.9], [2000, 2.4], [2004, 2.6], [2010, 2.3], [2022, 1.6]] },
+  ],
+  (v) => v.toFixed(1),
+  /** Latest marriage rate, for the headline. */
+  { marLatest: 4.4 },
+);
+
+// Share of single-person households in Germany, % (Destatis; pre-1950
+// estimates). One in seven at 1900, now over 40% — the structural side of
+// the shrinking family.
+export const DE_SINGLE_HH_PANEL: TrendSeries = trend(
+  [
+    [1900, 7], [1925, 11], [1950, 12], [1961, 21], [1970, 25],
+    [1980, 31], [1990, 34], [2000, 36], [2011, 40], [2022, 41],
+  ],
+  (v) => `${v.toFixed(0)}%`,
+  ['1900', '1940', '1980', 'heute'],
+);
+
 // Purchasing power of one 1913 US dollar (BLS CPI).
 export const DOLLAR_PANEL: TrendSeries = trend(
   [

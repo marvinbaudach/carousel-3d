@@ -104,7 +104,7 @@ export function drawHeader(
   deltaPct: number | null,
   sub?: string,
 ): number {
-  const { ctx, u, t } = f;
+  const { ctx, u, t, w } = f;
   const pad = 36 * u;
   const p = easeOut(t / 0.9);
 
@@ -113,11 +113,25 @@ export function drawHeader(
 
   ctx.fillStyle = MUTED;
   ctx.font = `600 ${17 * u}px ${FONT}`;
-  drawTracked(ctx, label.toUpperCase(), pad, pad + 16 * u, 2.4 * u);
+  // Wrap the (letter-spaced) title onto a second line when it would overflow
+  // the panel, so a long label reads in full instead of being clipped
+  // mid-word. Short titles keep the original single-line layout untouched.
+  const tracking = 2.4 * u;
+  const upper = label.toUpperCase();
+  const maxW = w - 2 * pad;
+  let shift = 0;
+  if (trackedWidth(ctx, upper, tracking) > maxW) {
+    const [l1, l2] = wrapTwo(ctx, upper, tracking, maxW);
+    drawTracked(ctx, l1, pad, pad + 14 * u, tracking);
+    drawTracked(ctx, l2, pad, pad + 34 * u, tracking);
+    shift = 22 * u;
+  } else {
+    drawTracked(ctx, upper, pad, pad + 16 * u, tracking);
+  }
 
   ctx.fillStyle = INK;
   ctx.font = `700 ${54 * u}px ${FONT}`;
-  ctx.fillText(format(value * p), pad, pad + 78 * u);
+  ctx.fillText(format(value * p), pad, pad + 78 * u + shift);
 
   if (deltaPct !== null) {
     const up = deltaPct >= 0;
@@ -126,7 +140,7 @@ export function drawHeader(
     ctx.font = `600 ${19 * u}px ${FONT}`;
     const tw = ctx.measureText(text).width;
     const cx = pad + 4 * u;
-    const cy = pad + 100 * u;
+    const cy = pad + 100 * u + shift;
     ctx.fillStyle = up ? 'rgba(12,163,12,0.14)' : 'rgba(208,59,59,0.14)';
     roundRect(ctx, cx - 10 * u, cy - 20 * u, tw + 20 * u, 30 * u, 15 * u);
     ctx.fill();
@@ -139,13 +153,46 @@ export function drawHeader(
     }
   }
 
-  return pad + 132 * u;
+  return pad + 132 * u + shift;
 }
 
 /** Letter-spaced text (canvas has no letter-spacing of its own). */
 // Grapheme segmentation keeps multi-code-point glyphs (flag emoji, ZWJ
 // sequences) intact when the header spaces characters out one by one.
 const graphemes = new Intl.Segmenter();
+
+/** Width of a letter-spaced string (no trailing tracking), in the current font. */
+function trackedWidth(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  tracking: number,
+): number {
+  let width = 0;
+  for (const { segment: ch } of graphemes.segment(text)) {
+    width += ctx.measureText(ch).width + tracking;
+  }
+  return width - tracking;
+}
+
+/** Greedily split a title into two lines at word boundaries so the first line
+    fills the panel width; the overflow (and the first word if it alone is too
+    wide) falls to the second line. */
+function wrapTwo(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  tracking: number,
+  maxW: number,
+): [string, string] {
+  const words = text.split(' ');
+  let line1 = '';
+  let i = 0;
+  for (; i < words.length; i++) {
+    const test = line1 ? `${line1} ${words[i]}` : words[i];
+    if (line1 && trackedWidth(ctx, test, tracking) > maxW) break;
+    line1 = test;
+  }
+  return [line1, words.slice(i).join(' ')];
+}
 
 export function drawTracked(
   ctx: CanvasRenderingContext2D,

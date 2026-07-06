@@ -21,6 +21,8 @@ import {
   CONFLICT_PANEL,
   DATA_REQUESTS,
   DEBT_TREND_FALLBACK,
+  DE_FAMILY,
+  DE_SINGLE_HH_PANEL,
   DOLLAR_PANEL,
   CONTINENT_FERTILITY,
   INTERNET_PANEL,
@@ -1017,6 +1019,8 @@ const POOL: Dashboard[] = [
           { name: 'Moskau 🇷🇺', v: 210_000 },
           { name: 'Singapur 🇸🇬', v: 90_000 },
           { name: 'New York 🇺🇸', v: 74_000 },
+          { name: 'Bangkok 🇹🇭', v: 60_000 },
+          { name: 'Hongkong 🇭🇰', v: 55_000 },
           { name: 'Berlin 🇩🇪', v: 40_000 },
           { name: 'Zürich 🇨🇭', v: 15_000 },
         ],
@@ -1029,7 +1033,7 @@ const POOL: Dashboard[] = [
     draw: (f) =>
       areaChart(f, {
         // Access Now #KeepItOn: government-ordered shutdowns per year.
-        label: 'Internet-Shutdowns · pro Jahr · Access Now',
+        label: 'Staatliche Internet-Abschaltungen · pro Jahr',
         value: SHUTDOWN_PANEL.latest,
         fmt: (v) => `${Math.round(v)}`,
         delta: SHUTDOWN_PANEL.yoyPct,
@@ -1175,24 +1179,25 @@ const POOL: Dashboard[] = [
     title: 'UN-Resolutionen gegen einzelne Länder',
     draw: (f) =>
       hBarChart(f, {
-        // UN General Assembly country-specific resolutions, 2022 session
-        // (UN Watch tally). Israel alone draws more than all others combined;
-        // the USA appears only via the annual Cuba-embargo resolution.
-        label: 'UN-Vollversammlung · Resolutionen gegen Länder · 2022',
-        value: 26,
+        // UN General Assembly country-specific resolutions, cumulative since
+        // 2015 (UN Watch tallies, rounded): 140 against Israel vs. 68 against
+        // all other countries combined. The USA's count is the recurring
+        // annual Cuba-embargo resolution.
+        label: 'UN-Resolutionen gegen Staaten · seit 2015',
+        value: 190,
         fmt: (v) => `${Math.round(v)}`,
         rowFmt: (v) => `${Math.round(v)}`,
         delta: null,
         color: red,
         unit: '',
         rows: [
-          { name: 'Israel 🇮🇱', v: 15 },
-          { name: 'Russland 🇷🇺', v: 6 },
-          { name: 'USA (Kuba-Embargo) 🇺🇸', v: 1 },
-          { name: 'Iran 🇮🇷', v: 1 },
-          { name: 'Nordkorea 🇰🇵', v: 1 },
-          { name: 'Syrien 🇸🇾', v: 1 },
-          { name: 'Myanmar 🇲🇲', v: 1 },
+          { name: 'Israel 🇮🇱', v: 140 },
+          { name: 'Russland 🇷🇺', v: 12 },
+          { name: 'USA (Kuba-Embargo) 🇺🇸', v: 8 },
+          { name: 'Nordkorea 🇰🇵', v: 8 },
+          { name: 'Iran 🇮🇷', v: 8 },
+          { name: 'Syrien 🇸🇾', v: 8 },
+          { name: 'Myanmar 🇲🇲', v: 6 },
         ],
       }),
   },
@@ -1220,6 +1225,28 @@ const POOL: Dashboard[] = [
         ],
       }),
   },
+  {
+    id: 'de-family',
+    title: 'Heiraten vs. Scheidungen · Deutschland',
+    draw: (f) =>
+      lineChart(f, {
+        // Destatis: marriages halve across the century, divorces peak ~2004
+        // and fall since — the "ever more divorces" belief no longer holds.
+        label: 'Heiraten & Scheidungen · 🇩🇪 · je 1000 Einw.',
+        value: DE_FAMILY.marLatest,
+        unit: '',
+        fmt: (v) => v.toFixed(1),
+        delta: null,
+        seed: 191,
+        series: [
+          { name: 'Heiraten', color: green, data: DE_FAMILY.rows[0].data },
+          { name: 'Scheidungen', color: red, data: DE_FAMILY.rows[1].data },
+        ],
+        ticks: DE_FAMILY.ticks,
+        xLabels: ['1900', '1940', '1980', 'heute'],
+      }),
+  },
+  trendCard('single-households', 'Einpersonenhaushalte · Deutschland', 'Einpersonenhaushalte · 🇩🇪 · Anteil · seit 1900', DE_SINGLE_HH_PANEL, violet, (v) => `${v.toFixed(0)}%`, 193),
   {
     id: 'swiss-trends',
     title: 'Schweizer Trends · Wikipedia',
@@ -1316,6 +1343,8 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'china-surveillance': ['welt', 'soziales', 'deutschland', 'schweiz'],
   'un-resolutions': ['welt', 'krieg'],
   'un-vetoes': ['welt', 'krieg'],
+  'de-family': ['deutschland', 'soziales'],
+  'single-households': ['deutschland', 'soziales'],
   'swiss-trends': ['schweiz'],
 };
 for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
@@ -1333,7 +1362,7 @@ const FEATURED = new Set([
   'pisa-de', 'teen-depression', 'obesity-fastfood', 'surveillance',
   'cameras-world', 'internet-shutdowns', 'gov-data-requests',
   'sdg-progress', 'cbdc', 'cashless', '5g-stations', 'china-surveillance',
-  'un-resolutions', 'un-vetoes',
+  'un-resolutions', 'un-vetoes', 'de-family', 'single-households',
 ]);
 
 /**
