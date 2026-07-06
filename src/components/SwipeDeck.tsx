@@ -132,6 +132,7 @@ export function SwipeDeck({ dashboards, onIndex }: SwipeDeckProps) {
     if (goNext || goPrev) {
       animating.current = true;
       intro.current = false; // no chart replay on the card we land on
+      navigator.vibrate?.(12); // short haptic tick (Android; iOS has no API)
       const off = goNext ? -1 : 1;
       // Hurl the card off: it slides out, arcs up, spins in Z and Y and shrinks
       // as it fades — an accelerating ease-in so it really flies.
