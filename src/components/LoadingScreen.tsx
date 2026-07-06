@@ -16,7 +16,6 @@ const CITY: Record<string, { lat: number; lon: number }> = {
 };
 
 const STATIONS = [...new Set(LIVE_FEEDS.map((f) => f.code))].filter((c) => CITY[c]);
-const TOTAL_FEEDS = LIVE_FEEDS.length;
 
 // How long the dots take to converge into the center once loading is done —
 // they collapse into exactly the point the carousel panels bloom out of.
@@ -111,15 +110,6 @@ const Wordmark = styled.div<{ $done: boolean }>`
     `}
 `;
 
-const Sub = styled.div`
-  color: #898781;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.4em;
-  margin-left: 0.4em;
-  text-shadow: 0 0 20px rgba(5, 7, 12, 0.9);
-`;
-
 // Empty space the globe rotates through; the type sits above, progress below.
 const GlobeGap = styled.div`
   height: min(48vmin, 44vh);
@@ -149,7 +139,7 @@ const BarFill = styled.div<{ $done: boolean }>`
 
 const Status = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   width: min(340px, 80vw);
   color: #52616e;
   font-family: ${MONO};
@@ -184,22 +174,9 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
   const [leaving, setLeaving] = useState(false);
   const [pct, setPct] = useState(0);
   const pctRef = useRef(0);
-  const [connected, setConnected] = useState(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const doneRef = useRef(false);
   doneRef.current = done;
-
-  // Stagger the source counter across the boot beat.
-  useEffect(() => {
-    const step = 1250 / TOTAL_FEEDS;
-    const timers = LIVE_FEEDS.map((_, i) =>
-      window.setTimeout(
-        () => setConnected((c) => Math.max(c, i + 1)),
-        120 + i * step + Math.random() * Math.min(90, step * 0.5),
-      ),
-    );
-    return () => timers.forEach((t) => window.clearTimeout(t));
-  }, []);
 
   // The globe: ~1500 dots on a sphere swirling in from the center, rotating;
   // the data stations pulse and send packets along great-circle arcs. On
@@ -361,8 +338,6 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
     return () => window.clearTimeout(t);
   }, [done]);
 
-  const shown = done ? TOTAL_FEEDS : connected;
-
   return (
     <Screen
       $leaving={leaving}
@@ -379,15 +354,11 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
 
       <Column $leaving={leaving}>
         <Wordmark $done={done}>WORLDPULSE</Wordmark>
-        <Sub>GLOBALE DATENQUELLEN WERDEN GELADEN</Sub>
         <GlobeGap />
         <BarTrack>
           <BarFill $done={done} />
         </BarTrack>
         <Status>
-          <span>
-            {shown}/{TOTAL_FEEDS} QUELLEN
-          </span>
           <span>{pct}%</span>
         </Status>
       </Column>

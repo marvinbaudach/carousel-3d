@@ -12,6 +12,7 @@ import { Vector2, Vector3 } from 'three';
 import { CameraRig } from './CameraRig';
 import { CarouselItem } from './CarouselItem';
 import { PerfProbe } from './PerfHud';
+import { Aurora } from './Aurora';
 import { Dust } from './Dust';
 import { HeroCard, type HeroStart } from './HeroCard';
 import { HandGestures } from './HandGestures';
@@ -292,7 +293,8 @@ export function Carousel3D() {
         // whole scene feel restless while browsing the panels.
         parallax={false}
       />
-      <Dust radius={radius} count={isMobile ? 180 : 500} />
+      <Aurora />
+      <Dust radius={radius} count={isMobile ? 120 : 320} />
 
       <Ring
         onSelect={open}
