@@ -485,6 +485,21 @@ export const INTERNET_PANEL: TrendSeries = trend(
   ['1990', '2001', '2013', 'heute'],
 );
 
+// Global oil consumption, million barrels per day (Energy Institute
+// Statistical Review of World Energy; pre-1965 from historical BP / Our World
+// in Data series). The only real dents before COVID-2020 are the 1973 and
+// 1979 oil-crisis demand shocks — otherwise a near-unbroken climb.
+export const OIL_CONSUMPTION_PANEL: TrendSeries = trend(
+  [
+    [1900, 0.5], [1920, 1.2], [1940, 6], [1950, 10.5], [1960, 21],
+    [1965, 31], [1973, 56], [1979, 65], [1983, 59], [1990, 66],
+    [2000, 76], [2008, 86], [2010, 88], [2019, 100], [2020, 91],
+    [2023, 102],
+  ],
+  (v) => `${v.toFixed(0)} mb/d`,
+  ['1900', '1941', '1982', 'heute'],
+);
+
 // Nuclear test explosions per year (Arms Control Association).
 export const NUKE_TESTS_PANEL: TrendSeries = trend(
   [

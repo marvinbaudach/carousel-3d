@@ -34,6 +34,7 @@ import {
   M2_COMPARE,
   M2_PANEL,
   NUKE_TESTS_PANEL,
+  OIL_CONSUMPTION_PANEL,
   OVERDOSE_PANEL,
   REFUGEE_PANEL,
   SWISS_POP_FALLBACK,
@@ -242,6 +243,27 @@ const POOL: Dashboard[] = [
         marker: { at: 1886 / 2025, label: '⛽ Benzin ~1886' },
       });
     },
+  },
+  {
+    id: 'oil-consumption',
+    title: 'Weltweiter Ölverbrauch',
+    draw: (f) =>
+      areaChart(f, {
+        label: 'Ölverbrauch · Mio. Barrel/Tag · Energy Institute',
+        value: OIL_CONSUMPTION_PANEL.latest,
+        fmt: (v) => `${v.toFixed(0)} mb/d`,
+        // No delta: a single YoY figure under a 120-year curve reads as if it
+        // were the growth over the whole span.
+        delta: null,
+        seed: 211,
+        color: orange,
+        data: OIL_CONSUMPTION_PANEL.series,
+        ticks: OIL_CONSUMPTION_PANEL.ticks,
+        xLabels: OIL_CONSUMPTION_PANEL.xLabels,
+        // The 1973 OPEC embargo on the 1900–2023 axis: the first time global
+        // oil demand ever fell — the dip right after this line.
+        marker: { at: (1973 - 1900) / (2023 - 1900), label: '⛽ Ölkrise 1973' },
+      }),
   },
   {
     id: 'conflict-deaths',
@@ -1490,6 +1512,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   climate: ['welt'],
   'swiss-pop': ['schweiz', 'soziales'],
   'world-pop': ['welt', 'soziales'],
+  'oil-consumption': ['welt', 'geld'],
   'conflict-deaths': ['krieg'],
   refugees: ['krieg', 'soziales'],
   'us-interest': ['geld'],
@@ -1560,7 +1583,7 @@ for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
 const FEATURED = new Set([
   'us-wars', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
-  'world-pop', 'climate', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees',
+  'world-pop', 'oil-consumption', 'climate', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees',
   'military', 'gdp-growth', 'de-industry', 'recent-wars',
   'youth-unemployment', 'unemployment', 'poverty',
   'teen-mde', 'suicide-by-age',
