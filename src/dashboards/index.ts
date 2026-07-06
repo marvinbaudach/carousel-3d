@@ -249,16 +249,9 @@ const POOL: Dashboard[] = [
         data: p.series,
         ticks: p.ticks,
         xLabels: p.xLabels,
-        // The four industrial revolutions on the 1770–2025 axis, plus Benz's
-        // 1886 automobile (the start of the fossil-fuel era). The first
-        // revolution is what tips the curve into its vertical climb.
-        markers: eraMarkers(1770, 2025, [
-          [1780, '⚙️ 1. Ind. Rev.'],
-          [1870, '🏭 2. Ind. Rev.'],
-          [1886, '⛽ Benzin'],
-          [1970, '💻 3. Ind. Rev.'],
-          [2010, '🤖 4. Ind. Rev.'],
-        ]),
+        // Benz's 1886 automobile marks the start of the fossil-fuel era that
+        // powered the population explosion.
+        markers: eraMarkers(1770, 2025, [[1886, '⛽ Benzin']]),
       });
     },
   },
