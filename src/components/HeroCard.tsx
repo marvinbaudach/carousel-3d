@@ -72,9 +72,10 @@ const FIT = 0.88;
 // off that and derive the width. Rounded up to a 128px step and clamped so an
 // extreme window can't blow up the per-frame intro redraw or texture memory.
 function heroTextureSize(): { w: number; h: number } {
-  const dpr = Math.min(2, Math.max(1.75, window.devicePixelRatio || 1));
+  // Match the canvas dpr the hero is pinned to (1.75), so the texture is neither
+  // upscaled soft nor needlessly oversized (which would only slow the redraw).
   const cssH = FIT * Math.min(window.innerHeight, window.innerWidth / CARD_ASPECT);
-  const h = Math.min(4096, Math.max(2560, Math.ceil((cssH * dpr) / 128) * 128));
+  const h = Math.min(3072, Math.max(2560, Math.ceil((cssH * 1.75) / 128) * 128));
   return { w: Math.round(h * CARD_ASPECT), h };
 }
 

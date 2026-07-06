@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ReactElement, type RefObject
 import { Canvas } from '@react-three/fiber';
 import {
   EffectComposer,
-  Bloom,
   ChromaticAberration,
   Noise,
   Vignette,
@@ -178,13 +177,11 @@ export function Carousel3D() {
   const [dpr, setDpr] = useState(maxDpr);
 
   const heroTarget = useMemo(() => new Vector3(0, 0, heroZ), [heroZ]);
-  // Tiny constant color fringe for a cinematic, lens-like finish — dropped
-  // while a hero is open, where it reads as blur on the fullscreen text.
+  // Tiny constant color fringe for a cinematic, lens-like finish. The effect is
+  // dropped from the stack entirely while a hero is open (see EffectComposer),
+  // so the offset itself can stay constant.
   const heroOpen = selected !== null;
-  const aberration = useMemo(
-    () => new Vector2(heroOpen ? 0 : 0.0008, heroOpen ? 0 : 0.0008),
-    [heroOpen],
-  );
+  const aberration = useMemo(() => new Vector2(0.0008, 0.0008), []);
 
   const open = (id: string, start: HeroStart) => {
     if (selected) return; // one hero at a time
@@ -262,12 +259,13 @@ export function Carousel3D() {
   return (
     <>
     <Canvas
-      // While a hero is open the ring stops spinning and bloom is off, so the
-      // GPU has the headroom to render at full native resolution — pin the dpr
-      // to the display cap there so the large, static hero is razor sharp,
-      // instead of leaving it at whatever PerformanceMonitor throttled the
-      // busy ring view down to (which upscales soft on hi-dpi screens).
-      dpr={heroOpen ? maxDpr : dpr}
+      // While a hero is open the heavy effect passes are dropped, so pin the
+      // dpr up to a crisp fixed level instead of leaving it at whatever
+      // PerformanceMonitor throttled the busy ring view down to (which upscales
+      // soft on hi-dpi screens). Capped at 1.75 rather than full native, so the
+      // hero is sharp without the fill-rate of a 2x buffer tanking the frame
+      // rate on hi-dpi displays.
+      dpr={heroOpen ? Math.min(maxDpr, 1.75) : dpr}
       camera={{ position: [0, 0, DEFAULT_RADIUS + 9], fov: 40 }}
       // Canvas MSAA is wasted work: EffectComposer renders offscreen anyway,
       // and the bloom/noise/vignette stack hides the aliasing it would fix.
@@ -356,20 +354,12 @@ export function Carousel3D() {
           invisible under the effect stack. */}
       <EffectComposer key={isMobile ? 'mobile' : 'desktop'} multisampling={0}>
         {[
-          // Bloom is a fullscreen pass, so it can't be kept off the hero alone.
-          // With a hero open the frame is mostly its big text, which hazes over
-          // and reads as soft-focus under any glow, so bloom is switched off
-          // entirely until the hero closes — the ring behind it goes flat, but
-          // the hero stays crisp. Intensity 0 keeps the effect in the stack so
-          // there is no composer recompile on open/close.
-          <Bloom
-            key="bloom"
-            intensity={heroOpen ? 0 : 0.7}
-            luminanceThreshold={0.55}
-            luminanceSmoothing={0.3}
-            mipmapBlur
-          />,
-          !isMobile && (
+          // No bloom at all: its fullscreen glow ran every mipmap blur pass
+          // each frame (even zeroed), which tanked the frame rate at the hero's
+          // pinned dpr and hazed the hero text — removed entirely. Aberration
+          // and noise still dress the ring but drop out while a hero is open,
+          // so only the cheap vignette is ever left over the hero.
+          !isMobile && !heroOpen && (
             <ChromaticAberration
               key="aberration"
               blendFunction={BlendFunction.NORMAL}
