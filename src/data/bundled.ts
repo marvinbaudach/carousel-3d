@@ -602,16 +602,20 @@ function teenSadnessPanel() {
 }
 export const TEEN_SADNESS = teenSadnessPanel();
 
-// US suicide rate, ages 10–14, per 100k (CDC WONDER). A low, flat baseline
-// through the pre-smartphone years, then roughly tripling after ~2010 —
-// young girls' rate rose fastest. A correlation, not proof of cause.
-export const YOUTH_SUICIDE = maskedTrend(
+// US suicide rate by age band, per 100k (CDC WONDER), from 1980. The older
+// bands carry by far the highest rates (20–24 > 15–19 > 10–14); the youngest
+// band is lowest but rose fastest in relative terms after ~2010. All three
+// span 1980–2021 so the lines align. Note the rates were already high in the
+// 1980s, long before the internet — not a clean single-cause story.
+export const SUICIDE_BY_AGE = compareSeries(
   [
-    [1999, 0.9], [2003, 0.7], [2007, 0.9], [2010, 1.1], [2013, 1.3],
-    [2015, 1.5], [2017, 2.5], [2018, 2.9], [2020, 2.6], [2021, 2.3],
+    { name: '10–14 J.', pts: [[1980, 0.8], [1990, 1.5], [2000, 1.3], [2007, 0.9], [2015, 2.1], [2021, 2.4]] },
+    { name: '15–19 J.', pts: [[1980, 8.5], [1990, 11.1], [2000, 8.0], [2007, 6.9], [2015, 9.8], [2018, 11.4], [2021, 11.0]] },
+    { name: '20–24 J.', pts: [[1980, 16.1], [1990, 15.1], [2000, 12.5], [2007, 12.5], [2015, 15.0], [2018, 17.0], [2021, 18.0]] },
   ],
   (v) => v.toFixed(1),
-  2012,
+  /** Latest 20–24 rate, for the headline. */
+  { oldestLatest: 18.0 },
 );
 
 // US adolescents (12–17) with a past-year major depressive episode, %
@@ -626,34 +630,33 @@ export const TEEN_MDE = maskedTrend(
   2012,
 );
 
-// US suicide rate, ages 15–19, per 100k (CDC WONDER). A low around 2007,
-// then rising ~60% to a 2017–18 peak and holding high. Broader teen band
-// alongside the 10–14 panel; shaded = smartphone era.
-export const TEEN_SUICIDE = maskedTrend(
-  [
-    [1999, 8.0], [2003, 7.3], [2007, 6.9], [2010, 7.5], [2013, 8.3],
-    [2015, 9.8], [2017, 11.4], [2018, 11.4], [2020, 10.5], [2021, 10.9],
-  ],
-  (v) => v.toFixed(1),
-  2012,
-);
-
-// Daily entertainment screen media among US teens (13–18), hours (Common
-// Sense Media Census). Up by roughly a third in six years — and this
-// excludes school and homework screen time.
+// Daily entertainment screen media among US teens (13–18), hours, from the
+// arrival of colour TV (~1965). Pre-2015 points come from TV-era time-use
+// studies (Nielsen / Kaiser Family Foundation) and are TV-dominated — a rough,
+// definition-shifting splice onto the smartphone-era Common Sense Media
+// Census, but the shape is the story: ~2.5h of colour TV in the 1960s to ~8h
+// across all screens today. Excludes school and homework screen time.
 export const TEEN_SCREEN_PANEL: TrendSeries = trend(
-  [[2015, 6.7], [2019, 7.4], [2021, 8.6], [2023, 8.4]],
+  [
+    [1965, 2.5], [1980, 3.0], [1999, 3.9], [2004, 4.4], [2009, 5.6],
+    [2015, 6.7], [2019, 7.4], [2021, 8.6], [2023, 8.4],
+  ],
   (v) => `${v.toFixed(1)} h`,
-  ['2015', '2019', '2021', '2023'],
+  ['1965', '1985', '2005', 'heute'],
 );
 
-// Monthly antidepressant dispensing to US adolescents (12–17), index
-// 2016 = 100 (Chua et al., Pediatrics; IQVIA). The climb steepened sharply
-// during the pandemic, fastest among teenage girls.
+// Share of US adolescents (12–17) dispensed an antidepressant in the year, %,
+// back to 1970. Near zero before Prozac (1988) — tricyclics were rarely given
+// to children; the SSRI era opens the climb. Pre-2000 points are rough
+// estimates (youth-specific dispensing data is sparse that far back), post-2010
+// tracks IQVIA/CDC. The shape — from almost nothing to the mid-single digits.
 export const TEEN_RX_PANEL: TrendSeries = trend(
-  [[2016, 100], [2018, 114], [2019, 121], [2020, 131], [2021, 155], [2022, 166]],
-  (v) => `${Math.round(v)}`,
-  ['2016', '2018', '2020', '2022'],
+  [
+    [1970, 0.1], [1988, 0.4], [1995, 1.2], [2002, 2.4], [2010, 3.0],
+    [2016, 4.2], [2019, 5.0], [2022, 6.3],
+  ],
+  (v) => `${v.toFixed(1)}%`,
+  ['1970', '1987', '2004', 'heute'],
 );
 
 // Installed nuclear generating capacity in Germany, GW net (BMWK / IAEA PRIS).
@@ -731,10 +734,13 @@ export const DE_ENERGY_MIX = compareSeries(
   { renewLatest: 172 },
 );
 
-// US adult obesity share, % (NHANES). The shaded band marks the fast-food
-// era: the 1970s drive-through boom and, from the 1980s, cheap high-fructose
-// corn syrup in soft drinks — the decades US obesity roughly tripled.
+// US adult obesity share, % (NHANES from 1962; pre-1962 are rough estimates
+// from early insurance/anthropometric data — a low, flat baseline). The
+// shaded band marks the fast-food era: the 1970s drive-through boom and, from
+// the 1980s, cheap high-fructose corn syrup in soft drinks — the decades US
+// obesity roughly tripled.
 const US_OBESITY_ANCHORS: [number, number][] = [
+  [1900, 3.0], [1920, 4.0], [1940, 8.0], [1955, 10.0],
   [1962, 13.0], [1971, 14.5], [1978, 15.0], [1988, 22.9], [1994, 23.2],
   [2000, 30.5], [2004, 32.2], [2008, 33.7], [2012, 34.9], [2016, 39.6],
   [2018, 42.4], [2022, 41.9],

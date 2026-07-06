@@ -25,7 +25,6 @@ import {
   DOLLAR_PANEL,
   CONTINENT_FERTILITY,
   INTERNET_PANEL,
-  SHUTDOWN_PANEL,
   LIFE_PANEL,
   DE_FOREIGN_SUSPECTS_PANEL,
   DE_INSOLVENCY_JOBS_PANEL,
@@ -35,18 +34,15 @@ import {
   M2_COMPARE,
   M2_PANEL,
   NUKE_TESTS_PANEL,
-  OBESITY_PANEL,
   OVERDOSE_PANEL,
   REFUGEE_PANEL,
   SWISS_POP_FALLBACK,
   DE_ENERGY_MIX,
   US_ENERGY_MIX,
+  SUICIDE_BY_AGE,
   TEEN_MDE,
   TEEN_RX_PANEL,
-  TEEN_SADNESS,
   TEEN_SCREEN_PANEL,
-  TEEN_SUICIDE,
-  YOUTH_SUICIDE,
   US_ALCOHOL_DEATHS_PANEL,
   US_INTEREST_PANEL,
   US_OBESITY_FASTFOOD,
@@ -241,6 +237,9 @@ const POOL: Dashboard[] = [
         data: p.series,
         ticks: p.ticks,
         xLabels: p.xLabels,
+        // Carl Benz's first automobile (1886) on the 0–2025 axis: the dawn of
+        // the fossil-fuel era, right where the population curve goes vertical.
+        marker: { at: 1886 / 2025, label: '⛽ Benzin ~1886' },
       });
     },
   },
@@ -308,6 +307,15 @@ const POOL: Dashboard[] = [
         data: OVERDOSE_PANEL.series,
         ticks: OVERDOSE_PANEL.ticks,
         xLabels: OVERDOSE_PANEL.xLabels,
+        // The drug behind each era of the curve, on the 1950–2024 axis: the
+        // first heroin wave, the 1980s crack epidemic, the OxyContin/Rx-opioid
+        // surge from ~1999, and the fentanyl explosion driving the recent peak.
+        markers: [
+          { at: (1970 - 1950) / 74, label: 'Heroin' },
+          { at: (1986 - 1950) / 74, label: 'Crack' },
+          { at: (1999 - 1950) / 74, label: 'OxyContin' },
+          { at: (2015 - 1950) / 74, label: 'Fentanyl' },
+        ],
       }),
   },
   {
@@ -571,7 +579,6 @@ const POOL: Dashboard[] = [
   },
   trendCard('internet', 'Menschen online weltweit', 'Internetnutzer · ITU', INTERNET_PANEL, blue, (v) => `${(v / 1e9).toFixed(1)}B`, 103),
   trendCard('nuke-tests', 'Atomtests pro Jahr', 'Atomtests · seit 1945', NUKE_TESTS_PANEL, red, (v) => `${Math.round(v)}`, 107),
-  trendCard('obesity', 'Adipositas weltweit', 'Adipositas-Quote', OBESITY_PANEL, magenta, (v) => `${v.toFixed(0)}%`, 109),
   {
     id: 'fertility',
     title: 'Geburtenrate der Kontinente',
@@ -868,28 +875,6 @@ const POOL: Dashboard[] = [
       }),
   },
   {
-    id: 'teen-depression',
-    title: 'Niedergeschlagenheit der Jugend seit 1999',
-    draw: (f) =>
-      lineChart(f, {
-        // CDC YRBS: persistent sadness/hopelessness back to 1999. Flat through
-        // the pre-smartphone years, then girls climb steeply after ~2012.
-        label: 'Anhaltende Niedergeschlagenheit · 🇺🇸 · 14–18 J.',
-        value: TEEN_SADNESS.girlsLatest,
-        unit: '',
-        fmt: (v) => `${v.toFixed(0)}%`,
-        delta: null,
-        seed: 181,
-        series: [
-          { name: 'Mädchen', color: magenta, data: TEEN_SADNESS.girls },
-          { name: 'Jungen', color: blue, data: TEEN_SADNESS.boys },
-        ],
-        ticks: TEEN_SADNESS.ticks,
-        xLabels: ['1999', '2007', '2015', '2023'],
-        shade: { mask: TEEN_SADNESS.socialMask, label: '📱 Soziale Medien' },
-      }),
-  },
-  {
     id: 'teen-mde',
     title: 'Depression bei US-Jugendlichen',
     draw: (f) =>
@@ -909,45 +894,51 @@ const POOL: Dashboard[] = [
       }),
   },
   {
-    id: 'youth-suicide',
-    title: 'Suizidrate junger Teenager USA',
+    id: 'suicide-by-age',
+    title: 'Suizidrate USA nach Altersgruppe · seit 1980',
     draw: (f) =>
       lineChart(f, {
-        // CDC WONDER: suicide rate ages 10–14 per 100k. Low and flat through
-        // the pre-smartphone years, then roughly tripling after ~2010.
-        label: 'Suizidrate · 🇺🇸 · 10–14 J. · je 100.000',
-        value: YOUTH_SUICIDE.latest,
+        // CDC WONDER: suicide rate per 100k by age band. Older bands are far
+        // higher; the youngest rose fastest relatively. Already high in the
+        // 1980s — not a clean single-cause story.
+        label: 'Suizidrate · 🇺🇸 · je 100.000',
+        value: SUICIDE_BY_AGE.oldestLatest,
         unit: '',
         fmt: (v) => v.toFixed(1),
         delta: null,
         seed: 191,
-        series: [{ name: 'Suizidrate', color: red, data: YOUTH_SUICIDE.data }],
-        ticks: YOUTH_SUICIDE.ticks,
-        xLabels: ['1999', '2007', '2015', '2021'],
-        shade: { mask: YOUTH_SUICIDE.mask, label: '📱 Soziale Medien' },
+        series: [
+          { name: '10–14 J.', color: yellow, data: SUICIDE_BY_AGE.rows[0].data },
+          { name: '15–19 J.', color: orange, data: SUICIDE_BY_AGE.rows[1].data },
+          { name: '20–24 J.', color: red, data: SUICIDE_BY_AGE.rows[2].data },
+        ],
+        ticks: SUICIDE_BY_AGE.ticks,
+        xLabels: ['1980', '1994', '2007', '2021'],
       }),
   },
   {
-    id: 'teen-suicide',
-    title: 'Suizidrate Jugendlicher USA',
+    id: 'teen-screen',
+    title: 'Bildschirmzeit US-Teenager',
     draw: (f) =>
-      lineChart(f, {
-        // CDC WONDER: suicide rate ages 15–19 per 100k. Low around 2007,
-        // then rising ~60% to a 2017–18 peak and holding high.
-        label: 'Suizidrate · 🇺🇸 · 15–19 J. · je 100.000',
-        value: TEEN_SUICIDE.latest,
-        unit: '',
-        fmt: (v) => v.toFixed(1),
+      areaChart(f, {
+        label: 'Unterhaltungsmedien · 🇺🇸 · 13–18 J. · Std./Tag',
+        value: TEEN_SCREEN_PANEL.latest,
+        fmt: (v) => `${v.toFixed(1)} h`,
         delta: null,
-        seed: 197,
-        series: [{ name: 'Suizidrate', color: red, data: TEEN_SUICIDE.data }],
-        ticks: TEEN_SUICIDE.ticks,
-        xLabels: ['1999', '2007', '2015', '2021'],
-        shade: { mask: TEEN_SUICIDE.mask, label: '📱 Soziale Medien' },
+        seed: 193,
+        color: violet,
+        data: TEEN_SCREEN_PANEL.series,
+        ticks: TEEN_SCREEN_PANEL.ticks,
+        xLabels: ['1965', '1985', '2005', 'heute'],
+        // Era markers across the 1965–2023 span (fraction of the x-range).
+        markers: [
+          { at: 0.01, label: '📺 Farb-TV' },
+          { at: 0.52, label: '🎮 PlayStation' },
+          { at: 0.78, label: '📱 Soziale Medien' },
+        ],
       }),
   },
-  trendCard('teen-screen', 'Bildschirmzeit US-Teenager', 'Unterhaltungsmedien · 🇺🇸 · 13–18 J. · Std./Tag', TEEN_SCREEN_PANEL, violet, (v) => `${v.toFixed(1)} h`, 193),
-  trendCard('teen-antidepressants', 'Antidepressiva bei US-Jugendlichen', 'Verordnungen · 🇺🇸 · 12–17 J. · Index 2016 = 100', TEEN_RX_PANEL, aqua, (v) => `${Math.round(v)}`, 199),
+  trendCard('teen-antidepressants', 'Antidepressiva bei US-Jugendlichen', 'Antidepressiva-Rezepte · 🇺🇸 · 12–17 J. · Anteil', TEEN_RX_PANEL, aqua, (v) => `${v.toFixed(1)}%`, 199),
   {
     id: 'us-energy-mix',
     title: 'US-Strommix · Kohle, Kernkraft, Erneuerbare',
@@ -1009,7 +1000,7 @@ const POOL: Dashboard[] = [
         seed: 173,
         series: [{ name: 'Adipositas-Quote', color: orange, data: US_OBESITY_FASTFOOD.data }],
         ticks: US_OBESITY_FASTFOOD.ticks,
-        xLabels: ['1962', '1982', '2002', 'heute'],
+        xLabels: ['1900', '1940', '1980', 'heute'],
         shade: { mask: US_OBESITY_FASTFOOD.fastfoodMask, label: '🍔 Fast-Food-Ära' },
       }),
   },
@@ -1045,23 +1036,6 @@ const POOL: Dashboard[] = [
       }),
   },
   trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras · IHS · Schätzung', CAMERAS_PANEL, aqua, (v) => `${(v / 1e9).toFixed(2)} Mrd`, 183),
-  {
-    id: 'internet-shutdowns',
-    title: 'Internet-Abschaltungen durch Regierungen',
-    draw: (f) =>
-      areaChart(f, {
-        // Access Now #KeepItOn: government-ordered shutdowns per year.
-        label: 'Staatliche Internet-Abschaltungen · pro Jahr',
-        value: SHUTDOWN_PANEL.latest,
-        fmt: (v) => `${Math.round(v)}`,
-        delta: SHUTDOWN_PANEL.yoyPct,
-        seed: 185,
-        color: red,
-        data: SHUTDOWN_PANEL.series,
-        ticks: SHUTDOWN_PANEL.ticks,
-        xLabels: SHUTDOWN_PANEL.xLabels,
-      }),
-  },
   {
     id: 'gov-data-requests',
     title: 'Behörden-Datenanfragen an Big Tech',
@@ -1104,6 +1078,9 @@ const POOL: Dashboard[] = [
           { name: 'Großbritannien', v: 65_000 },
           { name: 'Frankreich', v: 62_000 },
           { name: 'Deutschland', v: 45_000 },
+          { name: 'Italien', v: 40_000 },
+          { name: 'Australien', v: 33_000 },
+          { name: 'Spanien', v: 28_000 },
         ],
       }),
   },
@@ -1128,6 +1105,32 @@ const POOL: Dashboard[] = [
           { name: 'Türkei', v: 6_200 },
           { name: 'Pakistan', v: 4_100 },
           { name: 'Brasilien', v: 3_000 },
+        ],
+      }),
+  },
+  {
+    id: 'who-pandemic',
+    title: 'WHO-Pandemieabkommen · Enthaltungen',
+    draw: (f) =>
+      treemap(f, {
+        // WHA 20 May 2025: adopted by consensus (124 for, 0 against, 11
+        // abstentions). All 11 abstainers shown as equal blocks — abstaining
+        // is not "refused to sign"; ratification is a separate later step.
+        label: 'WHO-Pandemievertrag · 124 dafür · 0 dagegen · Mai 2025',
+        value: 11,
+        fmt: (v) => `${Math.round(v)} Enthaltungen`,
+        rows: [
+          { name: 'Russland 🇷🇺', v: 1, short: '🇷🇺' },
+          { name: 'Iran 🇮🇷', v: 1, short: '🇮🇷' },
+          { name: 'Israel 🇮🇱', v: 1, short: '🇮🇱' },
+          { name: 'Italien 🇮🇹', v: 1, short: '🇮🇹' },
+          { name: 'Polen 🇵🇱', v: 1, short: '🇵🇱' },
+          { name: 'Niederlande 🇳🇱', v: 1, short: '🇳🇱' },
+          { name: 'Slowakei 🇸🇰', v: 1, short: '🇸🇰' },
+          { name: 'Bulgarien 🇧🇬', v: 1, short: '🇧🇬' },
+          { name: 'Ägypten 🇪🇬', v: 1, short: '🇪🇬' },
+          { name: 'Paraguay 🇵🇾', v: 1, short: '🇵🇾' },
+          { name: 'Jamaika 🇯🇲', v: 1, short: '🇯🇲' },
         ],
       }),
   },
@@ -1212,30 +1215,6 @@ const POOL: Dashboard[] = [
           { name: 'Iran 🇮🇷', v: 8 },
           { name: 'Syrien 🇸🇾', v: 8 },
           { name: 'Myanmar 🇲🇲', v: 6 },
-        ],
-      }),
-  },
-  {
-    id: 'un-vetoes',
-    title: 'Vetos im UN-Sicherheitsrat',
-    draw: (f) =>
-      hBarChart(f, {
-        // Security Council vetoes 1946–2024 (UN Dag Hammarskjöld Library,
-        // rounded). Russia/USSR lead all-time; the USA is second overall and
-        // first in recent decades, most often shielding Israel.
-        label: 'Vetos im UN-Sicherheitsrat · seit 1946 · gerundet',
-        value: 282,
-        fmt: (v) => `${Math.round(v)}`,
-        rowFmt: (v) => `${Math.round(v)}`,
-        delta: null,
-        color: orange,
-        unit: '',
-        rows: [
-          { name: 'Russland / UdSSR 🇷🇺', v: 128 },
-          { name: 'USA 🇺🇸', v: 87 },
-          { name: 'Großbritannien 🇬🇧', v: 29 },
-          { name: 'China 🇨🇳', v: 21 },
-          { name: 'Frankreich 🇫🇷', v: 16 },
         ],
       }),
   },
@@ -1389,6 +1368,7 @@ const POOL: Dashboard[] = [
           { name: 'Honduras 🇭🇳', v: 74 },
           { name: 'Chile 🇨🇱', v: 71 },
           { name: 'Argentinien 🇦🇷', v: 69 },
+          { name: 'Paraguay 🇵🇾', v: 68 },
           { name: 'Australien 🇦🇺', v: 62 },
           { name: 'Deutschland 🇩🇪', v: 60 },
           { name: 'USA 🇺🇸', v: 58 },
@@ -1425,6 +1405,67 @@ const POOL: Dashboard[] = [
           { name: 'Rom 🇮🇹', v: 105 },
           { name: 'Berlin 🇩🇪', v: 75 },
           { name: 'Stockholm 🇸🇪', v: 0 },
+        ],
+      }),
+  },
+  {
+    id: 'covid-vaccinations',
+    title: 'Corona-Impfungen · verabreichte Dosen',
+    draw: (f) =>
+      hBarChart(f, {
+        // Cumulative COVID-19 vaccine doses administered (Our World in Data,
+        // final 2023 figures). Absolute counts, so the two population giants
+        // dominate: China and India alone gave out ~40% of the world's
+        // ~13.5 billion doses. Germany added as a European reference point.
+        label: 'Corona-Impfdosen · gesamt · 2020–23 · OWID',
+        value: 13.5e9,
+        fmt: (v) => `${(v / 1e9).toFixed(1)} Mrd`,
+        rowFmt: (v) => (v >= 1e9 ? `${(v / 1e9).toFixed(2)} Mrd` : `${Math.round(v / 1e6)} Mio`),
+        delta: null,
+        color: green,
+        unit: '',
+        rows: [
+          { name: 'China 🇨🇳', v: 3_491_000_000 },
+          { name: 'Indien 🇮🇳', v: 2_206_000_000 },
+          { name: 'USA 🇺🇸', v: 676_000_000 },
+          { name: 'Brasilien 🇧🇷', v: 519_000_000 },
+          { name: 'Indonesien 🇮🇩', v: 448_000_000 },
+          { name: 'Japan 🇯🇵', v: 436_000_000 },
+          { name: 'Bangladesch 🇧🇩', v: 363_000_000 },
+          { name: 'Pakistan 🇵🇰', v: 346_000_000 },
+          { name: 'Vietnam 🇻🇳', v: 266_000_000 },
+          { name: 'Deutschland 🇩🇪', v: 192_000_000 },
+        ],
+      }),
+  },
+  {
+    id: 'covid-vax-percapita',
+    title: 'Corona-Impfungen · Dosen pro Kopf',
+    draw: (f) =>
+      hBarChart(f, {
+        // COVID-19 vaccine doses administered per 100 people (Our World in
+        // Data, cumulative). Per-capita view: which countries jabbed their
+        // population most densely, not just most in absolute terms. Cuba
+        // tops it with a home-grown 3-dose regimen (Abdala/Soberana); the
+        // world average sits near ~170 doses per 100. Approximate.
+        label: 'Corona-Impfdosen · je 100 Einw. · 2020–23 · OWID',
+        value: 170,
+        fmt: (v) => `Ø ${Math.round(v)}/100`,
+        rowFmt: (v) => `${Math.round(v)}`,
+        delta: null,
+        color: aqua,
+        unit: '',
+        rows: [
+          { name: 'Kuba 🇨🇺', v: 395 },
+          { name: 'Japan 🇯🇵', v: 340 },
+          { name: 'Chile 🇨🇱', v: 330 },
+          { name: 'Singapur 🇸🇬', v: 285 },
+          { name: 'VAE 🇦🇪', v: 280 },
+          { name: 'Portugal 🇵🇹', v: 275 },
+          { name: 'Vietnam 🇻🇳', v: 270 },
+          { name: 'Südkorea 🇰🇷', v: 253 },
+          { name: 'China 🇨🇳', v: 247 },
+          { name: 'Deutschland 🇩🇪', v: 230 },
         ],
       }),
   },
@@ -1470,7 +1511,6 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-crime-foreign': ['deutschland', 'soziales'],
   internet: ['welt'],
   'nuke-tests': ['krieg'],
-  obesity: ['gesundheit', 'welt'],
   'obesity-nations': ['gesundheit', 'schweiz'],
   'gdp-growth': ['geld', 'deutschland'],
   fertility: ['welt', 'soziales'],
@@ -1483,10 +1523,8 @@ const TAGS_BY_ID: Record<string, string[]> = {
   corruption: ['soziales', 'welt', 'schweiz'],
   'us-wars': ['krieg'],
   'recent-wars': ['krieg'],
-  'teen-depression': ['gesundheit', 'soziales'],
   'teen-mde': ['gesundheit', 'soziales'],
-  'youth-suicide': ['gesundheit', 'soziales'],
-  'teen-suicide': ['gesundheit', 'soziales'],
+  'suicide-by-age': ['gesundheit', 'soziales'],
   'teen-screen': ['gesundheit', 'soziales'],
   'teen-antidepressants': ['gesundheit', 'soziales'],
   'us-energy-mix': ['welt'],
@@ -1494,10 +1532,10 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'obesity-fastfood': ['gesundheit'],
   surveillance: ['welt', 'soziales', 'schweiz'],
   'cameras-world': ['welt', 'soziales'],
-  'internet-shutdowns': ['welt', 'soziales'],
   'gov-data-requests': ['welt', 'soziales'],
   'gov-requests-country': ['welt', 'soziales'],
   'youtube-removals': ['welt', 'soziales'],
+  'who-pandemic': ['welt'],
   cashless: ['geld', 'welt', 'deutschland'],
   '5g-stations': ['welt', 'deutschland', 'schweiz'],
   inflation: ['geld', 'welt', 'deutschland', 'schweiz'],
@@ -1506,11 +1544,12 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'alcohol-deaths': ['gesundheit'],
   'c40-cities': ['welt'],
   'un-resolutions': ['welt', 'krieg'],
-  'un-vetoes': ['welt', 'krieg'],
   'de-family': ['deutschland', 'soziales'],
   'single-households': ['deutschland', 'soziales'],
   'covid-stringency': ['gesundheit', 'welt', 'soziales'],
   'covid-lockdowns': ['gesundheit', 'welt', 'soziales'],
+  'covid-vaccinations': ['gesundheit', 'welt'],
+  'covid-vax-percapita': ['gesundheit', 'welt'],
 };
 for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
 
@@ -1524,13 +1563,13 @@ const FEATURED = new Set([
   'world-pop', 'climate', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees',
   'military', 'gdp-growth', 'de-industry', 'recent-wars',
   'youth-unemployment', 'unemployment', 'poverty',
-  'teen-depression', 'teen-mde', 'youth-suicide', 'teen-suicide',
+  'teen-mde', 'suicide-by-age',
   'teen-screen', 'teen-antidepressants', 'obesity-fastfood', 'surveillance',
-  'cameras-world', 'internet-shutdowns', 'gov-data-requests',
-  'gov-requests-country', 'youtube-removals', '5g-stations',
-  'un-resolutions', 'un-vetoes', 'de-family', 'single-households', 'inflation',
+  'cameras-world', 'gov-data-requests',
+  'gov-requests-country', 'youtube-removals', 'who-pandemic', '5g-stations',
+  'un-resolutions', 'de-family', 'single-households', 'inflation',
   'digital-id', 'alcohol-nations', 'alcohol-deaths', 'c40-cities',
-  'covid-stringency', 'covid-lockdowns',
+  'covid-stringency', 'covid-lockdowns', 'covid-vaccinations', 'covid-vax-percapita',
 ]);
 
 /**

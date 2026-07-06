@@ -172,10 +172,14 @@ export function choroplethMap(f: Frame, cfg: ChoroplethCfg): void {
     ctx.lineJoin = 'round';
     for (const country of cfg.world) {
       const v = cfg.valueByIso?.[country.id];
+      // Linear ramp with a low floor (not sqrt): sqrt lifted even low values
+      // into a strong red, so clean/low countries looked almost as dark as the
+      // worst and the map read as uniformly red. Linear keeps the low end
+      // clearly faint, so darker genuinely means higher.
       ctx.fillStyle =
         v === undefined
           ? 'rgba(214,222,236,0.06)'
-          : `rgba(208,59,59,${(0.1 + 0.62 * Math.sqrt(Math.min(1, v / ref)) * p).toFixed(2)})`;
+          : `rgba(208,59,59,${(0.06 + 0.74 * Math.min(1, v / ref) * p).toFixed(2)})`;
       for (const ring of country.rings) {
         ctx.beginPath();
         ring.forEach(([lon, lat], i) => {

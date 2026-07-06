@@ -61,6 +61,16 @@ export const EU_DEBT_ABS: Record<string, number> = {
   LVA: 20 * BN, MLT: 11 * BN, EST: 9 * BN,
 };
 
+// WHO Pandemic Agreement, World Health Assembly, 20 May 2025: adopted by
+// consensus after a committee vote of 124 in favour, 0 against, 11
+// abstentions. These are the 11 that abstained (did NOT back it) — the honest
+// "held back" set, not "refused to sign", since signing/ratification is a
+// separate later process. Source: WHO / WHA May 2025.
+export const WHO_PANDEMIC_ABSTAIN: Record<string, number> = {
+  RUS: 1, IRN: 1, ISR: 1, ITA: 1, POL: 1, NLD: 1, SVK: 1, BGR: 1, EGY: 1,
+  PRY: 1, JAM: 1,
+};
+
 // EU gross government debt as a share of GDP, % (Eurostat 2024). The ratio,
 // not the absolute pile: small, heavily-indebted states (Greece, Italy) burn
 // darker than large economies with more moderate ratios (Germany).

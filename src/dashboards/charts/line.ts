@@ -115,6 +115,11 @@ export interface AreaCfg {
   ticks: string[];
   data?: number[];
   xLabels?: string[];
+  /** Vertical event marker at `at` (0..1 of the x-range), e.g. an invention. */
+  marker?: { at: number; label: string };
+  /** Several era markers along the x-range; labels alternate rows so close
+      ones do not overlap. */
+  markers?: { at: number; label: string }[];
 }
 
 /** Single-series area chart with a gradient fill sweeping in. */
@@ -149,6 +154,31 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
   ctx.beginPath();
   ctx.arc(end.x, end.y, 4.5 * u, 0, Math.PI * 2);
   ctx.fill();
+
+  // Vertical era markers (dashed line + label), drawn on top of the curve.
+  // Labels alternate between two rows so markers close together stay legible.
+  const marks = [...(cfg.marker ? [cfg.marker] : []), ...(cfg.markers ?? [])];
+  marks.forEach((m, i) => {
+    const mx = r.x0 + (r.x1 - r.x0) * Math.min(1, Math.max(0, m.at));
+    ctx.save();
+    ctx.strokeStyle = 'rgba(224,156,96,0.8)';
+    ctx.lineWidth = 1.5 * u;
+    ctx.setLineDash([5 * u, 4 * u]);
+    ctx.beginPath();
+    ctx.moveTo(mx, r.y0);
+    ctx.lineTo(mx, r.y1);
+    ctx.stroke();
+    ctx.restore();
+    // Label kept inside the plot: right of the line normally, flipped left
+    // when the marker sits near the right edge.
+    ctx.fillStyle = 'rgba(236,182,132,0.9)';
+    ctx.font = `500 ${13 * u}px ${FONT}`;
+    const labelW = ctx.measureText(m.label).width;
+    const rightFits = mx + 6 * u + labelW <= r.x1;
+    ctx.textAlign = rightFits ? 'left' : 'right';
+    ctx.fillText(m.label, mx + (rightFits ? 6 : -6) * u, r.y0 + (i % 2 ? 34 : 16) * u);
+  });
+
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
   xAxisLabels(f, cfg.xLabels ?? ['Mon', 'Wed', 'Fri', 'Sun'], r.x0, r.x1, r.y1);
 }
