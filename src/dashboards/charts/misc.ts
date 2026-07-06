@@ -1,301 +1,33 @@
-// The dashboard renderers. Each draws a complete panel (surface,
-// header, chart) into a Frame; `t` replays the intro and drives the live
-// motion afterwards, so hovering a panel feels like it wakes up.
+// The remaining bespoke renderers: the wealth-inequality split, the Gantt-style
+// conflict timeline, the running debt clock, the weekly weather forecast and
+// the strip treemap.
 
 import {
   drawGrid,
   drawGridLabels,
   drawHeader,
-  drawLegend,
   drawSurface,
   drawTracked,
   easeOut,
   fmtCompact,
   linePath,
-  makeSeries,
   roundRect,
   stagger,
   type Frame,
-} from './draw';
-import { BASELINE, CRITICAL, FONT, GOOD, GRID, INK, INK_SECONDARY, MUTED, SEQ, SERIES } from './theme';
-
-/** Hex color (#rrggbb) at the given opacity. */
-function withAlpha(hex: string, a: number): string {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r},${g},${b},${a.toFixed(3)})`;
-}
-
-/**
- * Shared bar ramp: one gradient spans the full track, from a muted start
- * to the full color at the right edge. Every bar starts on the same tone,
- * and only the long ones reach the hot end — so the magnitude reads from
- * the color as well as the length.
- */
-function barGradient(
-  ctx: CanvasRenderingContext2D,
-  x0: number,
-  x1: number,
-  hex: string,
-): CanvasGradient {
-  const g = ctx.createLinearGradient(x0, 0, x1, 0);
-  g.addColorStop(0, withAlpha(hex, 0.3));
-  g.addColorStop(1, hex);
-  return g;
-}
-
-const MONTHS = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
-
-function plotRect(f: Frame, top: number) {
-  const pad = 36 * f.u;
-  return { x0: pad, x1: f.w - pad, y0: top, y1: f.h - 64 * f.u };
-}
-
-function xAxisLabels(f: Frame, labels: string[], x0: number, x1: number, y: number): void {
-  const { ctx, u } = f;
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${14 * u}px ${FONT}`;
-  ctx.textAlign = 'center';
-  labels.forEach((l, i) => {
-    ctx.fillText(l, x0 + ((x1 - x0) * i) / (labels.length - 1), y + 24 * u);
-  });
-  ctx.textAlign = 'left';
-}
-
-export interface LineCfg {
-  label: string;
-  value: number;
-  unit: string;
-  delta: number | null;
-  fmt?: (v: number) => string;
-  seed: number;
-  /** `data` (normalized 0..1) wins over the seeded fallback series. */
-  series: { name: string; color: string; data?: number[] }[];
-  ticks: string[];
-  xLabels?: string[];
-  /** Cool vertical bands over samples where mask[i] is true (e.g. ice ages). */
-  shade?: { mask: boolean[]; label: string };
-}
-
-/** Two-series line chart with draw-in, endpoint pulse and direct labels. */
-export function lineChart(f: Frame, cfg: LineCfg): void {
-  const { ctx, u, t } = f;
-  drawSurface(f);
-  const fmt = cfg.fmt ?? ((v: number) => fmtCompact(v, cfg.unit));
-  const top = drawHeader(f, cfg.label, cfg.value, fmt, cfg.delta);
-  const r = plotRect(f, top + 26 * u);
-
-  // Shaded bands (behind grid + series): contiguous true-runs of the mask.
-  if (cfg.shade) {
-    const mask = cfg.shade.mask;
-    const n = mask.length;
-    ctx.fillStyle = 'rgba(96,156,224,0.13)';
-    for (let i = 0; i < n; ) {
-      if (!mask[i]) {
-        i++;
-        continue;
-      }
-      let j = i;
-      while (j < n && mask[j]) j++;
-      const x0 = r.x0 + ((r.x1 - r.x0) * (i - 0.5)) / (n - 1);
-      const x1 = r.x0 + ((r.x1 - r.x0) * (j - 0.5)) / (n - 1);
-      ctx.fillRect(x0, r.y0, x1 - x0, r.y1 - r.y0);
-      i = j;
-    }
-    ctx.fillStyle = 'rgba(150,190,235,0.85)';
-    ctx.font = `500 ${13 * u}px ${FONT}`;
-    ctx.textAlign = 'left';
-    ctx.fillText(cfg.shade.label, r.x0 + 6 * u, r.y0 + 16 * u);
-  }
-
-  drawGrid(f, r.y0, r.y1, cfg.ticks.length);
-  drawLegend(f, r.y0 - 10 * u, cfg.series);
-
-  const p = easeOut(t / 1.4);
-  cfg.series.forEach((s, si) => {
-    const data = s.data ?? makeSeries(cfg.seed + si * 97, 14, si === 0 ? 0.6 : 0.25);
-    ctx.strokeStyle = s.color;
-    ctx.lineWidth = 2.5 * u;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    const end = linePath(ctx, data, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
-    ctx.stroke();
-    // Endpoint marker; the front series gets a soft live pulse.
-    ctx.fillStyle = s.color;
-    ctx.beginPath();
-    ctx.arc(end.x, end.y, 4.5 * u, 0, Math.PI * 2);
-    ctx.fill();
-    if (si === 0 && p >= 1) {
-      const pulse = (t * 0.9) % 1;
-      ctx.strokeStyle = s.color;
-      ctx.globalAlpha = (1 - pulse) * 0.5;
-      ctx.lineWidth = 2 * u;
-      ctx.beginPath();
-      ctx.arc(end.x, end.y, (5 + pulse * 14) * u, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-  });
-  drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-  xAxisLabels(f, cfg.xLabels ?? ['Q1', 'Q2', 'Q3', 'Q4'], r.x0, r.x1, r.y1);
-}
-
-export interface AreaCfg {
-  label: string;
-  value: number;
-  delta: number | null;
-  fmt?: (v: number) => string;
-  seed: number;
-  color: string;
-  ticks: string[];
-  data?: number[];
-  xLabels?: string[];
-}
-
-/** Single-series area chart with a gradient fill sweeping in. */
-export function areaChart(f: Frame, cfg: AreaCfg): void {
-  const { ctx, u, t } = f;
-  drawSurface(f);
-  const top = drawHeader(f, cfg.label, cfg.value, cfg.fmt ?? ((v) => fmtCompact(v)), cfg.delta);
-  const r = plotRect(f, top + 26 * u);
-  drawGrid(f, r.y0, r.y1, cfg.ticks.length);
-
-  const data = cfg.data ?? makeSeries(cfg.seed, 18, 0.7);
-  const p = easeOut(t / 1.4);
-  const grad = ctx.createLinearGradient(0, r.y0, 0, r.y1);
-  grad.addColorStop(0, `${cfg.color}59`);
-  grad.addColorStop(1, `${cfg.color}00`);
-
-  const end = linePath(ctx, data, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
-  ctx.save();
-  ctx.lineTo(end.x, r.y1);
-  ctx.lineTo(r.x0, r.y1);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.restore();
-
-  ctx.strokeStyle = cfg.color;
-  ctx.lineWidth = 2.5 * u;
-  ctx.lineJoin = 'round';
-  linePath(ctx, data, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
-  ctx.stroke();
-  ctx.fillStyle = cfg.color;
-  ctx.beginPath();
-  ctx.arc(end.x, end.y, 4.5 * u, 0, Math.PI * 2);
-  ctx.fill();
-  drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-  xAxisLabels(f, cfg.xLabels ?? ['Mon', 'Wed', 'Fri', 'Sun'], r.x0, r.x1, r.y1);
-}
-
-export interface BarCfg {
-  label: string;
-  value: number;
-  delta: number | null;
-  fmt?: (v: number) => string;
-  seed: number;
-  color: string;
-  ticks: string[];
-  data?: number[];
-  labels?: string[];
-  /** Raw value of the tallest bar, for its direct label. */
-  peak?: number;
-}
-
-/** Monthly vertical bars growing from the baseline, max bar direct-labeled. */
-export function barChart(f: Frame, cfg: BarCfg): void {
-  const { ctx, u, t } = f;
-  drawSurface(f);
-  const top = drawHeader(f, cfg.label, cfg.value, cfg.fmt ?? ((v) => fmtCompact(v)), cfg.delta);
-  const r = plotRect(f, top + 26 * u);
-  drawGrid(f, r.y0, r.y1, cfg.ticks.length);
-
-  const data = cfg.data ?? makeSeries(cfg.seed, 12, 0.5);
-  const labels = cfg.labels ?? MONTHS;
-  const maxI = data.indexOf(Math.max(...data));
-  const slot = (r.x1 - r.x0) / data.length;
-  const bw = slot - 2 * u - 6 * u;
-  // Same ramp as the horizontal bars, running up from the baseline: only
-  // the tallest columns reach the fully saturated end.
-  const grad = ctx.createLinearGradient(0, r.y1, 0, r.y0 + 20 * u);
-  grad.addColorStop(0, withAlpha(cfg.color, 0.3));
-  grad.addColorStop(1, cfg.color);
-  data.forEach((v, i) => {
-    const p = stagger(t, i, 0.045);
-    const bh = (r.y1 - r.y0 - 20 * u) * v * p;
-    const x = r.x0 + slot * i + (slot - bw) / 2;
-    ctx.fillStyle = grad;
-    roundRect(ctx, x, r.y1 - bh, bw, bh, 4 * u);
-    ctx.fill();
-    if (i === maxI && p >= 1) {
-      ctx.fillStyle = INK;
-      ctx.font = `600 ${14 * u}px ${FONT}`;
-      ctx.textAlign = 'center';
-      ctx.fillText(fmtCompact(cfg.peak ?? cfg.value * v), x + bw / 2, r.y1 - bh - 8 * u);
-      ctx.textAlign = 'left';
-    }
-    ctx.fillStyle = MUTED;
-    ctx.font = `400 ${13 * u}px ${FONT}`;
-    ctx.textAlign = 'center';
-    ctx.fillText(labels[i] ?? '', x + bw / 2, r.y1 + 22 * u);
-    ctx.textAlign = 'left';
-  });
-  drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-}
-
-export interface HBarCfg {
-  label: string;
-  value: number;
-  delta: number | null;
-  color: string;
-  unit?: string;
-  /** Headline formatter; falls back to compact notation with `unit`. */
-  fmt?: (v: number) => string;
-  /** Per-row value formatter (e.g. percentages); same fallback. */
-  rowFmt?: (v: number) => string;
-  rows: { name: string; v: number }[];
-}
-
-/** Horizontal top-N bars sliding in, every row direct-labeled. */
-export function hBarChart(f: Frame, cfg: HBarCfg): void {
-  const { ctx, u, t, w } = f;
-  drawSurface(f);
-  const unit = cfg.unit ?? '€';
-  const rowFmt = cfg.rowFmt ?? ((v: number) => fmtCompact(v, unit));
-  const top = drawHeader(
-    f,
-    cfg.label,
-    cfg.value,
-    cfg.fmt ?? ((v) => fmtCompact(v, unit)),
-    cfg.delta,
-  );
-  const pad = 36 * u;
-  const rowH = (f.h - 60 * u - (top + 10 * u)) / cfg.rows.length;
-  const max = Math.max(...cfg.rows.map((d) => d.v));
-  const grad = barGradient(ctx, pad, w - pad, cfg.color);
-
-  cfg.rows.forEach((d, i) => {
-    const p = stagger(t, i, 0.08);
-    const y = top + 10 * u + rowH * i;
-    ctx.fillStyle = INK_SECONDARY;
-    ctx.font = `500 ${17 * u}px ${FONT}`;
-    ctx.fillText(d.name, pad, y + 22 * u);
-    ctx.fillStyle = INK;
-    ctx.font = `600 ${17 * u}px ${FONT}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(rowFmt(d.v * p), w - pad, y + 22 * u);
-    ctx.textAlign = 'left';
-
-    const bw = (w - 2 * pad) * (d.v / max) * p;
-    ctx.fillStyle = GRID;
-    roundRect(ctx, pad, y + 34 * u, w - 2 * pad, 10 * u, 5 * u);
-    ctx.fill();
-    ctx.fillStyle = grad;
-    roundRect(ctx, pad, y + 34 * u, Math.max(bw, 10 * u), 10 * u, 5 * u);
-    ctx.fill();
-  });
-}
+} from '../draw';
+import {
+  BASELINE,
+  CRITICAL,
+  FONT,
+  GOOD,
+  GRID,
+  INK,
+  INK_SECONDARY,
+  MUTED,
+  SEQ,
+  SERIES,
+} from '../theme';
+import { drawSource, plotRect, xAxisLabels } from './shared';
 
 export interface WealthSplitCfg {
   label: string;
@@ -315,7 +47,7 @@ export interface WealthSplitCfg {
  * into half the wealth bar is the whole story at a glance.
  */
 export function wealthSplit(f: Frame, cfg: WealthSplitCfg): void {
-  const { ctx, u, t, w, h } = f;
+  const { ctx, u, t, w } = f;
   drawSurface(f);
   const top = drawHeader(f, cfg.label, cfg.value, cfg.fmt, null);
   const pad = 36 * u;
@@ -394,9 +126,7 @@ export function wealthSplit(f: Frame, cfg: WealthSplitCfg): void {
     ctx.globalAlpha = 1;
   });
 
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${13 * u}px ${FONT}`;
-  ctx.fillText(cfg.source, pad, h - 22 * u);
+  drawSource(f, cfg.source);
 }
 
 export interface TimelineCfg {
@@ -485,9 +215,7 @@ export function timelineChart(f: Frame, cfg: TimelineCfg): void {
     ctx.globalAlpha = 1;
   });
 
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${13 * u}px ${FONT}`;
-  ctx.fillText(cfg.source, pad, h - 22 * u);
+  drawSource(f, cfg.source);
 }
 
 export interface DebtClockCfg {
@@ -760,228 +488,6 @@ export function weatherForecast(f: Frame, cfg: ForecastCfg): void {
   });
 }
 
-export interface NukeMapCfg {
-  label: string;
-  total: number;
-  /** Estimated warheads with a rough country-center anchor. */
-  states: { name: string; iso: string; lon: number; lat: number; count: number }[];
-  /** Country outlines keyed by ISO3; graticule-only fallback. */
-  world?: { id: string; rings: number[][][] }[];
-  source: string;
-}
-
-/**
- * World map with the nine nuclear states shaded red by stockpile size and a
- * radar ping pulsing over each arsenal, plus a direct-labeled top-5 list
- * below. Equirectangular, cropped to 85°N..60°S.
- */
-export function nukeMap(f: Frame, cfg: NukeMapCfg): void {
-  const { ctx, u, t, w, h } = f;
-  drawSurface(f);
-  const top = drawHeader(f, cfg.label, cfg.total, (v) => fmtCompact(v), null);
-  const pad = 36 * u;
-
-  const mx0 = pad;
-  const mw = w - 2 * pad;
-  const mh = mw / 2;
-  const my0 = top + 4 * u;
-  const px = (lon: number) => mx0 + ((lon + 180) / 360) * mw;
-  const py = (lat: number) => my0 + ((85 - Math.min(85, Math.max(-60, lat))) / 145) * mh;
-  const maxCount = Math.max(...cfg.states.map((s) => s.count));
-  // Shading scales with sqrt so China/France stay visible next to the big two.
-  const heat = (count: number) => Math.sqrt(count / maxCount);
-
-  if (cfg.world) {
-    const armed = new Map(cfg.states.map((s) => [s.iso, s.count]));
-    for (const country of cfg.world) {
-      const count = armed.get(country.id);
-      // Nuclear states breathe: fill and border pulse, phase-salted per
-      // country so the map never throbs in unison.
-      const pulse = count === undefined ? 0 : 0.5 + 0.5 * Math.sin(t * 2.2 + (count % 97));
-      ctx.fillStyle =
-        count === undefined
-          ? 'rgba(214,222,236,0.08)'
-          : `rgba(208,59,59,${(0.18 + 0.5 * heat(count) + 0.12 * pulse).toFixed(2)})`;
-      for (const ring of country.rings) {
-        ctx.beginPath();
-        ring.forEach(([lon, lat], i) => {
-          if (i === 0) ctx.moveTo(px(lon), py(lat));
-          else ctx.lineTo(px(lon), py(lat));
-        });
-        ctx.closePath();
-        ctx.fill();
-        if (count !== undefined) {
-          ctx.strokeStyle = `rgba(255,107,94,${(0.15 + 0.55 * pulse).toFixed(2)})`;
-          ctx.lineWidth = 1.4 * u;
-          ctx.stroke();
-        }
-      }
-    }
-  } else {
-    // No geometry (yet): a quiet graticule keeps the map readable.
-    ctx.strokeStyle = GRID;
-    ctx.lineWidth = 1 * u;
-    for (let lon = -150; lon <= 150; lon += 30) {
-      ctx.beginPath();
-      ctx.moveTo(px(lon), my0);
-      ctx.lineTo(px(lon), my0 + mh);
-      ctx.stroke();
-    }
-    for (let lat = -60; lat <= 80; lat += 20) {
-      ctx.beginPath();
-      ctx.moveTo(mx0, py(lat));
-      ctx.lineTo(mx0 + mw, py(lat));
-      ctx.stroke();
-    }
-  }
-
-  // Radar pings: an expanding, fading ring over every arsenal, phase-shifted
-  // per state so the map keeps flickering with activity; core dot on top.
-  cfg.states.forEach((s, i) => {
-    const appear = stagger(t, i, 0.06);
-    if (appear <= 0) return;
-    const x = px(s.lon);
-    const y = py(s.lat);
-    const rMax = (8 + 20 * heat(s.count)) * u;
-    const phase = (t * 0.55 + i * 0.31) % 1;
-    ctx.globalAlpha = appear * (1 - phase) * 0.8;
-    ctx.strokeStyle = CRITICAL;
-    ctx.lineWidth = 1.8 * u;
-    ctx.beginPath();
-    ctx.arc(x, y, 2.5 * u + phase * rMax, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.globalAlpha = appear;
-    ctx.fillStyle = '#ff6b5e';
-    ctx.beginPath();
-    ctx.arc(x, y, 3 * u, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-
-  // Top-5 list under the map, direct-labeled.
-  const rows = cfg.states.toSorted((a, b) => b.count - a.count).slice(0, 5);
-  const ly0 = my0 + mh + 18 * u;
-  const rowH = (h - 46 * u - ly0) / rows.length;
-  const barMax = Math.max(...rows.map((r) => r.count));
-  rows.forEach((s, i) => {
-    const p = stagger(t, i + 4, 0.06);
-    const y = ly0 + rowH * i;
-    ctx.globalAlpha = Math.max(0, p);
-    ctx.fillStyle = INK_SECONDARY;
-    ctx.font = `500 ${16 * u}px ${FONT}`;
-    ctx.fillText(s.name, pad, y + 15 * u);
-    ctx.fillStyle = INK;
-    ctx.font = `600 ${16 * u}px ${FONT}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(fmtCompact(s.count * Math.max(0, p)), w - pad, y + 15 * u);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = GRID;
-    roundRect(ctx, pad, y + 24 * u, w - 2 * pad, 7 * u, 3.5 * u);
-    ctx.fill();
-    ctx.fillStyle = barGradient(ctx, pad, w - pad, CRITICAL);
-    roundRect(ctx, pad, y + 24 * u, Math.max((w - 2 * pad) * (s.count / barMax) * Math.max(0, p), 7 * u), 7 * u, 3.5 * u);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${13 * u}px ${FONT}`;
-  ctx.fillText(cfg.source, pad, h - 22 * u);
-}
-
-export interface ChoroplethCfg {
-  label: string;
-  value: number;
-  fmt: (v: number) => string;
-  /** Value per ISO3 country; countries without data stay neutral. */
-  valueByIso?: Record<string, number>;
-  world?: { id: string; rings: number[][][] }[];
-  /** Optional lon/lat window for a regional map (e.g. Europe); the drawing
-      is clipped to the map area, countries outside simply fall off. */
-  bounds?: { lonMin: number; lonMax: number; latMin: number; latMax: number };
-  rows: { name: string; v: number }[];
-  rowFmt: (v: number) => string;
-  source: string;
-}
-
-/**
- * World choropleth: every country shaded by its value (sqrt ramp against a
- * high percentile so outliers don't wash out the rest), top-5 list below.
- */
-export function choroplethMap(f: Frame, cfg: ChoroplethCfg): void {
-  const { ctx, u, t, w, h } = f;
-  drawSurface(f);
-  const top = drawHeader(f, cfg.label, cfg.value, cfg.fmt, null);
-  const pad = 36 * u;
-
-  const mx0 = pad;
-  const mw = w - 2 * pad;
-  const b = cfg.bounds ?? { lonMin: -180, lonMax: 180, latMin: -60, latMax: 85 };
-  // Height follows the window's aspect, capped so regional maps (taller
-  // than they are wide in lon/lat) still leave room for the row list.
-  const mh = Math.min((mw * (b.latMax - b.latMin)) / (b.lonMax - b.lonMin), mw * 0.62);
-  const my0 = top + 4 * u;
-  const px = (lon: number) => mx0 + ((lon - b.lonMin) / (b.lonMax - b.lonMin)) * mw;
-  const py = (lat: number) => my0 + ((b.latMax - lat) / (b.latMax - b.latMin)) * mh;
-
-  const values = Object.values(cfg.valueByIso ?? {}).toSorted((a, b2) => a - b2);
-  const ref = values.length ? values[Math.floor(values.length * 0.95)] : 1;
-  const p = easeOut(t / 1.1);
-
-  if (cfg.world) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(mx0, my0, mw, mh);
-    ctx.clip();
-    for (const country of cfg.world) {
-      const v = cfg.valueByIso?.[country.id];
-      ctx.fillStyle =
-        v === undefined
-          ? 'rgba(214,222,236,0.06)'
-          : `rgba(208,59,59,${(0.1 + 0.62 * Math.sqrt(Math.min(1, v / ref)) * p).toFixed(2)})`;
-      for (const ring of country.rings) {
-        ctx.beginPath();
-        ring.forEach(([lon, lat], i) => {
-          if (i === 0) ctx.moveTo(px(lon), py(lat));
-          else ctx.lineTo(px(lon), py(lat));
-        });
-        ctx.closePath();
-        ctx.fill();
-      }
-    }
-    ctx.restore();
-  }
-
-  const rows = cfg.rows;
-  const ly0 = my0 + mh + 18 * u;
-  const rowH = (h - 46 * u - ly0) / Math.max(1, rows.length);
-  const barMax = Math.max(...rows.map((r) => r.v), 1);
-  rows.forEach((s, i) => {
-    const rp = stagger(t, i + 4, 0.06);
-    const y = ly0 + rowH * i;
-    ctx.globalAlpha = Math.max(0, rp);
-    ctx.fillStyle = INK_SECONDARY;
-    ctx.font = `500 ${16 * u}px ${FONT}`;
-    ctx.fillText(s.name, pad, y + 15 * u);
-    ctx.fillStyle = INK;
-    ctx.font = `600 ${16 * u}px ${FONT}`;
-    ctx.textAlign = 'right';
-    ctx.fillText(cfg.rowFmt(s.v * Math.max(0, rp)), w - pad, y + 15 * u);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = GRID;
-    roundRect(ctx, pad, y + 24 * u, w - 2 * pad, 7 * u, 3.5 * u);
-    ctx.fill();
-    ctx.fillStyle = barGradient(ctx, pad, w - pad, CRITICAL);
-    roundRect(ctx, pad, y + 24 * u, Math.max((w - 2 * pad) * (s.v / barMax) * Math.max(0, rp), 7 * u), 7 * u, 3.5 * u);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${13 * u}px ${FONT}`;
-  ctx.fillText(cfg.source, pad, h - 22 * u);
-}
-
 export interface TreemapCfg {
   label: string;
   value: number;
@@ -1078,4 +584,3 @@ export function treemap(f: Frame, cfg: TreemapCfg): void {
     i += len;
   }
 }
-
