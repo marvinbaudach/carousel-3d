@@ -313,6 +313,41 @@ export function Carousel3D() {
     };
   }, [heroOpen]);
 
+  // Pinch to zoom the ring on touch devices — the phone stand-in for the +/-
+  // keys. Two fingers: scale the zoom by how the finger distance changes each
+  // move (incremental, so it never fights the current zoom); like the keys it
+  // idles while a hero owns the screen.
+  useEffect(() => {
+    if (!isMobile) return;
+    const spread = (t: TouchList) =>
+      Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    let last = 0;
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) last = spread(e.touches);
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || heroOpen || !last) return;
+      e.preventDefault();
+      const d = spread(e.touches);
+      const scale = d / last;
+      last = d;
+      setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * scale)));
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) last = 0;
+    };
+    window.addEventListener('touchstart', onStart, { passive: false });
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onEnd);
+    window.addEventListener('touchcancel', onEnd);
+    return () => {
+      window.removeEventListener('touchstart', onStart);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onEnd);
+      window.removeEventListener('touchcancel', onEnd);
+    };
+  }, [isMobile, heroOpen]);
+
   const selectedDashboard = selected
     ? ALL_DASHBOARDS.find((d) => d.id === selected.id)
     : undefined;
