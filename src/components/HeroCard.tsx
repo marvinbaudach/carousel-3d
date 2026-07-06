@@ -4,7 +4,7 @@ import { Image } from '@react-three/drei';
 import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
 import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
 import { GlassPlate, GLASS_OPACITY } from './GlassPlate';
-import { createDashboardTexture, SETTLED_T, type Dashboard } from '../dashboards';
+import { createDashboardTexture, type Dashboard } from '../dashboards';
 
 /** World-space transform captured from the clicked ring panel. */
 export interface HeroStart {
@@ -55,11 +55,8 @@ const OVERSHOOT = 0.06;
 const UP = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 
-// Hero canvas resolution (4:5). Generous so the fullscreen card stays crisp on
-// hi-dpi displays; the per-frame redraw is gated to the intro (see useFrame),
-// so this size costs nothing once the card has settled.
-const TEX_W = 2048;
-const TEX_H = 2560;
+// Card aspect (4:5, = PANEL_W / PANEL_H) shared by the ring plate and hero.
+const CARD_ASPECT = 0.8;
 
 // Every panel intro has settled well before this; past it the hero stops
 // redrawing (unless it is a live panel) and just holds its last frame.
@@ -68,6 +65,18 @@ const INTRO_SETTLE = 2.6;
 // Fraction of the visible frustum (at the hero's depth) the card may fill,
 // so all four edges sit comfortably inside the frame.
 const FIT = 0.88;
+
+// Hero canvas resolution, sized at mount to just exceed the card's on-screen
+// backing pixels so it never upscales soft — a tall or 4K viewport renders the
+// hero far larger than a laptop one. The card is height-constrained, so size
+// off that and derive the width. Rounded up to a 128px step and clamped so an
+// extreme window can't blow up the per-frame intro redraw or texture memory.
+function heroTextureSize(): { w: number; h: number } {
+  const dpr = Math.min(2, Math.max(1.75, window.devicePixelRatio || 1));
+  const cssH = FIT * Math.min(window.innerHeight, window.innerWidth / CARD_ASPECT);
+  const h = Math.min(4096, Math.max(2560, Math.ceil((cssH * dpr) / 128) * 128));
+  return { w: Math.round(h * CARD_ASPECT), h };
+}
 
 // Glass opacity once the card faces the viewer head-on: at that angle the
 // white sheen sits on the whole reading surface, so it thins out during the
@@ -109,14 +118,15 @@ export function HeroCard({
   const imgRef = useRef<Mesh>(null);
   const glassRef = useRef<Mesh>(null);
   const progress = useRef(startOpen ? 1 : 0);
-  // Timestamp the card became fully open. The chart intro is held until then,
-  // so the diagram animates in only once the hero has finished flying in — not
-  // during the flight. Stays null until the fly-in lands; an already-open card
-  // (the outgoing hero flying back, startOpen) skips this and holds its settled
-  // chart.
-  const settledAt = useRef<number | null>(null);
+  // The chart intro plays from the moment the hero opens, so the diagram
+  // animates in during the fly-in instead of making the viewer wait for the
+  // card to land before anything happens.
+  const openedAt = useRef<number | null>(null);
 
-  const dash = useMemo(() => createDashboardTexture(dashboard, TEX_W, TEX_H), [dashboard]);
+  const dash = useMemo(() => {
+    const { w, h } = heroTextureSize();
+    return createDashboardTexture(dashboard, w, h);
+  }, [dashboard]);
   useEffect(() => () => dash.dispose(), [dash]);
 
   useFrame((state, delta) => {
@@ -125,21 +135,12 @@ export function HeroCard({
     const img = imgRef.current;
     if (!pivot || !inner || !img) return;
 
-    // Start the chart intro only once the fly-in has landed (progress hits 1);
-    // during the flight the diagram holds its pre-animation start frame.
-    if (settledAt.current === null && !startOpen && progress.current > 0.999) {
-      settledAt.current = state.clock.elapsedTime;
-    }
-    // Outgoing hero (already open) shows its settled chart at once; an incoming
-    // one holds t = 0 until it has landed, then plays the intro from there.
-    const chartT =
-      startOpen ? SETTLED_T
-      : settledAt.current === null ? 0
-      : state.clock.elapsedTime - settledAt.current;
+    if (openedAt.current === null) openedAt.current = state.clock.elapsedTime;
     // Redraw only while the intro is still playing (or for the live panels
     // that keep ticking); afterwards the high-res canvas holds its last frame
     // instead of re-rendering and re-uploading a big texture every frame.
-    if (chartT < INTRO_SETTLE || dashboard.live) dash.render(chartT);
+    const heroT = state.clock.elapsedTime - openedAt.current;
+    if (heroT < INTRO_SETTLE || dashboard.live) dash.render(heroT);
 
     const scrubT = scrub?.current ?? null;
     if (scrubT !== null) {

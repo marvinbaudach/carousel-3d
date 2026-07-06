@@ -97,6 +97,7 @@ const POOL: Dashboard[] = [
   {
     id: 'military',
     title: 'Militärausgaben · Top 10',
+    dynamic: true,
     draw: (f) => {
       const m = live.military;
       hBarChart(f, {
@@ -119,6 +120,7 @@ const POOL: Dashboard[] = [
     id: 'us-debt',
     title: 'US-Staatsschulden',
     live: true,
+    dynamic: true,
     draw: (f) => {
       const d = live.debt;
       debtClock(f, {
@@ -149,6 +151,7 @@ const POOL: Dashboard[] = [
   {
     id: 'homicide-map',
     title: 'Mordrate weltweit',
+    dynamic: true,
     draw: (f) => {
       const hm = live.homicide;
       choroplethMap(f, {
@@ -172,6 +175,7 @@ const POOL: Dashboard[] = [
   {
     id: 'homicide-trend',
     title: 'Mordraten · 6 Länder',
+    dynamic: true,
     draw: (f) => {
       const hm = live.homicide;
       lineChart(f, {
@@ -216,6 +220,7 @@ const POOL: Dashboard[] = [
   {
     id: 'swiss-pop',
     title: 'Schweizer Bevölkerung · 500 Jahre',
+    dynamic: true,
     draw: (f) => {
       const p = live.swissPop ?? SWISS_POP_FALLBACK;
       areaChart(f, {
@@ -234,6 +239,7 @@ const POOL: Dashboard[] = [
   {
     id: 'world-pop',
     title: 'Weltbevölkerung · 2000 Jahre',
+    dynamic: true,
     draw: (f) => {
       const p = live.worldPop ?? WORLD_POP_FALLBACK;
       areaChart(f, {
@@ -832,6 +838,7 @@ const POOL: Dashboard[] = [
   {
     id: 'swiss-trends',
     title: 'Schweizer Trends · Wikipedia',
+    dynamic: true,
     draw: (f) => {
       const s = live.swiss;
       hBarChart(f, {

@@ -17,8 +17,11 @@ interface GlassPlateProps {
 /**
  * The glossy, environment-reflecting glass slab shared by the ring panels and
  * the hero card — the same plate travels visually with a panel through its
- * whole lifecycle, so there is never a glass/no-glass jump. No transmission
- * pass, so it stays cheap. raycast disabled so clicks reach the dashboard.
+ * whole lifecycle, so there is never a glass/no-glass jump. A plain standard
+ * material (no transmission pass, no clearcoat lobe) keeps the shader cheap
+ * across all the on-stage plates; the glossy reflection comes from the low
+ * roughness plus the boosted env map. raycast disabled so clicks reach the
+ * dashboard.
  */
 export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
   return (
@@ -28,18 +31,13 @@ export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
       raycast={() => null}
     >
       <boxGeometry args={[width, height, GLASS_THICKNESS]} />
-      <meshPhysicalMaterial
+      <meshStandardMaterial
         color="#ffffff"
         transparent
         opacity={GLASS_OPACITY}
         roughness={0.05}
         metalness={0}
-        clearcoat={1}
-        clearcoatRoughness={0.1}
-        ior={1.5}
-        reflectivity={1}
-        transmission={0}
-        envMapIntensity={2.6}
+        envMapIntensity={3.2}
         depthWrite={false}
       />
     </mesh>

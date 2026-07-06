@@ -114,15 +114,17 @@ export function CarouselItem({
     return () => dash.dispose();
   }, [dash, maxAnisotropy]);
 
-  // Refresh the settled render when live data lands. Price ticks only touch
-  // the two socket-fed panels, so idle texture uploads stay at ~2/second.
+  // Refresh the settled render when live data lands. A 'tick' only moves the
+  // continuously-animated panels (the debt clock); a 'data' event only needs
+  // the panels actually fed by a fetcher — the ~37 purely bundled panels never
+  // change, so they skip the redraw and its texture upload entirely.
   useEffect(
     () =>
       onLiveUpdate((kind) => {
-        if (kind === 'tick' && !dashboard.live) return;
+        if (kind === 'tick' ? !dashboard.live : !dashboard.dynamic) return;
         dash.render(SETTLED_T);
       }),
-    [dash, dashboard.live],
+    [dash, dashboard.live, dashboard.dynamic],
   );
 
   // Drop this panel's pose when it unmounts, so a hero never flies toward

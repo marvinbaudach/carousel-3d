@@ -5,6 +5,10 @@ export interface Dashboard {
   title: string;
   /** True for panels that keep moving while idle — re-rendered on ticks. */
   live?: boolean;
+  /** True for panels whose data is filled in by a live fetcher, so they need a
+      re-render when a dataset lands. Purely bundled panels leave this off and
+      skip the (otherwise per-feed, per-panel) redraw storm during boot. */
+  dynamic?: boolean;
   /** Theme tags for the filter chips; assigned from TAGS_BY_ID. */
   tags?: string[];
   draw: (f: Frame) => void;

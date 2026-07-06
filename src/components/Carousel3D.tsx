@@ -170,9 +170,12 @@ export function Carousel3D() {
 
   // Adaptive quality: integrated GPUs are fill-rate bound, so the render
   // resolution is the main lever. PerformanceMonitor samples the frame rate
-  // and walks dpr between the bounds.
-  const maxDpr = isMobile ? 1.5 : 1.75;
-  const [dpr, setDpr] = useState(Math.min(maxDpr, 1.5));
+  // and walks dpr between the bounds. The cap follows the display's own pixel
+  // ratio (up to 2) so a hi-dpi screen renders at native sharpness — the large
+  // static hero upscales the most when the buffer sits below native — but never
+  // below 1.75, so standard displays keep their supersampling.
+  const maxDpr = isMobile ? 1.5 : Math.min(2, Math.max(1.75, window.devicePixelRatio || 1));
+  const [dpr, setDpr] = useState(maxDpr);
 
   const heroTarget = useMemo(() => new Vector3(0, 0, heroZ), [heroZ]);
   // Tiny constant color fringe for a cinematic, lens-like finish — dropped
@@ -259,7 +262,12 @@ export function Carousel3D() {
   return (
     <>
     <Canvas
-      dpr={dpr}
+      // While a hero is open the ring stops spinning and bloom is off, so the
+      // GPU has the headroom to render at full native resolution — pin the dpr
+      // to the display cap there so the large, static hero is razor sharp,
+      // instead of leaving it at whatever PerformanceMonitor throttled the
+      // busy ring view down to (which upscales soft on hi-dpi screens).
+      dpr={heroOpen ? maxDpr : dpr}
       camera={{ position: [0, 0, DEFAULT_RADIUS + 9], fov: 40 }}
       // Canvas MSAA is wasted work: EffectComposer renders offscreen anyway,
       // and the bloom/noise/vignette stack hides the aliasing it would fix.
@@ -348,13 +356,15 @@ export function Carousel3D() {
           invisible under the effect stack. */}
       <EffectComposer key={isMobile ? 'mobile' : 'desktop'} multisampling={0}>
         {[
-          // Bloom is a fullscreen pass, so it can't be dialed back for the
-          // hero alone — doing that stripped the glow off every ring card
-          // still visible around it and read as flat. Kept constant so the
-          // ring keeps its cinematic look while a hero is open.
+          // Bloom is a fullscreen pass, so it can't be kept off the hero alone.
+          // With a hero open the frame is mostly its big text, which hazes over
+          // and reads as soft-focus under any glow, so bloom is switched off
+          // entirely until the hero closes — the ring behind it goes flat, but
+          // the hero stays crisp. Intensity 0 keeps the effect in the stack so
+          // there is no composer recompile on open/close.
           <Bloom
             key="bloom"
-            intensity={0.7}
+            intensity={heroOpen ? 0 : 0.7}
             luminanceThreshold={0.55}
             luminanceSmoothing={0.3}
             mipmapBlur
