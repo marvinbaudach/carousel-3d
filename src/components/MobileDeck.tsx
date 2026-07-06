@@ -1,11 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import styled from 'styled-components';
 import { ALL_DASHBOARDS, TAGS } from '../dashboards';
 import { SwipeDeck } from './SwipeDeck';
 import { glassSurface } from './glass';
-
-// Shared with the 3D view so the chosen filter survives a switch/reload.
-const TAG_KEY = 'worldpulse-tag';
 
 const Deck = styled.div`
   position: fixed;
@@ -119,13 +116,9 @@ const Option = styled.button<{ $active: boolean }>`
  * each drawn straight to a 2D canvas. Far lighter than the WebGL carousel.
  */
 export function MobileDeck() {
-  const [tag, setTag] = useState<string | null>(() => {
-    const saved = localStorage.getItem(TAG_KEY);
-    return !saved || saved === 'all' ? null : saved;
-  });
-  useEffect(() => {
-    localStorage.setItem(TAG_KEY, tag ?? 'all');
-  }, [tag]);
+  // Always open on the full deck (ALLE); the filter lives in state for the
+  // session only, so it never inherits the 3D view's saved filter.
+  const [tag, setTag] = useState<string | null>(null);
 
   const dashboards = useMemo(
     () => (tag ? ALL_DASHBOARDS.filter((d) => d.tags?.includes(tag)) : ALL_DASHBOARDS),
