@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import styled from 'styled-components';
 import type { HandState, HandTrackingStatus } from '../hooks/useHandTracking';
+import { glassSurface } from './glass';
 
 interface HandControlsProps {
   status: HandTrackingStatus;
@@ -24,10 +25,8 @@ const Bar = styled.div`
 
 const Toggle = styled.button`
   padding: 8px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
-  background: rgba(10, 14, 24, 0.55);
-  backdrop-filter: blur(8px);
+  ${glassSurface}
   color: rgba(255, 255, 255, 0.85);
   font: 500 13px/1 inherit;
   font-family: inherit;
@@ -74,10 +73,8 @@ const SWIPE_SPEED = 0.55;
 // Live gesture readout; its text/opacity are set imperatively per frame.
 const GestureChip = styled.span`
   padding: 8px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
-  background: rgba(10, 14, 24, 0.55);
-  backdrop-filter: blur(8px);
+  ${glassSurface}
   color: rgba(160, 200, 255, 0.95);
   font-size: 12px;
   line-height: 1;
@@ -89,10 +86,8 @@ const GestureChip = styled.span`
 const HintToggle = styled.button`
   width: 32px;
   height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 50%;
-  background: rgba(10, 14, 24, 0.55);
-  backdrop-filter: blur(8px);
+  ${glassSurface}
   color: rgba(255, 255, 255, 0.85);
   font: 500 13px/1 inherit;
   font-family: inherit;
@@ -117,10 +112,8 @@ const Hints = styled.div<{ $visible: boolean }>`
   display: flex;
   gap: 28px;
   padding: 14px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
-  background: rgba(10, 14, 24, 0.6);
-  backdrop-filter: blur(10px);
+  ${glassSurface}
   color: rgba(255, 255, 255, 0.85);
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   visibility: ${({ $visible }) => ($visible ? 'visible' : 'hidden')};

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import styled from 'styled-components';
 import { LAYOUT_MODES, type LayoutMode } from '../layouts';
 import { TAGS } from '../dashboards';
+import { glassSurface } from './glass';
 
 interface LayoutControlsProps {
   layout: LayoutMode;
@@ -36,10 +37,8 @@ const Bar = styled.div`
   display: flex;
   gap: 4px;
   padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
-  background: rgba(10, 14, 24, 0.55);
-  backdrop-filter: blur(8px);
+  ${glassSurface}
 `;
 
 // The theme-filter chips sit in their own smaller pill above the main bar.

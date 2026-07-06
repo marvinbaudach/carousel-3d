@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import styled from 'styled-components';
+import { glassSurface } from './glass';
 
 /**
  * Renderer stats sampled inside the Canvas and read by the DOM HUD outside
@@ -60,9 +61,7 @@ const Panel = styled.button`
   z-index: 20;
   padding: 5px 10px;
   border-radius: 8px;
-  background: rgba(10, 14, 22, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(6px);
+  ${glassSurface}
   color: rgba(255, 255, 255, 0.75);
   font: inherit;
   font-size: 12px;
