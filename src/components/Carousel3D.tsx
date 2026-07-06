@@ -348,13 +348,14 @@ export function Carousel3D() {
           invisible under the effect stack. */}
       <EffectComposer key={isMobile ? 'mobile' : 'desktop'} multisampling={0}>
         {[
-          // With a hero open the whole frame is text, so the glow that looks
-          // cinematic on the ring reads as a soft-focus filter: raise the
-          // threshold and pull the intensity back until the hero closes.
+          // Bloom is a fullscreen pass, so it can't be dialed back for the
+          // hero alone — doing that stripped the glow off every ring card
+          // still visible around it and read as flat. Kept constant so the
+          // ring keeps its cinematic look while a hero is open.
           <Bloom
             key="bloom"
-            intensity={heroOpen ? 0.25 : 0.7}
-            luminanceThreshold={heroOpen ? 0.85 : 0.55}
+            intensity={0.7}
+            luminanceThreshold={0.55}
             luminanceSmoothing={0.3}
             mipmapBlur
           />,
