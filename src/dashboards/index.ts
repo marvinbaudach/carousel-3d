@@ -453,7 +453,7 @@ const POOL: Dashboard[] = [
         xLabels: ['1950', '1975', '2000', 'heute'],
       }),
   },
-  trendCard('de-migration', 'Migrationsanteil Deutschland', 'Bevölkerung mit Migrationshintergrund', DE_MIGRATION_PANEL, aqua, (v) => `${v.toFixed(1)}%`, 149),
+  trendCard('de-migration', 'Migrationsanteil Deutschland', 'Migrationshintergrund · Deutschland', DE_MIGRATION_PANEL, aqua, (v) => `${v.toFixed(1)}%`, 149),
   trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
   {
     id: 'gdp-growth',

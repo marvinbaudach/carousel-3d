@@ -818,13 +818,17 @@ export const INDUSTRY_COMPARE = (() => {
 
 // Share of Germany's population with a migration background, %
 // (Destatis Mikrozensus; 2024 first results: 25.2m people = 30.4%).
+// The concept only exists since 2005 — earlier points are rough
+// back-estimates (guest-worker era onward, West Germany before 1990;
+// post-war German expellees don't count as migration background).
 export const DE_MIGRATION_PANEL: TrendSeries = trend(
   [
-    [2005, 18.6], [2010, 19.3], [2013, 20.5], [2015, 21.0],
+    [1950, 1.5], [1960, 2.5], [1970, 6], [1980, 10], [1990, 14],
+    [2000, 18], [2005, 18.6], [2010, 19.3], [2013, 20.5], [2015, 21.0],
     [2017, 23.6], [2019, 26.0], [2022, 28.7], [2024, 30.4],
   ],
   (v) => `${v.toFixed(0)}%`,
-  ['2005', '2011', '2018', 'heute'],
+  ['1950', '1975', '2000', 'heute'],
 );
 
 // Share of non-German suspects in the police crime statistics (BKA PKS),
