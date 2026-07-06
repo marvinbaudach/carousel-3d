@@ -1175,6 +1175,36 @@ const POOL: Dashboard[] = [
       }),
   },
   {
+    id: 'inflation',
+    title: 'Höchste Inflation weltweit',
+    draw: (f) =>
+      hBarChart(f, {
+        // Annual consumer-price inflation, ~2024 (IMF/national estimates,
+        // rounded). Crisis economies run hot; the values swing month to month,
+        // so treat them as magnitudes. Germany anchors the low end.
+        label: 'Höchste Inflation · Jahresrate ≈ 2024',
+        value: 230,
+        fmt: (v) => `${Math.round(v)}%`,
+        rowFmt: (v) => `${Math.round(v)}%`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Argentinien 🇦🇷', v: 230 },
+          { name: 'Sudan 🇸🇩', v: 145 },
+          { name: 'Venezuela 🇻🇪', v: 100 },
+          { name: 'Syrien 🇸🇾', v: 90 },
+          { name: 'Türkei 🇹🇷', v: 65 },
+          { name: 'Iran 🇮🇷', v: 40 },
+          { name: 'Nigeria 🇳🇬', v: 33 },
+          { name: 'Ägypten 🇪🇬', v: 28 },
+          { name: 'Pakistan 🇵🇰', v: 24 },
+          { name: 'Deutschland 🇩🇪', v: 2 },
+          { name: 'Schweiz 🇨🇭', v: 1 },
+        ],
+      }),
+  },
+  {
     id: 'un-resolutions',
     title: 'UN-Resolutionen gegen einzelne Länder',
     draw: (f) =>
@@ -1341,6 +1371,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   cashless: ['geld', 'welt', 'deutschland'],
   '5g-stations': ['welt', 'deutschland', 'schweiz'],
   'china-surveillance': ['welt', 'soziales', 'deutschland', 'schweiz'],
+  inflation: ['geld', 'welt', 'deutschland', 'schweiz'],
   'un-resolutions': ['welt', 'krieg'],
   'un-vetoes': ['welt', 'krieg'],
   'de-family': ['deutschland', 'soziales'],
@@ -1362,7 +1393,7 @@ const FEATURED = new Set([
   'pisa-de', 'teen-depression', 'obesity-fastfood', 'surveillance',
   'cameras-world', 'internet-shutdowns', 'gov-data-requests',
   'sdg-progress', 'cbdc', 'cashless', '5g-stations', 'china-surveillance',
-  'un-resolutions', 'un-vetoes', 'de-family', 'single-households',
+  'un-resolutions', 'un-vetoes', 'de-family', 'single-households', 'inflation',
 ]);
 
 /**

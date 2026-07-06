@@ -30,9 +30,13 @@ const Wrap = styled.div<{ $hidden: boolean }>`
     transform 0.35s ease;
 `;
 
-// The card animates in from just below its toggle; when collapsed it is
-// pulled from the layout so it never eats pointer events.
+// The card floats above the toggle (absolutely, so its footprint never
+// inflates the Wrap's hit area over the bottom-center filter chips) and
+// animates in from just below it; collapsed it takes no space and no clicks.
 const Panel = styled.div<{ $open: boolean }>`
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
   width: 232px;
   padding: 14px 16px;
   border-radius: 16px;
@@ -42,6 +46,7 @@ const Panel = styled.div<{ $open: boolean }>`
     scale(${(p) => (p.$open ? 1 : 0.96)});
   opacity: ${(p) => (p.$open ? 1 : 0)};
   visibility: ${(p) => (p.$open ? 'visible' : 'hidden')};
+  pointer-events: ${(p) => (p.$open ? 'auto' : 'none')};
   transition:
     opacity 0.25s ease,
     transform 0.25s ease,
