@@ -45,8 +45,21 @@ export interface Dashboard {
   title: string;
   /** True for panels that keep moving while idle — re-rendered on ticks. */
   live?: boolean;
+  /** Theme tags for the filter chips; assigned from TAGS_BY_ID below. */
+  tags?: string[];
   draw: (f: Frame) => void;
 }
+
+/** Filter chips shown in the bottom bar, in display order. */
+export const TAGS: { id: string; label: string }[] = [
+  { id: 'geld', label: 'GELD' },
+  { id: 'krieg', label: 'KRIEG' },
+  { id: 'deutschland', label: 'DEUTSCHLAND' },
+  { id: 'soziales', label: 'SOZIALES' },
+  { id: 'gesundheit', label: 'GESUNDHEIT' },
+  { id: 'schweiz', label: 'SCHWEIZ' },
+  { id: 'welt', label: 'WELT' },
+];
 
 /**
  * Time fed into the one-shot idle render: far past every intro, so panels
@@ -910,6 +923,56 @@ function shuffled<T>(list: T[]): T[] {
   }
   return a;
 }
+
+// Theme tags per card; cards may carry several (the industry chart is both
+// a Germany and a money story). Applied to the POOL right below.
+const TAGS_BY_ID: Record<string, string[]> = {
+  military: ['krieg'],
+  'us-debt': ['geld'],
+  nukes: ['krieg'],
+  'homicide-map': ['soziales', 'welt'],
+  'homicide-trend': ['soziales', 'schweiz'],
+  climate: ['welt'],
+  'swiss-pop': ['schweiz', 'soziales'],
+  'world-pop': ['welt', 'soziales'],
+  'conflict-deaths': ['krieg'],
+  refugees: ['krieg', 'soziales'],
+  'us-interest': ['geld'],
+  overdose: ['gesundheit'],
+  'debt-gdp': ['geld', 'deutschland', 'schweiz'],
+  'eu-debt-map': ['geld'],
+  'pop-share': ['welt', 'soziales'],
+  'life-exp': ['gesundheit', 'welt'],
+  'life-exp-nations': ['gesundheit', 'schweiz'],
+  m2: ['geld', 'schweiz'],
+  'm2-history': ['geld'],
+  'ai-jobs': ['soziales', 'geld'],
+  'de-insolvenzen': ['deutschland', 'geld'],
+  'de-insolvenz-schaden': ['deutschland', 'geld'],
+  'de-industry': ['deutschland', 'geld'],
+  'de-migration': ['deutschland', 'soziales'],
+  'de-crime-foreign': ['deutschland', 'soziales'],
+  internet: ['welt'],
+  'nuke-tests': ['krieg'],
+  obesity: ['gesundheit', 'welt'],
+  'obesity-nations': ['gesundheit', 'schweiz'],
+  'gdp-growth': ['geld', 'deutschland'],
+  fertility: ['welt', 'soziales'],
+  dollar: ['geld'],
+  armies: ['krieg'],
+  'reserve-fx': ['geld'],
+  'energy-mix': ['welt'],
+  wealth: ['geld', 'soziales'],
+  'tax-burden': ['geld', 'deutschland', 'schweiz'],
+  'power-prices': ['geld', 'deutschland', 'schweiz'],
+  incarceration: ['soziales', 'schweiz'],
+  corruption: ['soziales', 'welt', 'schweiz'],
+  'us-wars': ['krieg'],
+  'us-homicide': ['soziales'],
+  'recent-wars': ['krieg'],
+  'swiss-trends': ['schweiz'],
+};
+for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
 
 /**
  * Hand-picked headliners: the page always opens with these; the rest of the

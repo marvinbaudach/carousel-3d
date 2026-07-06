@@ -37,8 +37,9 @@ const PANEL_H = 3.0;
 const radiusFor = (count: number) => (PANEL_W * count) / (2 * Math.PI) + 0.6;
 const DEFAULT_RADIUS = radiusFor(DEFAULT_COUNT);
 
-// localStorage key for the persisted panel count.
+// localStorage keys for the persisted panel count and theme filter.
 const COUNT_KEY = 'worldpulse-panel-count';
+const TAG_KEY = 'worldpulse-tag';
 
 interface RingProps {
   onSelect: (id: string, start: HeroStart) => void;
@@ -137,8 +138,23 @@ export function Carousel3D() {
   useEffect(() => {
     localStorage.setItem(COUNT_KEY, String(count));
   }, [count]);
-  const dashboards = useMemo(() => ALL_DASHBOARDS.slice(0, count), [count]);
-  const radius = radiusFor(count);
+  // Theme filter: a chip narrows the stage to the tagged cards (all of
+  // them); without one, the count control slices the shuffled pool.
+  const [tag, setTag] = useState<string | null>(
+    () => localStorage.getItem(TAG_KEY) || null,
+  );
+  useEffect(() => {
+    if (tag) localStorage.setItem(TAG_KEY, tag);
+    else localStorage.removeItem(TAG_KEY);
+  }, [tag]);
+  const dashboards = useMemo(
+    () =>
+      tag
+        ? ALL_DASHBOARDS.filter((d) => d.tags?.includes(tag))
+        : ALL_DASHBOARDS.slice(0, count),
+    [count, tag],
+  );
+  const radius = radiusFor(Math.max(dashboards.length, MIN_COUNT));
   const fogNear = radius + 2;
   const fogFar = radius * 2 + 8;
   const heroZ = radius + 4.5;
@@ -367,10 +383,12 @@ export function Carousel3D() {
       hidden={heroOpen}
       layout={layout}
       onChange={setLayout}
-      count={count}
+      count={tag ? dashboards.length : count}
       minCount={MIN_COUNT}
       maxCount={ALL_DASHBOARDS.length}
       onCountChange={setCount}
+      tag={tag}
+      onTagChange={setTag}
     />
 
     {/* Hand tracking is desktop-only: detection + post-processing together
