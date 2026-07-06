@@ -8,7 +8,6 @@ import {
   nukeMap,
   timelineChart,
   treemap,
-  weatherForecast,
 } from './charts';
 import type { Frame } from './draw';
 import { SERIES } from './theme';
@@ -21,7 +20,13 @@ import {
   CONTINENT_FERTILITY,
   INTERNET_PANEL,
   LIFE_PANEL,
+  DE_FOREIGN_SUSPECTS_PANEL,
+  DE_INSOLVENCY_PANEL,
+  DE_MIGRATION_PANEL,
+  INDUSTRY_COMPARE,
+  GDP_COMPARE,
   M2_COMPARE,
+  M2_PANEL,
   NUKE_TESTS_PANEL,
   OBESITY_PANEL,
   OVERDOSE_PANEL,
@@ -215,12 +220,12 @@ const POOL: Dashboard[] = [
         delta: null,
         seed: 41,
         series: [
-          { name: 'BRA', color: orange, data: hm?.bra },
+          { name: 'BRA', color: green, data: hm?.bra },
           { name: 'RUS', color: red, data: hm?.rus },
-          { name: 'USA', color: magenta, data: hm?.usa },
-          { name: 'DEU', color: aqua, data: hm?.deu },
-          { name: 'CHE', color: blue, data: hm?.che },
-          { name: 'JPN', color: green, data: hm?.jpn },
+          { name: 'USA', color: blue, data: hm?.usa },
+          { name: 'DEU', color: yellow, data: hm?.deu },
+          { name: 'CHE', color: violet, data: hm?.che },
+          { name: 'JPN', color: magenta, data: hm?.jpn },
         ],
         ticks: hm?.ticks ?? ['0', '5', '10'],
         xLabels: ['1990', '2002', '2013', 'heute'],
@@ -281,28 +286,6 @@ const POOL: Dashboard[] = [
         data: p.series,
         ticks: p.ticks,
         xLabels: p.xLabels,
-      });
-    },
-  },
-  {
-    id: 'forecast',
-    title: 'Zürich · 7-Tage-Prognose',
-    draw: (f) => {
-      const w = live.weather;
-      weatherForecast(f, {
-        label: 'Zürich · 7-Tage-Prognose',
-        current: w?.currentTemp ?? 18,
-        days:
-          w?.forecast ??
-          [
-            { day: 'Heute', code: 1, min: 14, max: 24 },
-            { day: 'Sa', code: 0, min: 15, max: 27 },
-            { day: 'So', code: 3, min: 16, max: 25 },
-            { day: 'Mo', code: 61, min: 13, max: 20 },
-            { day: 'Di', code: 95, min: 12, max: 19 },
-            { day: 'Mi', code: 2, min: 13, max: 22 },
-            { day: 'Do', code: 0, min: 15, max: 26 },
-          ],
       });
     },
   },
@@ -446,6 +429,56 @@ const POOL: Dashboard[] = [
         xLabels: ['1995', '2005', '2014', 'heute'],
       }),
   },
+  trendCard('m2-history', 'US-Geldmenge seit 1900', 'US-Geldmenge M2 · seit 1900', M2_PANEL, yellow, (v) => `$${(v / 1e12).toFixed(1)}T`, 97),
+  trendCard('de-insolvenzen', 'Firmeninsolvenzen Deutschland', 'Unternehmensinsolvenzen · Destatis', DE_INSOLVENCY_PANEL, red, (v) => `${(v / 1000).toFixed(1)}k`, 137),
+  {
+    id: 'de-industry',
+    title: 'Industrieproduktion · DEU vs. USA vs. China',
+    draw: (f) =>
+      lineChart(f, {
+        // Industrial production indexed to 2015 = 100; the headline
+        // tracks Germany's slide from the 2018 peak.
+        label: 'Industrie · Deutschland · 2015 = 100',
+        value: INDUSTRY_COMPARE.deuLatest,
+        unit: '',
+        fmt: (v) => `${v.toFixed(0)}`,
+        delta: null,
+        seed: 139,
+        series: [
+          { name: 'China', color: red, data: INDUSTRY_COMPARE.rows[0].data },
+          { name: 'USA', color: blue, data: INDUSTRY_COMPARE.rows[1].data },
+          { name: 'Deutschland', color: yellow, data: INDUSTRY_COMPARE.rows[2].data },
+        ],
+        ticks: INDUSTRY_COMPARE.ticks,
+        xLabels: ['1950', '1975', '2000', 'heute'],
+      }),
+  },
+  trendCard('de-migration', 'Migrationsanteil Deutschland', 'Bevölkerung mit Migrationshintergrund', DE_MIGRATION_PANEL, aqua, (v) => `${v.toFixed(1)}%`, 149),
+  trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
+  {
+    id: 'gdp-growth',
+    title: 'Wirtschaftsleistung im Vergleich',
+    draw: (f) =>
+      lineChart(f, {
+        // Real GDP indexed to 2015 = 1x; the headline tracks Germany,
+        // whose economy has been flat to shrinking since 2019.
+        label: 'BIP real · Deutschland · 2015 = 1×',
+        value: GDP_COMPARE.deuLatest,
+        unit: '',
+        fmt: (v) => `${v.toFixed(2)}×`,
+        delta: null,
+        seed: 131,
+        series: [
+          { name: 'Indien', color: yellow, data: GDP_COMPARE.rows[0].data },
+          { name: 'China', color: red, data: GDP_COMPARE.rows[1].data },
+          { name: 'USA', color: blue, data: GDP_COMPARE.rows[2].data },
+          { name: 'Deutschland', color: green, data: GDP_COMPARE.rows[3].data },
+          { name: 'Japan', color: violet, data: GDP_COMPARE.rows[4].data },
+        ],
+        ticks: GDP_COMPARE.ticks,
+        xLabels: ['2010', '2015', '2020', 'heute'],
+      }),
+  },
   trendCard('internet', 'Menschen online weltweit', 'Internetnutzer · ITU', INTERNET_PANEL, blue, (v) => `${(v / 1e9).toFixed(1)}B`, 103),
   trendCard('nuke-tests', 'Atomtests pro Jahr', 'Atomtests · seit 1945', NUKE_TESTS_PANEL, red, (v) => `${Math.round(v)}`, 107),
   trendCard('obesity', 'Adipositas weltweit', 'Adipositas-Quote', OBESITY_PANEL, magenta, (v) => `${v.toFixed(0)}%`, 109),
@@ -461,9 +494,9 @@ const POOL: Dashboard[] = [
         delta: null,
         seed: 113,
         series: [
-          { name: 'Afrika', color: orange, data: CONTINENT_FERTILITY.rows[0].data },
-          { name: 'Asien', color: aqua, data: CONTINENT_FERTILITY.rows[1].data },
-          { name: 'Lateinamerika', color: magenta, data: CONTINENT_FERTILITY.rows[2].data },
+          { name: 'Afrika', color: red, data: CONTINENT_FERTILITY.rows[0].data },
+          { name: 'Asien', color: green, data: CONTINENT_FERTILITY.rows[1].data },
+          { name: 'Lateinamerika', color: yellow, data: CONTINENT_FERTILITY.rows[2].data },
           { name: 'Nordamerika', color: blue, data: CONTINENT_FERTILITY.rows[3].data },
           { name: 'Europa', color: violet, data: CONTINENT_FERTILITY.rows[4].data },
         ],
@@ -613,9 +646,68 @@ const POOL: Dashboard[] = [
           { name: 'Türkei', v: 37 },
           { name: 'Mexiko', v: 36 },
           { name: 'Deutschland', v: 23 },
+          { name: 'Schweiz', v: 12 },
           { name: 'China', v: 8 },
           { name: 'Japan', v: 5 },
-          { name: 'Vietnam', v: 2 },
+        ],
+      }),
+  },
+  {
+    id: 'tax-burden',
+    title: 'Steuer- und Abgabenlast',
+    draw: (f) =>
+      hBarChart(f, {
+        // OECD tax wedge 2024: income tax plus employee and employer
+        // social contributions, single earner without children, as a
+        // share of total labor cost. Germany is second-highest in the
+        // OECD; Switzerland sits near the bottom.
+        label: 'Abgabenkeil · Single · OECD 2024',
+        value: 34.9,
+        fmt: (v) => `Ø ${v.toFixed(1)}%`,
+        rowFmt: (v) => `${v.toFixed(1)}%`,
+        delta: null,
+        color: yellow,
+        unit: '',
+        rows: [
+          { name: 'Belgien', v: 52.6 },
+          { name: 'Deutschland', v: 47.9 },
+          { name: 'Frankreich', v: 47.2 },
+          { name: 'Österreich', v: 47.1 },
+          { name: 'Italien', v: 45.1 },
+          { name: 'Schweden', v: 42.4 },
+          { name: 'Spanien', v: 40.7 },
+          { name: 'Großbritannien', v: 31.3 },
+          { name: 'USA', v: 30.1 },
+          { name: 'Schweiz', v: 22.9 },
+        ],
+      }),
+  },
+  {
+    id: 'power-prices',
+    title: 'Strompreise für Haushalte',
+    draw: (f) =>
+      hBarChart(f, {
+        // Household electricity prices incl. taxes, euro cents per kWh,
+        // rounded 2024 figures (Eurostat / GlobalPetrolPrices). Germany
+        // is among the most expensive markets worldwide.
+        label: 'Strompreis · Haushalte · ct/kWh',
+        value: 40,
+        fmt: (v) => `${v.toFixed(0)} ct`,
+        rowFmt: (v) => `${v.toFixed(0)} ct`,
+        delta: null,
+        color: blue,
+        unit: '',
+        rows: [
+          { name: 'Deutschland', v: 40 },
+          { name: 'Dänemark', v: 38 },
+          { name: 'Irland', v: 37 },
+          { name: 'Italien', v: 35 },
+          { name: 'Großbritannien', v: 34 },
+          { name: 'Österreich', v: 30 },
+          { name: 'Schweiz', v: 28 },
+          { name: 'Frankreich', v: 27 },
+          { name: 'USA', v: 15 },
+          { name: 'China', v: 8 },
         ],
       }),
   },
@@ -700,27 +792,6 @@ const POOL: Dashboard[] = [
       }),
   },
   {
-    id: 'wiki',
-    title: 'Wikipedia · Top-Artikel',
-    draw: (f) => {
-      const wk = live.wiki;
-      hBarChart(f, {
-        label: 'Wikipedia · Top heute',
-        value: wk?.topViews ?? 412_000,
-        delta: null,
-        color: blue,
-        unit: '',
-        rows: wk?.rows ?? [
-          { name: 'Todesfälle 2026', v: 168_000 },
-          { name: 'ChatGPT', v: 112_000 },
-          { name: 'Bitcoin', v: 64_000 },
-          { name: 'Deutschland', v: 44_000 },
-          { name: 'Zweiter Weltkrieg', v: 24_000 },
-        ],
-      });
-    },
-  },
-  {
     id: 'swiss-trends',
     title: 'Schweizer Trends · Wikipedia',
     draw: (f) => {
@@ -759,8 +830,8 @@ function shuffled<T>(list: T[]): T[] {
 const FEATURED = new Set([
   'us-wars', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
-  'world-pop', 'climate', 'life-exp', 'conflict-deaths', 'refugees',
-  'military', 'energy-mix', 'fertility', 'recent-wars',
+  'world-pop', 'climate', 'de-insolvenzen', 'conflict-deaths', 'refugees',
+  'military', 'gdp-growth', 'de-industry', 'recent-wars',
 ]);
 
 /**

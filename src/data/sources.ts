@@ -709,15 +709,19 @@ export const LIFE_PANEL: TrendSeries = trend(
   ['1900', '1941', '1983', 'heute'],
 );
 
-// US M2 money supply, USD (Federal Reserve H.6).
+// US M2 money supply, USD. Pre-1959 from Friedman & Schwartz's monetary
+// history (M2 definition shifts slightly over the century), from 1959 on
+// Federal Reserve H.6.
 export const M2_PANEL: TrendSeries = trend(
   [
+    [1900, 0.01e12], [1915, 0.018e12], [1920, 0.035e12], [1929, 0.046e12],
+    [1933, 0.032e12], [1940, 0.055e12], [1945, 0.127e12], [1950, 0.15e12],
     [1960, 0.3e12], [1970, 0.6e12], [1980, 1.5e12], [1990, 3.2e12],
     [2000, 4.9e12], [2008, 8.2e12], [2015, 12.3e12], [2020, 19.1e12],
     [2022, 21.7e12], [2024, 21.4e12],
   ],
   (v) => `$${(v / 1e12).toFixed(0)}T`,
-  ['1960', '1981', '2003', 'heute'],
+  ['1900', '1941', '1983', 'heute'],
 );
 
 // Broad money (M2) indexed to 2000 = 1x — USA (Fed H.6) vs euro area (ECB)
@@ -744,6 +748,97 @@ export const M2_COMPARE = (() => {
     usLatest: 4.4,
   };
 })();
+
+// Real GDP indexed to 2015 = 1x (IMF WEO / national accounts). The recent
+// base year keeps the scale tight enough that Germany's post-2019
+// stagnation reads as the flatline it is.
+const GDP_COMPARE_ANCHORS: { name: string; pts: [number, number][] }[] = [
+  { name: 'Indien', pts: [[2010, 0.71], [2015, 1.0], [2019, 1.3], [2020, 1.22], [2022, 1.45], [2024, 1.65]] },
+  { name: 'China', pts: [[2010, 0.73], [2015, 1.0], [2019, 1.28], [2020, 1.31], [2022, 1.42], [2024, 1.55]] },
+  { name: 'USA', pts: [[2010, 0.9], [2015, 1.0], [2019, 1.1], [2020, 1.07], [2022, 1.18], [2024, 1.25]] },
+  { name: 'Deutschland', pts: [[2010, 0.94], [2015, 1.0], [2017, 1.05], [2019, 1.08], [2020, 1.03], [2022, 1.09], [2023, 1.09], [2024, 1.08]] },
+  { name: 'Japan', pts: [[2010, 0.95], [2015, 1.0], [2019, 1.03], [2020, 0.99], [2022, 1.02], [2024, 1.02]] },
+];
+
+/** All five economies normalized onto one shared scale. */
+export const GDP_COMPARE = (() => {
+  const yearlySets = GDP_COMPARE_ANCHORS.map((c) => yearly(c.pts));
+  const all = yearlySets.flat();
+  const s = niceScale(Math.min(...all), Math.max(...all), (v) => `${v.toFixed(1)}×`);
+  return {
+    rows: GDP_COMPARE_ANCHORS.map((c, i) => ({
+      name: c.name,
+      data: norm(resample(yearlySets[i], 48), s.lo, s.hi),
+    })),
+    ticks: s.ticks,
+    /** Germany's latest multiple, for the headline. */
+    deuLatest: 1.08,
+  };
+})();
+
+// German corporate insolvencies per year (Destatis). Fell steadily from
+// the 2003 peak to the 2021 low, then three consecutive surges — the
+// steepest rises since the early-2000s crisis.
+export const DE_INSOLVENCY_PANEL: TrendSeries = trend(
+  [
+    [2000, 28_235], [2003, 39_320], [2006, 34_137], [2009, 32_687],
+    [2012, 28_297], [2015, 23_101], [2019, 18_749], [2021, 13_993],
+    [2022, 14_590], [2023, 17_814], [2024, 21_812], [2025, 24_064],
+  ],
+  (v) => `${(v / 1000).toFixed(0)}k`,
+  ['2000', '2008', '2017', 'heute'],
+);
+
+// Industrial production indexed to 2015 = 100 (Destatis, Fed G.17, NBS;
+// rounded). Germany peaked in 2018 and has lost roughly a fifth since,
+// the US is flat, China keeps compounding.
+// Pre-1990 Germany is West Germany; pre-2000 China is a rough magnitude
+// estimate — reliable indexed series only start with the reform era.
+const INDUSTRY_COMPARE_ANCHORS: { name: string; pts: [number, number][] }[] = [
+  { name: 'China', pts: [[1950, 0.3], [1970, 1.5], [1980, 3], [1990, 8], [2000, 24], [2005, 41], [2008, 60], [2010, 72], [2015, 100], [2020, 130], [2022, 143], [2024, 158], [2025, 166]] },
+  { name: 'USA', pts: [[1950, 15], [1960, 22], [1970, 35], [1980, 48], [1990, 62], [2000, 91], [2005, 95], [2008, 100], [2009, 89], [2015, 100], [2018, 103], [2020, 96], [2022, 103], [2024, 102], [2025, 103]] },
+  { name: 'Deutschland', pts: [[1950, 12], [1960, 32], [1970, 55], [1980, 66], [1990, 78], [2000, 84], [2005, 91], [2008, 104], [2009, 86], [2011, 102], [2015, 100], [2018, 105], [2020, 91], [2022, 93], [2023, 91], [2024, 87], [2025, 85]] },
+];
+
+/** All three industrial bases normalized onto one shared scale. */
+export const INDUSTRY_COMPARE = (() => {
+  const yearlySets = INDUSTRY_COMPARE_ANCHORS.map((c) => yearly(c.pts));
+  const all = yearlySets.flat();
+  const s = niceScale(Math.min(...all), Math.max(...all), (v) => `${v.toFixed(0)}`);
+  return {
+    rows: INDUSTRY_COMPARE_ANCHORS.map((c, i) => ({
+      name: c.name,
+      data: norm(resample(yearlySets[i], 48), s.lo, s.hi),
+    })),
+    ticks: s.ticks,
+    /** Germany's latest index level, for the headline. */
+    deuLatest: 85,
+  };
+})();
+
+// Share of Germany's population with a migration background, %
+// (Destatis Mikrozensus; 2024 first results: 25.2m people = 30.4%).
+export const DE_MIGRATION_PANEL: TrendSeries = trend(
+  [
+    [2005, 18.6], [2010, 19.3], [2013, 20.5], [2015, 21.0],
+    [2017, 23.6], [2019, 26.0], [2022, 28.7], [2024, 30.4],
+  ],
+  (v) => `${v.toFixed(0)}%`,
+  ['2005', '2011', '2018', 'heute'],
+);
+
+// Share of non-German suspects in the police crime statistics (BKA PKS),
+// excluding immigration-law offenses that only foreigners can commit.
+// Rounded from published PKS yearbooks; 2024 is a record 35.4%.
+// Suspect counts are not convictions and skew with age/urbanity/reporting.
+export const DE_FOREIGN_SUSPECTS_PANEL: TrendSeries = trend(
+  [
+    [2005, 22.5], [2010, 21.9], [2014, 24.3], [2016, 30.5],
+    [2019, 30.4], [2022, 33.4], [2023, 34.4], [2024, 35.4],
+  ],
+  (v) => `${v.toFixed(0)}%`,
+  ['2005', '2011', '2018', 'heute'],
+);
 
 // People online worldwide (ITU).
 export const INTERNET_PANEL: TrendSeries = trend(
