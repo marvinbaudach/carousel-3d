@@ -21,7 +21,7 @@ const Card = styled.div`
   top: 50%;
   left: 50%;
   width: min(94vw, 560px, 72vh);
-  height: 96%;
+  height: 85vh;
   border-radius: 18px;
   overflow: hidden;
   touch-action: none;
