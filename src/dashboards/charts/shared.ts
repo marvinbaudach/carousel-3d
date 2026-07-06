@@ -13,11 +13,23 @@ export function withAlpha(hex: string, a: number): string {
   return `rgba(${r},${g},${b},${a.toFixed(3)})`;
 }
 
+/** Blend a hex color (#rrggbb) toward white by amount (0..1). */
+export function lighten(hex: string, amt: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const m = (c: number) => Math.round(c + (255 - c) * amt);
+  return `rgb(${m(r)},${m(g)},${m(b)})`;
+}
+
 /**
- * Shared bar ramp: one gradient spans the full track, from a muted start
- * to the full color at the right edge. Every bar starts on the same tone,
- * and only the long ones reach the hot end — so the magnitude reads from
- * the color as well as the length.
+ * Shared horizontal ramp spanning the full track: dark and muted at the
+ * baseline, full color at the midpoint, brightened at the far end. Every bar
+ * is clipped to its own length, so where a bar's tip lands on this shared
+ * ramp encodes its magnitude — longer bars end on hotter, brighter tones,
+ * which makes the lengths directly comparable at a glance. The brightened
+ * tip leaves headroom so even bars packed in a narrow high band still
+ * separate by color instead of reading as one flat block.
  */
 export function barGradient(
   ctx: CanvasRenderingContext2D,
@@ -26,8 +38,9 @@ export function barGradient(
   hex: string,
 ): CanvasGradient {
   const g = ctx.createLinearGradient(x0, 0, x1, 0);
-  g.addColorStop(0, withAlpha(hex, 0.3));
-  g.addColorStop(1, hex);
+  g.addColorStop(0, withAlpha(hex, 0.32));
+  g.addColorStop(0.5, hex);
+  g.addColorStop(1, lighten(hex, 0.5));
   return g;
 }
 
@@ -81,9 +94,12 @@ export function drawRankedList(
   const rowH = (h - 46 * u - top) / Math.max(1, rows.length);
   const barMax = Math.max(...rows.map((r) => r.v), 1);
   const grad = barGradient(ctx, pad, w - pad, color);
+  // Label + bar form one group ~31u tall; center it in the row slot so the
+  // label stays tied to its own bar instead of drifting toward the row above.
+  const groupH = 31 * u;
   rows.forEach((s, i) => {
     const p = Math.max(0, stagger(t, i + 4, 0.06));
-    const y = top + rowH * i;
+    const y = top + rowH * i + Math.max(0, (rowH - groupH) / 2);
     ctx.globalAlpha = p;
     ctx.fillStyle = INK_SECONDARY;
     ctx.font = `500 ${16 * u}px ${FONT}`;

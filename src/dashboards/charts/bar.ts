@@ -13,7 +13,7 @@ import {
   type Frame,
 } from '../draw';
 import { FONT, GRID, INK, INK_SECONDARY, MUTED } from '../theme';
-import { MONTHS, barGradient, plotRect, withAlpha } from './shared';
+import { MONTHS, barGradient, lighten, plotRect, withAlpha } from './shared';
 
 export interface BarCfg {
   label: string;
@@ -42,11 +42,13 @@ export function barChart(f: Frame, cfg: BarCfg): void {
   const maxI = data.indexOf(Math.max(...data));
   const slot = (r.x1 - r.x0) / data.length;
   const bw = slot - 2 * u - 6 * u;
-  // Same ramp as the horizontal bars, running up from the baseline: only
-  // the tallest columns reach the fully saturated end.
+  // Same ramp as the horizontal bars, running up from the baseline: muted at
+  // the bottom, full color partway up, brightened at the top so the tallest
+  // columns end on the hottest tone.
   const grad = ctx.createLinearGradient(0, r.y1, 0, r.y0 + 20 * u);
-  grad.addColorStop(0, withAlpha(cfg.color, 0.3));
-  grad.addColorStop(1, cfg.color);
+  grad.addColorStop(0, withAlpha(cfg.color, 0.32));
+  grad.addColorStop(0.5, cfg.color);
+  grad.addColorStop(1, lighten(cfg.color, 0.5));
   data.forEach((v, i) => {
     const p = stagger(t, i, 0.045);
     const bh = (r.y1 - r.y0 - 20 * u) * v * p;
@@ -101,24 +103,28 @@ export function hBarChart(f: Frame, cfg: HBarCfg): void {
   const max = Math.max(...cfg.rows.map((d) => d.v));
   const grad = barGradient(ctx, pad, w - pad, cfg.color);
 
+  // Label + bar form one group ~34u tall; center it in the row slot so the
+  // extra slack of tall rows splits evenly above and below, keeping the
+  // label tied to its own bar instead of drifting toward the row above.
+  const groupH = 34 * u;
   cfg.rows.forEach((d, i) => {
     const p = stagger(t, i, 0.08);
-    const y = top + 10 * u + rowH * i;
+    const y = top + 10 * u + rowH * i + Math.max(0, (rowH - groupH) / 2);
     ctx.fillStyle = INK_SECONDARY;
     ctx.font = `500 ${17 * u}px ${FONT}`;
-    ctx.fillText(d.name, pad, y + 22 * u);
+    ctx.fillText(d.name, pad, y + 14 * u);
     ctx.fillStyle = INK;
     ctx.font = `600 ${17 * u}px ${FONT}`;
     ctx.textAlign = 'right';
-    ctx.fillText(rowFmt(d.v * p), w - pad, y + 22 * u);
+    ctx.fillText(rowFmt(d.v * p), w - pad, y + 14 * u);
     ctx.textAlign = 'left';
 
     const bw = (w - 2 * pad) * (d.v / max) * p;
     ctx.fillStyle = GRID;
-    roundRect(ctx, pad, y + 34 * u, w - 2 * pad, 10 * u, 5 * u);
+    roundRect(ctx, pad, y + 24 * u, w - 2 * pad, 10 * u, 5 * u);
     ctx.fill();
     ctx.fillStyle = grad;
-    roundRect(ctx, pad, y + 34 * u, Math.max(bw, 10 * u), 10 * u, 5 * u);
+    roundRect(ctx, pad, y + 24 * u, Math.max(bw, 10 * u), 10 * u, 5 * u);
     ctx.fill();
   });
 }

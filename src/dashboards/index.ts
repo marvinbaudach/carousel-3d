@@ -445,6 +445,95 @@ const POOL: Dashboard[] = [
         xLabels: ['2015', '2018', '2022', 'heute'],
       }),
   },
+  {
+    id: 'youth-unemployment',
+    title: 'Jugendarbeitslosigkeit international',
+    draw: (f) =>
+      hBarChart(f, {
+        // Youth unemployment rate (ages 15–24), OECD/Eurostat/ILO
+        // harmonised 2024 figures. Southern Europe still tops the list a
+        // decade after the euro crisis; Switzerland and Germany, with their
+        // dual apprenticeship systems, anchor the low end.
+        label: 'Jugendarbeitslosigkeit · 15–24 J. · 2024',
+        value: 14.9,
+        fmt: (v) => `Ø ${v.toFixed(1)}%`,
+        rowFmt: (v) => `${v.toFixed(1)}%`,
+        delta: null,
+        color: orange,
+        unit: '',
+        rows: [
+          { name: 'Spanien', v: 26.5 },
+          { name: 'Schweden', v: 22.5 },
+          { name: 'Italien', v: 20.3 },
+          { name: 'Frankreich', v: 17.2 },
+          { name: 'China (Stadt)', v: 17.1 },
+          { name: 'EU-27', v: 14.9 },
+          { name: 'USA', v: 9.0 },
+          { name: 'Schweiz', v: 8.0 },
+          { name: 'Deutschland', v: 6.8 },
+          { name: 'Japan', v: 4.0 },
+        ],
+      }),
+  },
+  {
+    id: 'unemployment',
+    title: 'Arbeitslosigkeit international',
+    draw: (f) =>
+      hBarChart(f, {
+        // Harmonised unemployment rate, all ages, OECD/Eurostat 2024
+        // (comparable definition, not national registered rates). Spain and
+        // France lead; Germany, Japan and Switzerland sit at the low end.
+        label: 'Arbeitslosenquote · harmonisiert · 2024',
+        value: 5.9,
+        fmt: (v) => `Ø ${v.toFixed(1)}%`,
+        rowFmt: (v) => `${v.toFixed(1)}%`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Spanien', v: 11.4 },
+          { name: 'Griechenland', v: 9.4 },
+          { name: 'Schweden', v: 8.4 },
+          { name: 'Frankreich', v: 7.4 },
+          { name: 'Italien', v: 6.5 },
+          { name: 'EU-27', v: 5.9 },
+          { name: 'Schweiz', v: 4.3 },
+          { name: 'USA', v: 4.1 },
+          { name: 'Deutschland', v: 3.4 },
+          { name: 'Japan', v: 2.5 },
+        ],
+      }),
+  },
+  {
+    id: 'poverty',
+    title: 'Armut international',
+    draw: (f) =>
+      hBarChart(f, {
+        // Relative income poverty: share living on under 50 % of the
+        // national median disposable income (OECD, latest year). The US
+        // and Japan top the list of rich nations; Switzerland and Germany
+        // sit in the middle, the Nordics lowest.
+        label: 'Armutsquote · < 50 % Medianeinkommen · OECD',
+        value: 11.4,
+        fmt: (v) => `Ø ${v.toFixed(1)}%`,
+        rowFmt: (v) => `${v.toFixed(1)}%`,
+        delta: null,
+        color: violet,
+        unit: '',
+        rows: [
+          { name: 'USA', v: 18.0 },
+          { name: 'Japan', v: 15.7 },
+          { name: 'Spanien', v: 14.7 },
+          { name: 'Italien', v: 14.4 },
+          { name: 'Großbritannien', v: 11.2 },
+          { name: 'Deutschland', v: 10.9 },
+          { name: 'Schweiz', v: 9.9 },
+          { name: 'Schweden', v: 9.3 },
+          { name: 'Frankreich', v: 8.4 },
+          { name: 'Dänemark', v: 6.5 },
+        ],
+      }),
+  },
   trendCard('de-insolvenzen', 'Firmeninsolvenzen Deutschland', 'Firmeninsolvenzen · 🇩🇪 · Destatis', DE_INSOLVENCY_PANEL, red, (v) => `${(v / 1000).toFixed(1)}k`, 137),
   trendCard('de-insolvenz-schaden', 'Insolvenz-Schäden Deutschland', 'Gläubigerforderungen · 🇩🇪 · Mrd €', DE_INSOLVENCY_CLAIMS_PANEL, orange, (v) => `${Math.round(v)} Mrd €`, 167),
   {
@@ -891,6 +980,9 @@ const TAGS_BY_ID: Record<string, string[]> = {
   m2: ['geld', 'schweiz'],
   'm2-history': ['geld'],
   'ai-jobs': ['soziales', 'geld'],
+  'youth-unemployment': ['soziales', 'geld', 'schweiz', 'deutschland'],
+  unemployment: ['soziales', 'geld', 'schweiz', 'deutschland'],
+  poverty: ['soziales', 'geld', 'schweiz', 'deutschland'],
   'de-insolvenzen': ['deutschland', 'geld'],
   'de-insolvenz-schaden': ['deutschland', 'geld'],
   'de-industry': ['deutschland', 'geld'],
@@ -927,6 +1019,7 @@ const FEATURED = new Set([
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
   'world-pop', 'climate', 'de-insolvenzen', 'conflict-deaths', 'refugees',
   'military', 'gdp-growth', 'de-industry', 'recent-wars',
+  'youth-unemployment', 'unemployment', 'poverty',
 ]);
 
 /**
