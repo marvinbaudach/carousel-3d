@@ -1,0 +1,216 @@
+import { useEffect, useState } from 'react';
+import styled from 'styled-components';
+import { LAYOUT_MODES, type LayoutMode } from '../layouts';
+import { glassSurface } from './glass';
+
+interface HotkeyPanelProps {
+  layout: LayoutMode;
+  onChange: (mode: LayoutMode) => void;
+  /** True while a hero is open — the panel slips away and its hotkeys go
+      dormant so nothing competes with the fullscreen card. */
+  hidden: boolean;
+}
+
+// Bottom-right corner: HandControls owns top-left, PerfHud top-right, the
+// theme chips sit bottom-center.
+const Wrap = styled.div<{ $hidden: boolean }>`
+  position: fixed;
+  right: 16px;
+  bottom: 18px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  transform: translateY(${(p) => (p.$hidden ? '14px' : '0')});
+  opacity: ${(p) => (p.$hidden ? 0 : 1)};
+  pointer-events: ${(p) => (p.$hidden ? 'none' : 'auto')};
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease;
+`;
+
+// The card animates in from just below its toggle; when collapsed it is
+// pulled from the layout so it never eats pointer events.
+const Panel = styled.div<{ $open: boolean }>`
+  width: 232px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  ${glassSurface}
+  transform-origin: bottom right;
+  transform: translateY(${(p) => (p.$open ? '0' : '8px')})
+    scale(${(p) => (p.$open ? 1 : 0.96)});
+  opacity: ${(p) => (p.$open ? 1 : 0)};
+  visibility: ${(p) => (p.$open ? 'visible' : 'hidden')};
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease,
+    visibility 0.25s;
+`;
+
+const Group = styled.div`
+  & + & {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+`;
+
+const GroupTitle = styled.div`
+  margin-bottom: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+`;
+
+// A shortcut line: key badge on the left, description on the right. Formation
+// rows are buttons, the static hints plain divs — same grid either way.
+const Row = styled.button<{ $active?: boolean; $static?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 5px 6px;
+  border: none;
+  border-radius: 8px;
+  background: ${(p) => (p.$active ? 'rgba(57, 135, 229, 0.24)' : 'transparent')};
+  color: ${(p) =>
+    p.$active ? '#cfe4ff' : 'rgba(255, 255, 255, 0.72)'};
+  font-family: inherit;
+  text-align: left;
+  cursor: ${(p) => (p.$static ? 'default' : 'pointer')};
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+
+  &:hover {
+    background: ${(p) =>
+      p.$static ? 'transparent' : 'rgba(255, 255, 255, 0.08)'};
+  }
+`;
+
+const Keycap = styled.span<{ $active?: boolean }>`
+  flex: none;
+  min-width: 22px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  border: 1px solid
+    ${(p) => (p.$active ? 'rgba(120, 170, 255, 0.6)' : 'rgba(255, 255, 255, 0.18)')};
+  background: ${(p) =>
+    p.$active ? 'rgba(57, 135, 229, 0.3)' : 'rgba(255, 255, 255, 0.06)'};
+  color: ${(p) => (p.$active ? '#e4efff' : 'rgba(255, 255, 255, 0.85)')};
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-align: center;
+`;
+
+const Label = styled.span`
+  font-size: 12px;
+  line-height: 1.25;
+`;
+
+const Toggle = styled.button<{ $open: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  ${glassSurface}
+  color: ${(p) => (p.$open ? '#cfe4ff' : 'rgba(255, 255, 255, 0.85)')};
+  font: 500 12px/1 inherit;
+  font-family: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+
+  &:hover {
+    background: rgba(20, 28, 46, 0.7);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+// Static shortcuts the app already listens for elsewhere (Carousel3D). Listed
+// here purely so a presenter can discover them; the panel only *drives* the
+// formation rows.
+const HINTS: { keys: string; label: string }[] = [
+  { keys: 'Ziehen', label: 'Ring drehen' },
+  { keys: '␣', label: 'Rotation pausieren' },
+  { keys: '←  →', label: 'Nachbar-Panel' },
+  { keys: '+  −', label: 'Zoom' },
+  { keys: 'F', label: 'Vollbild' },
+  { keys: 'H', label: 'Handsteuerung' },
+  { keys: '?', label: 'Dieses Panel' },
+  { keys: 'Esc', label: 'Panel schließen' },
+];
+
+/**
+ * Collapsible keyboard-shortcut legend that doubles as the formation switcher.
+ * The formations live here as interactive rows carrying their 1–4 hotkeys, so
+ * they no longer need a bar of their own. Number keys pick a formation.
+ */
+export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // With the panel dismissed behind a hero, the hotkeys would mutate the
+      // formation invisibly — swallow them until the hero closes.
+      if (hidden) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // "?" (or "/") folds the panel open/closed so it is discoverable
+      // without ever reaching for the mouse.
+      if (e.key === '?' || e.key === '/') {
+        setOpen((v) => !v);
+        return;
+      }
+      const i = Number(e.key) - 1;
+      if (i >= 0 && i < LAYOUT_MODES.length) onChange(LAYOUT_MODES[i].id);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
+  return (
+    <Wrap $hidden={hidden}>
+      <Panel $open={open} role="region" aria-label="Tastenkürzel">
+        <Group>
+          <GroupTitle>FORMATION</GroupTitle>
+          {LAYOUT_MODES.map((mode, i) => (
+            <Row
+              key={mode.id}
+              type="button"
+              $active={layout === mode.id}
+              onClick={() => onChange(mode.id)}
+            >
+              <Keycap $active={layout === mode.id}>{i + 1}</Keycap>
+              <Label>{mode.label}</Label>
+            </Row>
+          ))}
+        </Group>
+        <Group>
+          <GroupTitle>STEUERUNG</GroupTitle>
+          {HINTS.map((h) => (
+            <Row key={h.label} as="div" $static>
+              <Keycap>{h.keys}</Keycap>
+              <Label>{h.label}</Label>
+            </Row>
+          ))}
+        </Group>
+      </Panel>
+      <Toggle
+        type="button"
+        $open={open}
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+      >
+        ⌨ Tasten
+      </Toggle>
+    </Wrap>
+  );
+}

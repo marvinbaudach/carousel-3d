@@ -11,6 +11,10 @@ interface CameraRigProps {
   fogFar: number;
   /** Subtle mouse parallax; off for touch, where there is no hover pointer. */
   parallax?: boolean;
+  /** User zoom (1 = default framing). Higher pulls the camera in, and it
+      scales the gap rather than the whole distance, so even a wide ring keeps
+      the camera safely in front of its front row. */
+  zoom?: number;
 }
 
 // Distance is tuned for a landscape screen. Narrower (portrait) screens pull
@@ -29,6 +33,7 @@ export function CameraRig({
   fogNear,
   fogFar,
   parallax = true,
+  zoom = 1,
 }: CameraRigProps) {
   const camera = useThree((s) => s.camera);
   const scene = useThree((s) => s.scene);
@@ -37,7 +42,7 @@ export function CameraRig({
   useFrame((state) => {
     const aspect = size.width / size.height;
     const pullback = MathUtils.clamp(REF_ASPECT / aspect, 1, MAX_PULLBACK);
-    const dist = (radius + gap) * pullback;
+    const dist = (radius + gap / zoom) * pullback;
 
     const px = parallax ? state.pointer.x * 1.4 : 0;
     const py = parallax ? state.pointer.y * 0.9 : 0;

@@ -18,6 +18,7 @@ import { HeroCard, type HeroStart } from './HeroCard';
 import { HandGestures } from './HandGestures';
 import { HandControls } from './HandControls';
 import { LayoutControls } from './LayoutControls';
+import { HotkeyPanel } from './HotkeyPanel';
 import { LAYOUT_MODES, layoutSlots, type LayoutMode } from '../layouts';
 import { useCarouselRotation } from '../hooks/useCarouselRotation';
 import { useHandTracking, type HandState } from '../hooks/useHandTracking';
@@ -35,6 +36,11 @@ const PANEL_H = 3.0;
 // panel count, and CameraRig dollies the camera along smoothly.
 const radiusFor = (count: number) => (PANEL_W * count) / (2 * Math.PI) + 0.6;
 const DEFAULT_RADIUS = radiusFor(ALL_DASHBOARDS.length);
+
+// Zoom bounds and per-keypress step for the +/- camera dolly.
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 2.5;
+const ZOOM_STEP = 1.12;
 
 // localStorage keys for the persisted theme filter and formation.
 const TAG_KEY = 'worldpulse-tag';
@@ -167,6 +173,8 @@ export function Carousel3D() {
   const posesRef = useRef(new Map<string, HeroStart>());
   // Space toggles the carousel's idle spin.
   const [spinning, setSpinning] = useState(true);
+  // +/- dolly the camera in and out; CameraRig scales the gap by this factor.
+  const [zoom, setZoom] = useState(1);
 
   // Adaptive quality: integrated GPUs are fill-rate bound, so the render
   // resolution is the main lever. PerformanceMonitor samples the frame rate
@@ -244,6 +252,30 @@ export function Carousel3D() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
+  // Presenter shortcuts that work at any time: F toggles fullscreen, H the
+  // webcam hand tracking (desktop only — phones have no keyboard anyway, and
+  // the tracker is gated off there).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k === 'f') {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen?.();
+      } else if (k === 'h' && !isMobile) {
+        handTracking.toggle();
+      } else if (e.key === '+' || e.key === '=') {
+        // Zoom only frames the ring; while a hero owns the screen the dolly
+        // would sail straight past the fixed card, so leave it be.
+        if (!heroOpen) setZoom((z) => Math.min(ZOOM_MAX, z * ZOOM_STEP));
+      } else if (e.key === '-' || e.key === '_') {
+        if (!heroOpen) setZoom((z) => Math.max(ZOOM_MIN, z / ZOOM_STEP));
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isMobile, handTracking.toggle, heroOpen]);
+
   const selectedDashboard = selected
     ? ALL_DASHBOARDS.find((d) => d.id === selected.id)
     : undefined;
@@ -292,6 +324,7 @@ export function Carousel3D() {
         // Mouse parallax off: the camera drifting after the pointer made the
         // whole scene feel restless while browsing the panels.
         parallax={false}
+        zoom={zoom}
       />
       <Aurora />
       <Dust radius={radius} count={isMobile ? 120 : 320} />
@@ -381,13 +414,9 @@ export function Carousel3D() {
       </EffectComposer>
     </Canvas>
 
-    <LayoutControls
-      hidden={heroOpen}
-      layout={layout}
-      onChange={setLayout}
-      tag={tag}
-      onTagChange={setTag}
-    />
+    <LayoutControls hidden={heroOpen} tag={tag} onTagChange={setTag} />
+
+    <HotkeyPanel hidden={heroOpen} layout={layout} onChange={setLayout} />
 
     {/* Hand tracking is desktop-only: detection + post-processing together
         overwhelm phone GPUs, and touch already covers those devices. */}
