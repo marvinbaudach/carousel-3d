@@ -43,6 +43,8 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   if (cfg.shade) {
     const mask = cfg.shade.mask;
     const n = mask.length;
+    let bandStartX = r.x0;
+    let firstBand = true;
     ctx.fillStyle = 'rgba(96,156,224,0.13)';
     for (let i = 0; i < n; ) {
       if (!mask[i]) {
@@ -54,12 +56,21 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
       const x0 = r.x0 + ((r.x1 - r.x0) * (i - 0.5)) / (n - 1);
       const x1 = r.x0 + ((r.x1 - r.x0) * (j - 0.5)) / (n - 1);
       ctx.fillRect(x0, r.y0, x1 - x0, r.y1 - r.y0);
+      if (firstBand) {
+        bandStartX = x0;
+        firstBand = false;
+      }
       i = j;
     }
+    // Anchor the label to the start of the actual band, not the plot edge, so
+    // a band that only covers the right side (e.g. the smartphone era) is not
+    // mislabeled over the years before it. Clamp so it never spills off-plot.
     ctx.fillStyle = 'rgba(150,190,235,0.85)';
     ctx.font = `500 ${13 * u}px ${FONT}`;
     ctx.textAlign = 'left';
-    ctx.fillText(cfg.shade.label, r.x0 + 6 * u, r.y0 + 16 * u);
+    const labelW = ctx.measureText(cfg.shade.label).width;
+    const lx = Math.min(bandStartX + 6 * u, r.x1 - labelW - 6 * u);
+    ctx.fillText(cfg.shade.label, Math.max(r.x0 + 6 * u, lx), r.y0 + 16 * u);
   }
 
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
