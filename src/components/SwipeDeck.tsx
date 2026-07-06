@@ -53,6 +53,10 @@ export function SwipeDeck({ dashboards, onIndex }: SwipeDeckProps) {
   const nextRef = useRef<HTMLDivElement>(null);
   const drag = useRef({ active: false, startX: 0, dx: 0, w: 1, t0: 0 });
   const animating = useRef(false);
+  // Only the first card plays the chart fly-in; once you swipe, the cards you
+  // land on are already settled (they were drawn behind), so a replay would
+  // just flash the finished chart and then restart it.
+  const intro = useRef(true);
 
   // After every index change, snap the three roles back to their resting look
   // (imperative styles from the drag/throw would otherwise stick).
@@ -127,6 +131,7 @@ export function SwipeDeck({ dashboards, onIndex }: SwipeDeckProps) {
     const goPrev = right && index > 0;
     if (goNext || goPrev) {
       animating.current = true;
+      intro.current = false; // no chart replay on the card we land on
       const off = goNext ? -1 : 1;
       // Hurl the card off: it slides out, arcs up, spins in Z and Y and shrinks
       // as it fades — an accelerating ease-in so it really flies.
@@ -186,7 +191,7 @@ export function SwipeDeck({ dashboards, onIndex }: SwipeDeckProps) {
         onPointerUp={onUp}
         onPointerCancel={onUp}
       >
-        <CardCanvas dashboard={cur} animate />
+        <CardCanvas dashboard={cur} animate={intro.current} />
       </Card>
     </Stack>
   );
