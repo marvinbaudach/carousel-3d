@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, type RefObject } from 'react';
+import styled from 'styled-components';
 import { Canvas } from '@react-three/fiber';
 import {
   EffectComposer,
@@ -65,6 +66,10 @@ interface RingProps {
   poses: RefObject<Map<string, HeroStart>>;
   /** False while the user paused the auto-spin (Space). */
   spinning: boolean;
+  /** Phones: enables pinch-zoom, panel snap and rests the idle spin. */
+  isMobile: boolean;
+  /** Two-finger pinch ratio (mobile) — drives the zoom. */
+  onPinch: (scale: number) => void;
 }
 
 function Ring({
@@ -78,17 +83,22 @@ function Ring({
   radius,
   poses,
   spinning,
+  isMobile,
+  onPinch,
 }: RingProps) {
   const interactive = selectedId === null;
   const { groupRef, tiltRef, wasDrag } = useCarouselRotation({
-    // Space toggles the idle spin; drag, wheel and inertia stay alive.
-    autoSpin: spinning ? 0.12 : 0,
+    // Space toggles the idle spin; drag, wheel and inertia stay alive. Phones
+    // rest instead of idle-spinning, so the snap can settle a card centered.
+    autoSpin: spinning && !isMobile ? 0.12 : 0,
     paused,
     hand,
     // The visual lift of the front row is sin(tilt) * radius, so the start
     // tilt shrinks on big rings — otherwise a 30-panel ring opens with the
     // front row shoved to the top of the frame.
     initialTilt: -0.32 * Math.min(1, DEFAULT_RADIUS / radius),
+    onPinch: isMobile ? onPinch : undefined,
+    snapStep: isMobile ? (2 * Math.PI) / dashboards.length : undefined,
   });
   // Memoized so the slot objects keep their identity across unrelated
   // re-renders — CarouselItem detects a formation switch by slot identity.
@@ -123,6 +133,34 @@ function Ring({
     </group>
   );
 }
+
+// Explicit close affordance for touch: on a phone the hero closes by tapping
+// the backdrop, which isn't discoverable, so give it a real ✕ button. A 44px
+// target sits clear of the notch via the safe-area insets.
+const HeroClose = styled.button`
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  right: calc(env(safe-area-inset-right, 0px) + 14px);
+  z-index: 20;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 999px;
+  background: rgba(20, 24, 33, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+`;
+
+// Short haptic tap on selection/switch, where the device supports it — a bit
+// of physical feedback for touch, silently ignored on desktop.
+const buzz = () => navigator.vibrate?.(10);
 
 export function Carousel3D() {
   const isMobile = useIsMobile();
@@ -193,8 +231,14 @@ export function Carousel3D() {
   const heroOpen = selected !== null;
   const aberration = useMemo(() => new Vector2(0.0003, 0.0003), []);
 
+  // Two-finger pinch on a phone: dolly the ring within the zoom bounds.
+  const onPinch = useCallback((scale: number) => {
+    setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * scale)));
+  }, []);
+
   const open = (id: string, start: HeroStart) => {
     if (selected) return; // one hero at a time
+    buzz();
     setSelected({ id, start });
     setClosing(false);
   };
@@ -217,6 +261,7 @@ export function Carousel3D() {
       if (next.id === cur.id) return;
       // Clone the live pose: the registry entry keeps mutating every frame.
       const pose = posesRef.current.get(next.id);
+      navigator.vibrate?.(10);
       setOutgoing(cur);
       setSelected({
         id: next.id,
@@ -420,6 +465,8 @@ export function Carousel3D() {
         radius={radius}
         poses={posesRef}
         spinning={spinning}
+        isMobile={isMobile}
+        onPinch={onPinch}
       />
 
       {handTracking.status === 'running' && (
@@ -493,6 +540,12 @@ export function Carousel3D() {
         ].filter(Boolean) as ReactElement[]}
       </EffectComposer>
     </Canvas>
+
+    {isMobile && selected && !closing && (
+      <HeroClose aria-label="Schließen" onClick={requestClose}>
+        ✕
+      </HeroClose>
+    )}
 
     <LayoutControls hidden={heroOpen} tag={tag} onTagChange={setTag} />
 

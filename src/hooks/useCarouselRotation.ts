@@ -21,6 +21,14 @@ interface Options {
   tiltSensitivity?: number;
   /** Webcam hand state; an open moving hand swipes the ring like a drag. */
   hand?: RefObject<HandState>;
+  /** Two-finger pinch: called with the frame-to-frame distance ratio (>1
+      spreading, <1 closing) so the caller can drive zoom. Enabling this also
+      arbitrates touch — a second finger suspends the drag so the ring stops
+      spinning while pinching. */
+  onPinch?: (scale: number) => void;
+  /** When set (radians between panels), the ring eases to the nearest panel
+      once it has slowed — so a phone flick always leaves a card centered. */
+  snapStep?: number;
 }
 
 // Hand swipes are discrete flicks, not continuous coupling: tracking jitter
@@ -62,6 +70,8 @@ export function useCarouselRotation({
   initialTilt = -0.32,
   tiltSensitivity = 0.005,
   hand,
+  onPinch,
+  snapStep,
 }: Options = {}) {
   const groupRef = useRef<Group>(null);
   const tiltRef = useRef<Group>(null);
@@ -78,25 +88,64 @@ export function useCarouselRotation({
   const moved = useRef(0);
   const assembleStart = useRef<number | null>(null);
   const flickReadyAt = useRef(0);
-  // Keep the latest `paused` callback so listeners never capture a stale one.
+  // Active touch/pointer points, so a second finger can be recognised as a
+  // pinch instead of a second drag.
+  const pointers = useRef(new Map<number, { x: number; y: number }>());
+  const pinching = useRef(false);
+  const pinchDist = useRef(0);
+  // Keep the latest callbacks/params so listeners never capture a stale one.
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const onPinchRef = useRef(onPinch);
+  onPinchRef.current = onPinch;
+  const snapStepRef = useRef(snapStep);
+  snapStepRef.current = snapStep;
 
   useEffect(() => {
     const el = gl.domElement;
 
+    // Distance between the first two active pointers, for pinch scaling.
+    const twoFingerDist = () => {
+      const [a, b] = [...pointers.current.values()];
+      return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
+    };
+
     const onDown = (e: PointerEvent) => {
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      el.setPointerCapture(e.pointerId);
+      // Second finger down: take over as a pinch and drop the drag so the ring
+      // stops spinning while zooming.
+      if (onPinchRef.current && pointers.current.size >= 2) {
+        pinching.current = true;
+        dragging.current = false;
+        pinchDist.current = twoFingerDist();
+        el.style.cursor = 'grab';
+        return;
+      }
       dragging.current = true;
       moved.current = 0;
       lastX.current = e.clientX;
       lastY.current = e.clientY;
       lastMoveTime.current = performance.now();
       velocity.current = 0;
-      el.setPointerCapture(e.pointerId);
       el.style.cursor = 'grabbing';
     };
 
     const onMove = (e: PointerEvent) => {
+      const p = pointers.current.get(e.pointerId);
+      if (p) {
+        p.x = e.clientX;
+        p.y = e.clientY;
+      }
+
+      // Pinch: feed the frame-to-frame distance ratio to the caller (zoom).
+      if (pinching.current && pointers.current.size >= 2) {
+        const d = twoFingerDist();
+        if (pinchDist.current > 0 && d > 0) onPinchRef.current?.(d / pinchDist.current);
+        pinchDist.current = d;
+        return;
+      }
+
       if (!dragging.current) return;
       const now = performance.now();
       const dx = e.clientX - lastX.current;
@@ -123,10 +172,18 @@ export function useCarouselRotation({
     };
 
     const onUp = (e: PointerEvent) => {
-      if (!dragging.current) return;
-      dragging.current = false;
+      pointers.current.delete(e.pointerId);
       el.releasePointerCapture(e.pointerId);
-      el.style.cursor = 'grab';
+      if (pointers.current.size < 2) {
+        pinching.current = false;
+        pinchDist.current = 0;
+      }
+      // A finger left over after a pinch does not resume the drag (that would
+      // jump the ring); it waits for a fresh touch.
+      if (pointers.current.size === 0) {
+        dragging.current = false;
+        el.style.cursor = 'grab';
+      }
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -149,6 +206,9 @@ export function useCarouselRotation({
     };
 
     el.style.cursor = 'grab';
+    // Own all touch gestures ourselves — stops the phone from scrolling or
+    // browser-zooming the page when a drag or pinch runs over the canvas.
+    el.style.touchAction = 'none';
     el.addEventListener('pointerdown', onDown);
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
@@ -164,6 +224,7 @@ export function useCarouselRotation({
       el.removeEventListener('pointercancel', onUp);
       el.removeEventListener('wheel', onWheel);
       el.style.cursor = '';
+      el.style.touchAction = '';
     };
   }, [gl, dragSensitivity, wheelSensitivity, tiltSensitivity]);
 
@@ -197,6 +258,15 @@ export function useCarouselRotation({
       rotation.current += velocity.current * dt;
       // Ease velocity toward the auto-spin (inertia -> idle).
       velocity.current += (autoSpin - velocity.current) * friction;
+
+      // Snap: once the flick has bled off, ease the ring to the nearest panel
+      // so a card always ends up centered (mobile, where autoSpin is 0).
+      const step = snapStepRef.current;
+      if (step && !pinching.current && Math.abs(velocity.current) < 0.3) {
+        const target = Math.round(rotation.current / step) * step;
+        rotation.current += (target - rotation.current) * Math.min(1, dt * 6);
+        velocity.current *= 0.85;
+      }
     }
 
     // Eased swirl-in offset that unwinds to zero as the ring assembles.
