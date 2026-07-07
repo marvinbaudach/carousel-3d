@@ -90,7 +90,7 @@ function Ring({
   const interactive = selectedId === null;
   const { groupRef, tiltRef, wasDrag, spinTo } = useCarouselRotation({
     // Space toggles the idle spin; drag, wheel and inertia stay alive.
-    autoSpin: spinning ? 0.03 : 0,
+    autoSpin: spinning ? -0.03 : 0,
     paused,
     hand,
     // The visual lift of the front row is sin(tilt) * radius, so the start
