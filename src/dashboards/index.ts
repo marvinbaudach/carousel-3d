@@ -60,7 +60,6 @@ export const TAGS: { id: string; label: string }[] = [
   { id: 'deutschland', label: 'DEUTSCHLAND' },
   { id: 'soziales', label: 'SOZIALES' },
   { id: 'gesundheit', label: 'GESUNDHEIT' },
-  { id: 'schweiz', label: 'SCHWEIZ' },
   { id: 'welt', label: 'WELT' },
 ];
 
@@ -1587,7 +1586,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'us-debt': ['geld'],
   nukes: ['krieg'],
   'homicide-map': ['soziales', 'welt'],
-  'swiss-pop': ['schweiz', 'soziales'],
+  'swiss-pop': ['welt', 'soziales'],
   'world-pop': ['welt', 'soziales'],
   'oil-consumption': ['welt', 'geld'],
   'conflict-deaths': ['krieg'],
