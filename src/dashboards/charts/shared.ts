@@ -100,6 +100,8 @@ const COUNTRY_FLAGS: Record<string, string> = {
   'Saudi Arabia': '🇸🇦', 'United Kingdom': '🇬🇧', France: '🇫🇷', 'Korea, Rep.': '🇰🇷',
   Italy: '🇮🇹', Australia: '🇦🇺', Poland: '🇵🇱', Jamaica: '🇯🇲', 'South Africa': '🇿🇦',
   Brazil: '🇧🇷', Mexico: '🇲🇽',
+  Madagaskar: '🇲🇬', Malawi: '🇲🇼', 'Zentralafr. Republik': '🇨🇫', Burundi: '🇧🇮',
+  Mosambik: '🇲🇿', 'DR Kongo': '🇨🇩', Sambia: '🇿🇲',
 };
 
 const HAS_FLAG = /\p{Regional_Indicator}/u;

@@ -113,6 +113,7 @@ export const CARD_SOURCES: Record<string, Source> = {
   'youth-unemployment': S.oecd,
   unemployment: S.oecd,
   poverty: S.oecd,
+  'poorest-nations': S.worldBank,
   'de-insolvenz-jobs': S.creditreform,
   'de-underemployment': S.ba,
   'de-industry': S.oecd,

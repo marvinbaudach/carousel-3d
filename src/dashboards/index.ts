@@ -56,6 +56,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'youth-unemployment': ['soziales', 'welt'],
   unemployment: ['soziales', 'welt'],
   poverty: ['soziales', 'welt'],
+  'poorest-nations': ['soziales', 'welt'],
   'de-insolvenz-jobs': ['deutschland', 'geld'],
   'de-industry': ['deutschland', 'geld'],
   'de-migration': ['deutschland', 'soziales'],

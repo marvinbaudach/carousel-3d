@@ -611,6 +611,36 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
+  {
+    id: 'poorest-nations',
+    title: 'Ärmste Länder der Welt',
+    draw: (f) =>
+      hBarChart(f, {
+        // Share of the population living in extreme poverty, under $2.15/day
+        // (World Bank PIP, 2017 PPP, latest available year per country; rounded
+        // estimates). Almost the entire list is sub-Saharan Africa; Yemen is the
+        // West-Asian outlier, impoverished by nearly a decade of war.
+        label: 'Extreme Armut · Anteil unter 2,15 $/Tag · Weltbank',
+        value: 75,
+        fmt: (v) => `${Math.round(v)}%`,
+        rowFmt: (v) => `${Math.round(v)}%`,
+        delta: null,
+        color: orange,
+        unit: '',
+        rows: [
+          { name: 'Madagaskar', v: 75 },
+          { name: 'Malawi', v: 70 },
+          { name: 'Südsudan', v: 68 },
+          { name: 'Zentralafr. Republik', v: 66 },
+          { name: 'Burundi', v: 65 },
+          { name: 'Mosambik', v: 63 },
+          { name: 'DR Kongo', v: 62 },
+          { name: 'Sambia', v: 61 },
+          { name: 'Jemen', v: 55 },
+          { name: 'Nigeria', v: 31 },
+        ],
+      }),
+  },
   trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Jobs in Firmenpleiten · 🇩🇪', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137, eraMarkers(2000, 2025, [
     // The 2020 lockdown plus the suspended filing obligation pushed the count
     // to an artificial low; the rebound comes once the support ran out.
