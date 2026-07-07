@@ -175,9 +175,13 @@ export function HeroCard({
         1,
       );
     }
-    // Ring-side end of the flight: the panel's live pose when available (the
-    // slot may have moved since the click), the click-time capture otherwise.
-    const from = poses?.current.get(dashboard.id) ?? start;
+    // Ring-side end of the flight. Opening: launch from the pose captured at
+    // click (fixed), so the fly-in is independent of the ring — the card flies
+    // straight to center while the ring rotates the emptied slot to the front
+    // in parallel, instead of the launch point being dragged round first.
+    // Fly-back: track the slot's live pose so it still lands correctly after a
+    // formation or count change made while the hero was open.
+    const from = closing ? (poses?.current.get(dashboard.id) ?? start) : start;
     const t = easeInOutCubic(progress.current);
     // Flourish envelope: 0 at both ends, 1 at mid-flight — every extra move
     // (arc, yaw) is scaled by it, so start and landing poses stay exact.
