@@ -60,7 +60,6 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-population': ['deutschland', 'soziales'],
   'de-crime-foreign': ['deutschland', 'soziales'],
   'de-knife-attacks': ['deutschland', 'soziales'],
-  'de-group-rape': ['deutschland', 'soziales'],
   'de-tax-quota': ['deutschland', 'geld'],
   'de-power-prices': ['deutschland', 'geld', 'welt'],
   'berlin-warrants': ['deutschland', 'soziales'],

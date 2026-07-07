@@ -508,20 +508,6 @@ export const DE_KNIFE_ATTACKS_PANEL: TrendSeries = trend(
   ['2022', '2023', '2024', 'heute'],
 );
 
-// Group rapes: PKS special evaluation of "Vergewaltigung §177 Abs. 6-8
-// StGB" with the filter "suspects did not act alone", cases per year
-// (Bundestag Kleine Anfrage / BKA). The series starts in 2019 so it sits
-// entirely after the 2016 §177 reform — the numbers are then comparable
-// year to year. The real picture is roughly flat at ~680-790, not a sharp
-// climb. PKS counts suspects/cases, not convictions.
-export const DE_GROUP_RAPE_PANEL: TrendSeries = trend(
-  [
-    [2019, 710], [2020, 704], [2021, 677], [2022, 789], [2023, 761],
-  ],
-  (v) => `${Math.round(v)}`,
-  ['2019', '2021', '2022', '2023'],
-);
-
 // Germany's tax-and-contribution ratio: taxes plus compulsory social
 // security contributions as a share of GDP (OECD Revenue Statistics,
 // "tax-to-GDP", rounded). Climbed from ~32% in the 1960s to a record

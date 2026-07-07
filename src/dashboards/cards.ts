@@ -37,7 +37,6 @@ import {
   LIFE_PANEL,
   DE_FOREIGN_SUSPECTS_PANEL,
   DE_KNIFE_ATTACKS_PANEL,
-  DE_GROUP_RAPE_PANEL,
   DE_INSOLVENCY_JOBS_PANEL,
   DE_MIGRATION_PANEL,
   DE_MIGRATION_FLOWS,
@@ -573,7 +572,12 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Jobs in Firmenpleiten · 🇩🇪 · Creditreform', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137),
+  trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Jobs in Firmenpleiten · 🇩🇪 · Creditreform', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137, eraMarkers(2000, 2025, [
+    // The 2020 lockdown plus the suspended filing obligation pushed the count
+    // to an artificial low; the rebound comes once the support ran out.
+    [2009, '🏦 Finanzkrise 2009'],
+    [2020, '🦠 Corona-Lockdown'],
+  ])),
   {
     id: 'de-underemployment',
     title: 'Arbeitslosigkeit · offiziell vs. real',
@@ -696,15 +700,14 @@ export const POOL: Dashboard[] = [
     [2015, '📈 Zuwanderung 2015'],
     [2022, '🇺🇦 Vollinvasion 2022'],
   ])),
-  trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
+  trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151, eraMarkers(2005, 2024, [
+    // The share mechanically tracks the size of the foreign population, so the
+    // jump lines up with the 2015 wave — it is a share, not a per-capita rate.
+    [2015, '📈 Zuwanderung 2015'],
+  ])),
   // NRW, not Germany: no honest nationwide knife-violence time series exists
   // before the 2024 PKS, so this shows NRW's LKA public-space knife report.
   trendCard('de-knife-attacks', 'Messergewalt · NRW', 'Messergewalt · NRW · öffentl. Raum · LKA', DE_KNIFE_ATTACKS_PANEL, red, (v) => `${Math.round(v)}`, 313),
-  // Series starts in 2019 (post §177 reform), so the years are comparable and
-  // no causal marker is implied — Corona is the only in-window event.
-  trendCard('de-group-rape', 'Gruppenvergewaltigungen · Deutschland', 'Gruppenvergewaltigungen · 🇩🇪 · PKS · nicht allein', DE_GROUP_RAPE_PANEL, violet, (v) => `${Math.round(v)}`, 317, eraMarkers(2019, 2023, [
-    [2020, '🦠 Corona'],
-  ])),
   trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP · OECD', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 259, eraMarkers(1965, 2023, [
     // Taxes plus social contributions as a share of GDP — the state's take hit
     // a historical high of ~39% in the early 2020s.
