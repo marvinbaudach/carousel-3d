@@ -916,11 +916,14 @@ export const POOL: Dashboard[] = [
     [2023, '📚 Höhepunkt 23/24'],
   ])),
   trendCard('jailed-journalists', 'Inhaftierte Journalist:innen', 'Inhaftierte Journalist:innen · 🌍', JAILED_JOURNALISTS_PANEL, red, deInt, 181, eraMarkers(1992, 2024, [
-    // The two crackdowns that step the curve up on the 1992–2024 axis: Turkey's
-    // mass jailings after the 2016 coup attempt, and Belarus after the 2020
-    // election protests.
+    // The crackdowns that step the curve up on the 1992–2024 axis: Egypt after
+    // the 2013 coup, Turkey's mass jailings after the 2016 coup attempt, Belarus
+    // after the 2020 election protests, and Israel's detention of Palestinian
+    // journalists after the 2023 Gaza war (CPJ ranked it a top jailer that year).
+    [2013, '🇪🇬 Ägypten 2013'],
     [2016, '🇹🇷 Türkei 2016'],
     [2020, '🇧🇾 Belarus 2020'],
+    [2023, '🇮🇱 Israel 2023'],
   ])),
   {
     id: 'asset-correlation',
@@ -2195,6 +2198,7 @@ export const POOL: Dashboard[] = [
   ])),
   trendCard('smartphone-leash', 'Smartphones · die freiwillige Fußfessel', 'Smartphone-Nutzer · 🌍 · Ø 4h37m/Tag', SMARTPHONE_PANEL, aqua, (v) => `${(v / 1e9).toFixed(1)} Mrd`, 293, eraMarkers(2007, 2025, [
     [2007, '📱 iPhone'],
+    [2008, '🤖 Android'],
     [2016, '🌍 Jeder Dritte'],
   ])),
 ];
