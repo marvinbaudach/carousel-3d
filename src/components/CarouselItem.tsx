@@ -285,10 +285,10 @@ export function CarouselItem({
       if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, targetGlass, 0.15);
     }
 
-    // Front panels slightly larger -> "focus" feel (scales the whole group).
-    // The entrance already arrives at this scale, so there is no separate
-    // grow-in step to jolt; it only drifts as the ring slowly spins.
-    group.scale.set(focus, focus, 1);
+    // Front panels slightly larger -> "focus" feel (scales the whole group);
+    // a hover adds a small extra lift so the panel rises toward the viewer.
+    const lift = focus * (1 + pressed * 0.03);
+    group.scale.set(lift, lift, 1);
   });
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {

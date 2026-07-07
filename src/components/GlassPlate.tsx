@@ -55,6 +55,7 @@ export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
           roughness={0.04}
           metalness={0}
           envMapIntensity={3.6}
+          ior={1.5}
           clearcoat={1}
           clearcoatRoughness={0.08}
           specularIntensity={1}

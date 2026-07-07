@@ -50,6 +50,11 @@ const MAX_TILT = 0.7;
 // unwinds with an eased spin, in sync with the panels flying out.
 const ASSEMBLE_DURATION = 1.7;
 const ASSEMBLE_TURNS = Math.PI * 1.5;
+// Idle "breathing": a very slow, shallow vertical bob of the whole ring so the
+// resting scene never sits perfectly still. Tiny amplitude — it should register
+// as life, not as motion.
+const BREATHE_AMP = 0.06; // world units
+const BREATHE_SPEED = 0.5; // radians per second
 
 /**
  * Drives the ring: horizontal drag spins it (Y), vertical drag freely tilts it
@@ -262,6 +267,9 @@ export function useCarouselRotation({
 
     if (groupRef.current) {
       groupRef.current.rotation.y = rotation.current + assembleOffset;
+      // Slow vertical breathing so the idle ring is never dead still.
+      groupRef.current.position.y =
+        Math.sin(state.clock.elapsedTime * BREATHE_SPEED) * BREATHE_AMP;
     }
     if (tiltRef.current) {
       tiltRef.current.rotation.x = tilt.current;
