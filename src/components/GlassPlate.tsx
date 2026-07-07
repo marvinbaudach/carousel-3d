@@ -1,5 +1,6 @@
 import type { Ref } from 'react';
 import type { Mesh } from 'three';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 // Thickness of the glass plate sitting in front of each dashboard, giving the
 // panels real depth instead of looking like flat sheets.
@@ -17,13 +18,18 @@ interface GlassPlateProps {
 /**
  * The glossy, environment-reflecting glass slab shared by the ring panels and
  * the hero card — the same plate travels visually with a panel through its
- * whole lifecycle, so there is never a glass/no-glass jump. A plain standard
- * material (no transmission pass, no clearcoat lobe) keeps the shader cheap
- * across all the on-stage plates; the glossy reflection comes from the low
- * roughness plus the boosted env map. raycast disabled so clicks reach the
- * dashboard.
+ * whole lifecycle, so there is never a glass/no-glass jump. raycast disabled so
+ * clicks reach the dashboard.
+ *
+ * On desktop the plate carries a clearcoat lobe: a second specular layer that
+ * mirrors the night environment and, being fresnel-weighted, glares along the
+ * edges and on the panels curving away on the ring — the real glass look.
+ * Mobile keeps a plain standard material (no clearcoat pass) so the shader
+ * stays cheap across every on-stage plate; the reflection there is just the
+ * boosted env map on the low roughness.
  */
 export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
+  const isMobile = useIsMobile();
   return (
     <mesh
       ref={meshRef}
@@ -31,15 +37,30 @@ export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
       raycast={() => null}
     >
       <boxGeometry args={[width, height, GLASS_THICKNESS]} />
-      <meshStandardMaterial
-        color="#ffffff"
-        transparent
-        opacity={GLASS_OPACITY}
-        roughness={0.05}
-        metalness={0}
-        envMapIntensity={3.2}
-        depthWrite={false}
-      />
+      {isMobile ? (
+        <meshStandardMaterial
+          color="#ffffff"
+          transparent
+          opacity={GLASS_OPACITY}
+          roughness={0.05}
+          metalness={0}
+          envMapIntensity={3.2}
+          depthWrite={false}
+        />
+      ) : (
+        <meshPhysicalMaterial
+          color="#ffffff"
+          transparent
+          opacity={GLASS_OPACITY}
+          roughness={0.04}
+          metalness={0}
+          envMapIntensity={3.6}
+          clearcoat={1}
+          clearcoatRoughness={0.08}
+          specularIntensity={1}
+          depthWrite={false}
+        />
+      )}
     </mesh>
   );
 }
