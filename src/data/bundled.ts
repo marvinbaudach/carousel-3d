@@ -551,20 +551,22 @@ export const DE_UNDEREMPLOYMENT_COMPARE = compareSeries(
   { underLatest: 3.58 },
 );
 
-// Merchandise exports, USD trillions, Germany vs. China vs. USA (WTO / World
-// Bank, rounded). Germany was the world's #1 goods exporter from 2003 to 2008
-// ("Exportweltmeister"), neck-and-neck with China at ~$1.4T in 2008 — then
-// China overtook it in 2009 and rocketed to ~$3.5T while Germany's line
-// stagnated near $1.6T and rolled over in 2023–24. The crown, then the slide.
+// Share of world merchandise exports, %, Germany vs. China vs. USA (WTO,
+// rounded). On a share basis Germany's line actually falls — from ~12% around
+// 1990 to ~7% today — while China climbs from under 2% to ~14.5% and the USA
+// drifts from ~11% to ~8%. This is the "Exportweltmeister → abschmieren" story
+// the absolute-dollar view hides: nominal exports keep rising with world
+// prices, but Germany's slice of the pie shrinks. Germany's ~10% peak share
+// around 2003 is exactly when it held the world's #1 export crown.
 export const DE_EXPORT_COMPARE = compareSeries(
   [
-    { name: 'Deutschland', pts: [[1990, 0.41], [1995, 0.52], [2000, 0.55], [2005, 0.98], [2008, 1.45], [2009, 1.12], [2010, 1.26], [2015, 1.33], [2018, 1.56], [2020, 1.38], [2022, 1.66], [2023, 1.69], [2024, 1.66]] },
-    { name: 'China', pts: [[1990, 0.06], [1995, 0.15], [2000, 0.25], [2005, 0.76], [2008, 1.43], [2009, 1.20], [2010, 1.58], [2015, 2.27], [2018, 2.49], [2020, 2.59], [2022, 3.59], [2023, 3.38], [2024, 3.58]] },
-    { name: 'USA', pts: [[1990, 0.39], [1995, 0.58], [2000, 0.78], [2005, 0.90], [2008, 1.30], [2009, 1.06], [2010, 1.28], [2015, 1.50], [2018, 1.66], [2020, 1.43], [2022, 2.06], [2023, 2.02], [2024, 2.07]] },
+    { name: 'Deutschland', pts: [[1990, 12.0], [1995, 10.1], [2000, 8.5], [2003, 10.0], [2005, 9.3], [2008, 9.1], [2010, 8.2], [2015, 8.1], [2018, 8.0], [2020, 7.9], [2023, 7.1], [2024, 7.0]] },
+    { name: 'China', pts: [[1990, 1.8], [1995, 2.9], [2000, 3.9], [2005, 7.3], [2008, 8.9], [2009, 9.6], [2010, 10.3], [2015, 13.7], [2018, 12.7], [2020, 14.7], [2022, 14.4], [2024, 14.5]] },
+    { name: 'USA', pts: [[1990, 11.3], [1995, 11.3], [2000, 12.1], [2005, 8.6], [2008, 8.0], [2010, 8.4], [2015, 9.1], [2018, 8.5], [2020, 8.1], [2024, 8.4]] },
   ],
-  (v) => `$${v.toFixed(1)} Bio.`,
-  /** Latest German export figure, for the headline. */
-  { deuLatest: 1.66 },
+  (v) => `${v.toFixed(0)}%`,
+  /** Latest German world-export share, for the headline. */
+  { deuLatest: 7.0 },
 );
 
 // US unemployment: recent college graduates vs all workers, % (NY Fed /

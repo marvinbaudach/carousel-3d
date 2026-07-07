@@ -628,25 +628,25 @@ export const POOL: Dashboard[] = [
     title: 'Exportweltmeister · DEU vs. China vs. USA',
     draw: (f) =>
       lineChart(f, {
-        // Germany held the world's #1 goods-export crown 2003–2008, level with
-        // China in 2008 — then China overtook in 2009 and pulled far ahead
-        // while Germany's line flattened and rolled over in 2023–24.
-        label: 'Warenexporte · Bio. $ · WTO',
+        // Share of world merchandise exports: Germany's ~10% peak around 2003
+        // (the #1 crown) slides to ~7% today, China climbs from under 2% to
+        // ~14.5% — the decline the absolute-dollar view hides.
+        label: 'Anteil an Weltexporten · % · WTO',
         value: DE_EXPORT_COMPARE.deuLatest,
         unit: '',
-        fmt: (v) => `$${v.toFixed(1)} Bio.`,
+        fmt: (v) => `${v.toFixed(0)}%`,
         delta: null,
         seed: 277,
         series: [
           { name: '🇩🇪 DEU', color: yellow, data: DE_EXPORT_COMPARE.rows[0].data },
-          { name: '🇨🇳 China', color: red, data: DE_EXPORT_COMPARE.rows[1].data },
+          { name: '🇨🇳 China', color: magenta, data: DE_EXPORT_COMPARE.rows[1].data },
           { name: '🇺🇸 USA', color: blue, data: DE_EXPORT_COMPARE.rows[2].data },
         ],
         ticks: DE_EXPORT_COMPARE.ticks,
         xLabels: ['1990', '2001', '2013', 'heute'],
         // Germany takes the export crown in 2003, loses it to China in 2009.
         markers: eraMarkers(1990, 2024, [
-          [2003, '🏆 Weltmeister'],
+          [2003, '🏆 🇩🇪 Weltmeister'],
           [2009, '🇨🇳 China überholt'],
         ]),
       }),

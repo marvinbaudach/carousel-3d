@@ -144,7 +144,6 @@ const Toggle = styled.button<{ $open: boolean }>`
 // here purely so a presenter can discover them; the panel only *drives* the
 // formation rows.
 const HINTS: { keys: string; label: string }[] = [
-  { keys: 'Ziehen', label: 'Ring drehen' },
   { keys: '␣', label: 'Rotation pausieren' },
   { keys: '←  →', label: 'Nachbar-Panel' },
   { keys: '+  −', label: 'Zoom' },
