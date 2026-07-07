@@ -2017,7 +2017,7 @@ export const POOL: Dashboard[] = [
         // follow the same slope a decade behind — the quiet prerequisite for
         // fully programmable money. Japan is the outlier: rich yet still ~40%
         // cash, proof the slide is a policy choice, not a law of nature.
-        label: 'Barzahlungen · Anteil der Käufe · EZB/Riksbank/Worldpay',
+        label: 'Barzahlungen · Anteil der Käufe',
         value: CASHLESS_COMPARE.sweLatest,
         unit: '%',
         fmt: (v) => `${v.toFixed(0)}%`,
@@ -2034,6 +2034,38 @@ export const POOL: Dashboard[] = [
         ],
         ticks: CASHLESS_COMPARE.ticks,
         xLabels: ['2016', '2019', '2022', 'heute'],
+      }),
+  },
+  {
+    id: 'fiat-lifespan',
+    title: 'Fiat-Währungen · Lebensdauer',
+    draw: (f) =>
+      hBarChart(f, {
+        // Years a paper/fiat currency lasted before hyperinflation or a
+        // currency reform wiped it out — documented individual cases, not the
+        // popular "avg. 27 years / 775 currencies" (DollarDaze) figure, which
+        // the FT debunked (most of those deaths were wars and decolonisation,
+        // and true fiat only exists since 1971). The still-running US-Dollar,
+        // 54 years into the pure-fiat experiment since Nixon closed the gold
+        // window, tops the list — no pure fiat regime has yet reached 60.
+        label: 'Fiat-Währungen · Jahre bis Kollaps oder Reform',
+        value: 54,
+        fmt: (v) => `${Math.round(v)} J.`,
+        rowFmt: (v) => `${v} J.`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: '🇺🇸 US-Dollar · seit 1971 ⏳', v: 54 },
+          { name: '🇿🇼 Zimbabwe-Dollar', v: 29 },
+          { name: '🇩🇪 Reichsmark', v: 24 },
+          { name: '🇭🇺 Pengő', v: 19 },
+          { name: '🇻🇪 Bolívar fuerte', v: 10 },
+          { name: '🇩🇪 Papiermark', v: 9 },
+          { name: '🇺🇸 Continental', v: 6 },
+          { name: '🇫🇷 Assignat', v: 6 },
+          { name: '🇦🇷 Austral', v: 6 },
+        ],
       }),
   },
   trendCard('cbdc', 'Digitales Zentralbankgeld · Länder', 'Länder mit CBDC-Projekt · Atlantic Council', CBDC_PANEL, violet, (v) => `${Math.round(v)}`, 251, eraMarkers(2020, 2026, [
