@@ -53,8 +53,16 @@ const ARC_LIFT = 0.55;
 // before settling (fraction of the full travel). Reversed on close it reads
 // as a small anticipation pop before the card flies back.
 const OVERSHOOT = 0.06;
+// Anticipation: the card recoils back along its path, dips and leans back into
+// the ring before it launches, peaking early in the opening flight.
+const RECOIL_DIST = 0.13;
+const RECOIL_LEAN = 0.2;
+// Banking: peak roll (radians) the card leans into its flight direction at
+// mid-flight, leveling out for the landing.
+const MAX_BANK = 0.38;
 const UP = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
+const Z_AXIS = new Vector3(0, 0, 1);
 
 // Card aspect (4:5, = PANEL_W / PANEL_H) shared by the ring plate and hero.
 const CARD_ASPECT = 0.8;
@@ -95,6 +103,8 @@ const _up = new Vector3();
 const _qBase = new Quaternion();
 const _hinge = new Quaternion();
 const _yaw = new Quaternion();
+const _bank = new Quaternion();
+const _dir = new Vector3();
 
 // Ease that starts and ends gently for an elegant flight.
 function easeInOutCubic(t: number): number {
@@ -192,6 +202,12 @@ export function HeroCard({
     // instead of sliding on a straight line.
     _pos.lerpVectors(from.position, targetPosition, tPunch);
     _pos.y += swing * ARC_LIFT;
+    // Anticipation: early in the opening flight the card winds up — pulling
+    // back along its path and dipping before it launches (0 on close).
+    const anticipate = closing ? 0 : Math.sin(Math.PI * MathUtils.clamp(t / 0.22, 0, 1));
+    _dir.subVectors(targetPosition, from.position).normalize();
+    _pos.addScaledVector(_dir, -RECOIL_DIST * anticipate);
+    _pos.y -= RECOIL_DIST * 0.4 * anticipate;
     _scale.lerpVectors(from.scale, _target, tPunch);
     const halfH = _scale.y / 2;
 
@@ -199,15 +215,17 @@ export function HeroCard({
     _qBase.slerpQuaternions(from.quaternion, IDENTITY, t);
 
     // Hinge about the top edge: swing toward the viewer, peaking mid-flight and
-    // settling flat, so it reads as being pulled by the top.
-    _hinge.setFromAxisAngle(X_AXIS, -swing * MAX_HINGE);
+    // settling flat, plus the anticipation lean-back into the ring before launch.
+    _hinge.setFromAxisAngle(X_AXIS, -swing * MAX_HINGE + RECOIL_LEAN * anticipate);
     // Yaw corkscrew toward the launch side, also peaking mid-flight.
     _yaw.setFromAxisAngle(UP, side * swing * MAX_YAW);
+    // Bank: lean into the flight direction at mid-flight, leveling for landing.
+    _bank.setFromAxisAngle(Z_AXIS, -side * swing * MAX_BANK);
 
     // Pivot sits at the top edge (card center + up * halfH, in base orientation).
     _up.copy(UP).applyQuaternion(_qBase);
     pivot.position.copy(_pos).addScaledVector(_up, halfH);
-    pivot.quaternion.copy(_qBase).multiply(_yaw).multiply(_hinge);
+    pivot.quaternion.copy(_qBase).multiply(_yaw).multiply(_bank).multiply(_hinge);
 
     // Inner group hangs the card down from the pivot; the image mesh carries
     // its size (aspect stays constant, so imperative scaling never distorts).
