@@ -268,9 +268,15 @@ export function Carousel3D() {
 
   const heroTarget = useMemo(() => new Vector3(0, 0, heroZ), [heroZ]);
   // Tiny constant color fringe for a cinematic, lens-like finish. The effect is
-  // dropped from the stack entirely while a hero is open (see EffectComposer),
-  // so the offset itself can stay constant.
+  // dropped from the stack while a hero is settled open (see `dressed` /
+  // EffectComposer), so the offset itself can stay constant.
   const heroOpen = selected !== null;
+  // Whether the ring's "dressing" passes (grain + aberration) render. They drop
+  // out under an open hero for a clean, crisp card — but come back the instant a
+  // close *begins*, not when it ends: the scrim is still dark then and masks
+  // their re-entry, so the scene doesn't brighten fully and then visibly grain
+  // over a beat later as the card lands.
+  const dressed = !heroOpen || closing;
   const heroSource = selected ? CARD_SOURCES[selected.id] : undefined;
   const aberration = useMemo(() => new Vector2(0.0003, 0.0003), []);
 
@@ -533,14 +539,14 @@ export function Carousel3D() {
           // pinned dpr and hazed the hero text — removed entirely. Aberration
           // and noise still dress the ring but drop out while a hero is open,
           // so only the cheap vignette is ever left over the hero.
-          !isMobile && !heroOpen && (
+          !isMobile && dressed && (
             <ChromaticAberration
               key="aberration"
               blendFunction={BlendFunction.NORMAL}
               offset={aberration}
             />
           ),
-          !isMobile && !heroOpen && (
+          !isMobile && dressed && (
             <Noise
               key="noise"
               premultiply

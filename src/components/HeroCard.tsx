@@ -63,6 +63,27 @@ const MAX_BANK = 0.38;
 const UP = new Vector3(0, 1, 0);
 const X_AXIS = new Vector3(1, 0, 0);
 const Z_AXIS = new Vector3(0, 0, 1);
+const TWO_PI = Math.PI * 2;
+
+// Flight personalities. One is drawn at random each time a hero opens, so the
+// same card can arrive with a different flourish — mostly the elegant swoop,
+// occasionally a full-turn stunt for surprise. Every extra move is scaled so it
+// is exactly zero at t=0 and lands flat at t=1 (partial swings ride `swing`, a
+// sin envelope; full 360° turns ride `spin`, a monotone 0→1 that hits 2π).
+type Variant = 'swoop' | 'barrel' | 'flip' | 'corkscrew' | 'tumble';
+// Weighted bag: swoop is the calm default, the stunts are the rare surprise.
+const VARIANT_BAG: Variant[] = [
+  'swoop', 'swoop', 'swoop', 'swoop', 'swoop',
+  'barrel', 'barrel', 'flip', 'flip', 'corkscrew', 'corkscrew', 'tumble',
+];
+function pickVariant(): Variant {
+  return VARIANT_BAG[Math.floor(Math.random() * VARIANT_BAG.length)];
+}
+// Smootherstep on the (already eased) progress: a full turn accelerates and
+// decelerates gently instead of spinning at constant rate.
+function smoother(t: number): number {
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
 
 // Card aspect (4:5, = PANEL_W / PANEL_H) shared by the ring plate and hero.
 const CARD_ASPECT = 0.8;
@@ -105,6 +126,7 @@ const _hinge = new Quaternion();
 const _yaw = new Quaternion();
 const _bank = new Quaternion();
 const _dir = new Vector3();
+const _spin = new Quaternion();
 
 // Ease that starts and ends gently for an elegant flight.
 function easeInOutCubic(t: number): number {
@@ -140,6 +162,11 @@ export function HeroCard({
   // Clock time of the last texture redraw, so a live panel's ticks can be
   // throttled (static heroes never redraw).
   const lastDrawAt = useRef(-Infinity);
+
+  // One random flight personality per opened hero (stable for its lifetime).
+  // startOpen cards (the outgoing side of an arrow switch) mount at progress 1,
+  // so they never actually play a flourish — plain swoop keeps them still.
+  const variant = useMemo<Variant>(() => (startOpen ? 'swoop' : pickVariant()), [startOpen]);
 
   // Size the hero canvas once at mount (window dimensions don't change under
   // it), then let the shared hook own the texture's creation and disposal.
@@ -218,22 +245,39 @@ export function HeroCard({
     // Base orientation eases from the tilted ring pose to facing the camera.
     _qBase.slerpQuaternions(from.quaternion, IDENTITY, t);
 
-    // Hinge about the top edge: swing toward the viewer, peaking mid-flight and
-    // settling flat, plus the anticipation lean-back into the ring before launch.
-    _hinge.setFromAxisAngle(X_AXIS, -swing * MAX_HINGE + RECOIL_LEAN * anticipate);
-    // Yaw corkscrew toward the launch side, also peaking mid-flight.
-    _yaw.setFromAxisAngle(UP, side * swing * MAX_YAW);
-    // Bank: lean into the flight direction at mid-flight, leveling for landing.
-    _bank.setFromAxisAngle(Z_AXIS, -side * swing * MAX_BANK);
+    // Flourish, in two layers. The base swoop (hinge/yaw/bank about the top-edge
+    // pivot) all rides `swing`, so it vanishes at both ends; under a stunt it is
+    // damped so the pivot lean doesn't fight the spin. The full 360° turn rides
+    // `spin` (a monotone 0→1 hitting exactly 2π, so it lands flat) and is applied
+    // to the inner group, whose origin is the card centre — the card spins in
+    // place and stays framed instead of orbiting the top edge out of view.
+    const spin = smoother(t);
+    const damp = variant === 'swoop' ? 1 : variant === 'tumble' ? 0.8 : 0.5;
+    // Base hinge about the top edge (flip stays almost flat so the centre
+    // somersault reads cleanly), plus the launch-recoil lean-back.
+    const hingeScale = variant === 'flip' ? 0.2 : damp;
+    _hinge.setFromAxisAngle(X_AXIS, -swing * MAX_HINGE * hingeScale + RECOIL_LEAN * anticipate);
+    _yaw.setFromAxisAngle(UP, side * swing * MAX_YAW * damp);
+    _bank.setFromAxisAngle(Z_AXIS, -side * swing * MAX_BANK * damp);
 
     // Pivot sits at the top edge (card center + up * halfH, in base orientation).
     _up.copy(UP).applyQuaternion(_qBase);
     pivot.position.copy(_pos).addScaledVector(_up, halfH);
     pivot.quaternion.copy(_qBase).multiply(_yaw).multiply(_bank).multiply(_hinge);
 
+    // Centre stunt: a full turn about the card's own axis (identity for swoop).
+    // barrel = roll (Z), corkscrew = spin (Y), flip/tumble = somersault (X).
+    if (variant === 'barrel') _spin.setFromAxisAngle(Z_AXIS, side * TWO_PI * spin);
+    else if (variant === 'corkscrew') _spin.setFromAxisAngle(UP, side * TWO_PI * spin);
+    else if (variant === 'flip' || variant === 'tumble') _spin.setFromAxisAngle(X_AXIS, -TWO_PI * spin);
+    else _spin.identity();
+
     // Inner group hangs the card down from the pivot; the image mesh carries
     // its size (aspect stays constant, so imperative scaling never distorts).
+    // Its origin sits at the card centre, so the stunt quaternion spins the card
+    // about its own middle.
     inner.position.set(0, -halfH, 0);
+    inner.quaternion.copy(_spin);
     img.scale.set(_scale.x, _scale.y, 1);
     // The glass slab (unit-sized geometry) tracks the card, so the panel
     // keeps its plate through the whole flight — no glass/no-glass jump.
