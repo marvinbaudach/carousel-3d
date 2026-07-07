@@ -38,6 +38,7 @@ import {
   M2_PANEL,
   NUKE_TESTS_PANEL,
   PRESS_FREEDOM_PANEL,
+  PRESS_FREEDOM_COMPARE,
   BOOK_BANS_PANEL,
   OIL_CONSUMPTION_PANEL,
   OVERDOSE_PANEL,
@@ -462,7 +463,7 @@ export const POOL: Dashboard[] = [
         xLabels: ['2015', '2018', '2022', 'heute'],
         markers: eraMarkers(2015, 2025, [
           [2020, '🦠 Pandemie'],
-          [2023, '🤖 KI · Einstiegslücke'],
+          [2023, '🤖 LLM'],
         ]),
       }),
   },
@@ -624,6 +625,28 @@ export const POOL: Dashboard[] = [
     // average dropped below 55 — RSF's line into a "difficult situation".
     [2025, '⚠️ unter 55'],
   ])),
+  {
+    id: 'press-freedom-nations',
+    title: 'Pressefreiheit · DE / USA / China',
+    draw: (f) =>
+      lineChart(f, {
+        // RSF country scores (0–100, higher = freer). Germany stays high, the
+        // US falls year on year, China sits near the global floor.
+        label: 'Pressefreiheit · RSF-Score · 0–100',
+        value: PRESS_FREEDOM_COMPARE.deLatest,
+        unit: '',
+        fmt: (v) => v.toFixed(1),
+        delta: null,
+        seed: 173,
+        series: [
+          { name: '🇩🇪 Deutschland', color: green, data: PRESS_FREEDOM_COMPARE.rows[0].data },
+          { name: '🇺🇸 USA', color: yellow, data: PRESS_FREEDOM_COMPARE.rows[1].data },
+          { name: '🇨🇳 China', color: red, data: PRESS_FREEDOM_COMPARE.rows[2].data },
+        ],
+        ticks: PRESS_FREEDOM_COMPARE.ticks,
+        xLabels: ['2022', '2023', '2024', 'heute'],
+      }),
+  },
   trendCard('book-bans', 'Buchverbote an US-Schulen', 'Buchverbote · 🇺🇸 · Fälle/Schuljahr', BOOK_BANS_PANEL, orange, (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`), 179, eraMarkers(2021, 2024, [
     [2023, '📚 Höhepunkt 23/24'],
   ])),

@@ -514,6 +514,22 @@ export const PRESS_FREEDOM_PANEL: TrendSeries = trend(
   ['2022', '2023', '2024', 'heute'],
 );
 
+// RSF World Press Freedom Index — per-country score (0–100, higher = freer),
+// current post-2022 methodology. Germany holds in the 80s ("good"), the US has
+// slid out of the 70s toward the "problematic" band, and China sits near the
+// very bottom worldwide. Figures track RSF's annual country scores; the 2025
+// values are approximate.
+export const PRESS_FREEDOM_COMPARE = compareSeries(
+  [
+    { name: 'Deutschland', pts: [[2022, 82.0], [2023, 81.9], [2024, 83.8], [2025, 82.0]] },
+    { name: 'USA', pts: [[2022, 72.7], [2023, 71.2], [2024, 66.6], [2025, 60.0]] },
+    { name: 'China', pts: [[2022, 25.2], [2023, 23.0], [2024, 23.4], [2025, 22.6]] },
+  ],
+  (v) => v.toFixed(1),
+  /** Latest German score, for the headline. */
+  { deLatest: 82.0 },
+);
+
 // PEN America Index of School Book Bans — documented cases per US school year.
 // Bans exploded from 2,532 (2021–22) to a peak of 10,046 (2023–24), then eased
 // to 6,870 (2024–25) — though PEN notes titles pulled in earlier years stay off
