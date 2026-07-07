@@ -19,9 +19,16 @@ import { live } from '../data/store';
 import {
   AI_JOBS_COMPARE,
   CAMERAS_PANEL,
+  CB_BALANCE_COMPARE,
   CONFLICT_PANEL,
   DEBT_TREND_FALLBACK,
   DE_FAMILY,
+  DE_HOUSE_PRICE_INCOME_PANEL,
+  DE_PENSION_LEVEL_PANEL,
+  DE_RENT_BURDEN_PANEL,
+  DE_WAGE_COMPARE,
+  FOOD_FERT_COMPARE,
+  WEALTH_DIVERGE_COMPARE,
   DE_SINGLE_HH_PANEL,
   DOLLAR_PANEL,
   CONTINENT_FERTILITY,
@@ -32,6 +39,8 @@ import {
   DE_FOREIGN_SUSPECTS_PANEL,
   DE_INSOLVENCY_JOBS_PANEL,
   DE_MIGRATION_PANEL,
+  DE_TAX_QUOTA_PANEL,
+  DE_STATE_QUOTA_PANEL,
   INDUSTRY_COMPARE,
   M2_COMPARE,
   M2_PANEL,
@@ -557,6 +566,16 @@ export const POOL: Dashboard[] = [
       }),
   },
   trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Jobs in Firmenpleiten · 🇩🇪 · Creditreform', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137),
+  trendCard('de-tax-quota', 'Steuer- & Abgabenquote · Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP · OECD', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 259, eraMarkers(1965, 2023, [
+    // Record take in the early 2020s — the state's share of the economy at its
+    // historical high.
+    [2021, '📈 Rekord ~39%'],
+  ])),
+  trendCard('de-state-quota', 'Staatsquote · Deutschland', 'Staatsausgaben · 🇩🇪 · % des BIP · Staatsquote', DE_STATE_QUOTA_PANEL, orange, (v) => `${v.toFixed(1)}%`, 263, eraMarkers(1960, 2024, [
+    // Crises ratchet it up: reunification in the mid-90s and Corona's ~51% peak.
+    [1995, '🧱 Einheit'],
+    [2020, '💸 Corona ~51%'],
+  ])),
   {
     id: 'de-industry',
     title: 'Industrieproduktion · DEU vs. USA vs. China',
@@ -594,6 +613,23 @@ export const POOL: Dashboard[] = [
     [2014, '🇺🇦 Ukraine 2014'],
   ])),
   trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
+  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP · OECD', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 223, eraMarkers(1965, 2023, [
+    // Taxes plus social contributions as a share of GDP on the 1965–2023 axis:
+    // the Soli levied from 1991, the mid-2000s Hartz-era dip, and the record
+    // high in the early 2020s.
+    [1991, '🧱 Soli 1991'],
+    [2005, '📉 Hartz-Reformen'],
+    [2021, '📈 Rekordhoch'],
+  ])),
+  trendCard('de-state-quota', 'Staatsquote Deutschland', 'Staatsquote · 🇩🇪 · Staatsausgaben % des BIP', DE_STATE_QUOTA_PANEL, orange, (v) => `${v.toFixed(1)}%`, 227, eraMarkers(1960, 2024, [
+    // Government spending as a share of GDP on the 1960–2024 axis: every crisis
+    // spikes it — the 1975 oil-shock recession, the 1995 reunification peak,
+    // the 2009 financial crisis, and Corona's ~51% record in 2020.
+    [1975, '🛢️ Ölkrise'],
+    [1990, '🧱 Wiedervereinigung'],
+    [2009, '🏦 Finanzkrise'],
+    [2020, '💸 Corona'],
+  ])),
   {
     id: 'internet-shutdowns',
     title: 'Internet-Shutdowns · Top-Länder',
@@ -730,6 +766,145 @@ export const POOL: Dashboard[] = [
     [1913, '🏦 Fed 1913'],
     [1971, '⛓️‍💥 Gold-Ende 1971'],
   ])),
+  {
+    id: 'real-wages',
+    title: 'Nominal- vs. Reallohn · Deutschland',
+    draw: (f) =>
+      lineChart(f, {
+        // The gap between the two lines is the purchasing-power story: nominal
+        // pay climbs, real pay (after inflation) stands nearly still.
+        label: 'Lohnindex · 🇩🇪 · 2015 = 100',
+        value: DE_WAGE_COMPARE.realLatest,
+        unit: '',
+        fmt: (v) => v.toFixed(0),
+        delta: null,
+        seed: 239,
+        series: [
+          { name: 'Nominallohn', color: blue, data: DE_WAGE_COMPARE.rows[0].data },
+          { name: 'Reallohn', color: yellow, data: DE_WAGE_COMPARE.rows[1].data },
+        ],
+        ticks: DE_WAGE_COMPARE.ticks,
+        xLabels: ['2000', '2008', '2016', 'heute'],
+        markers: eraMarkers(2000, 2024, [[2022, '📉 Reallohn-Einbruch']]),
+      }),
+  },
+  trendCard('house-price-income', 'Hauspreis je Einkommen · Deutschland', 'Hauspreis / Einkommen · 🇩🇪 · 2015 = 100 · OECD', DE_HOUSE_PRICE_INCOME_PANEL, orange, (v) => `${Math.round(v)}`, 241, eraMarkers(2000, 2024, [
+    // The climb steepens once the ECB pins rates near zero; the 2022 rate
+    // hikes bring the first correction.
+    [2015, '🏦 Nullzins'],
+    [2022, '📈 Zinswende'],
+  ])),
+  {
+    id: 'homeownership',
+    title: 'Wohneigentumsquote · Europa',
+    draw: (f) =>
+      hBarChart(f, {
+        // Owner-occupancy rate, share of households living in their own home
+        // (Eurostat 2023, rounded). Germany and Switzerland sit at the very
+        // bottom of Europe — a continent of renters at its wealthy core.
+        label: 'Wohneigentum · Anteil der Haushalte · Eurostat 2023',
+        value: 69,
+        fmt: (v) => `Ø ${v.toFixed(0)}%`,
+        rowFmt: (v) => `${v.toFixed(0)}%`,
+        delta: null,
+        color: blue,
+        unit: '',
+        rows: [
+          { name: 'Rumänien', v: 95 },
+          { name: 'Slowakei', v: 93 },
+          { name: 'Kroatien', v: 91 },
+          { name: 'Ungarn', v: 90 },
+          { name: 'Polen', v: 87 },
+          { name: 'Spanien', v: 75 },
+          { name: 'Italien', v: 75 },
+          { name: 'EU-27', v: 69 },
+          { name: 'Frankreich', v: 63 },
+          { name: 'Österreich', v: 54 },
+          { name: 'Deutschland', v: 47 },
+          { name: 'Schweiz', v: 42 },
+        ],
+      }),
+  },
+  {
+    id: 'cb-balance',
+    title: 'Zentralbankbilanzen · Fed vs. EZB',
+    draw: (f) =>
+      lineChart(f, {
+        // Near-flat until 2008, then two vertical legs — QE and the 2020
+        // pandemic printing that roughly doubled both balance sheets.
+        label: 'Bilanzsumme · Fed vs. EZB · Bio.',
+        value: CB_BALANCE_COMPARE.fedLatest,
+        unit: '',
+        fmt: (v) => `${v.toFixed(1)} Bio.`,
+        delta: null,
+        seed: 243,
+        series: [
+          { name: '🇺🇸 Fed', color: blue, data: CB_BALANCE_COMPARE.rows[0].data },
+          { name: '🇪🇺 EZB', color: violet, data: CB_BALANCE_COMPARE.rows[1].data },
+        ],
+        ticks: CB_BALANCE_COMPARE.ticks,
+        xLabels: ['2000', '2008', '2016', 'heute'],
+        markers: eraMarkers(2000, 2024, [
+          [2008, '🏦 QE 2008'],
+          [2020, '💸 Corona 2020'],
+        ]),
+      }),
+  },
+  {
+    id: 'wealth-divergence',
+    title: 'Vermögen: Milliardäre vs. Löhne',
+    draw: (f) =>
+      lineChart(f, {
+        // Total billionaire net worth (Forbes) against Germany's real wage,
+        // both indexed to 2010 = 1×. The asset tier compounds ~4×, wages after
+        // inflation gain barely a tenth — the Cantillon effect made visible.
+        label: 'Vermögen · Milliardäre vs. Reallohn · 2010 = 1×',
+        value: WEALTH_DIVERGE_COMPARE.richLatest,
+        unit: '',
+        fmt: (v) => `${v.toFixed(1)}×`,
+        delta: null,
+        seed: 247,
+        series: [
+          { name: '💰 Milliardäre', color: red, data: WEALTH_DIVERGE_COMPARE.rows[0].data },
+          { name: '👷 Reallohn 🇩🇪', color: blue, data: WEALTH_DIVERGE_COMPARE.rows[1].data },
+        ],
+        ticks: WEALTH_DIVERGE_COMPARE.ticks,
+        xLabels: ['2010', '2015', '2019', 'heute'],
+        markers: eraMarkers(2010, 2024, [[2020, '💸 Corona']]),
+      }),
+  },
+  {
+    id: 'food-fertilizer',
+    title: 'Nahrungs- & Düngemittelpreise',
+    draw: (f) =>
+      lineChart(f, {
+        // Fertilizer swings harder than food and drags it along: natural gas
+        // is the feedstock for nitrogen fertilizer, so every energy shock —
+        // 2008, the 2022 gas crisis — spikes fertilizer first, then food.
+        label: 'Preisindex · Nahrung (FAO) & Dünger (Weltbank)',
+        value: FOOD_FERT_COMPARE.foodLatest,
+        unit: '',
+        fmt: (v) => `${Math.round(v)}`,
+        delta: null,
+        seed: 251,
+        series: [
+          { name: '🌾 Nahrung', color: green, data: FOOD_FERT_COMPARE.rows[0].data },
+          { name: '🧪 Dünger', color: orange, data: FOOD_FERT_COMPARE.rows[1].data },
+        ],
+        ticks: FOOD_FERT_COMPARE.ticks,
+        xLabels: ['2000', '2008', '2016', 'heute'],
+        markers: eraMarkers(2000, 2024, [
+          [2008, '🌾 Preiskrise'],
+          [2022, '⛽ Gaskrise'],
+        ]),
+      }),
+  },
+  trendCard('pension-level', 'Rentenniveau · Deutschland', 'Sicherungsniveau vor Steuern · 🇩🇪 · % des Durchschnittslohns', DE_PENSION_LEVEL_PANEL, magenta, (v) => `${v.toFixed(0)}%`, 253, eraMarkers(1990, 2040, [
+    // The legislated 48% floor holds only through 2039; projections then slide.
+    [2025, '⚖️ Haltelinie 48%'],
+    [2039, '📉 danach ~45%'],
+  ])),
+  trendCard('rent-burden', 'Mietbelastung · Großstädte Deutschland', 'Mietbelastung · Neuvermietung · 🇩🇪 Top-7-Städte · % des Einkommens', DE_RENT_BURDEN_PANEL, red, (v) => `${v.toFixed(0)}%`, 257),
   {
     id: 'armies',
     title: 'Größte Armeen · aktive Soldaten',

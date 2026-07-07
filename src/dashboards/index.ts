@@ -57,6 +57,8 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-industry': ['deutschland', 'geld'],
   'de-migration': ['deutschland', 'soziales'],
   'de-crime-foreign': ['deutschland', 'soziales'],
+  'de-tax-quota': ['deutschland', 'geld'],
+  'de-state-quota': ['deutschland', 'geld'],
   'internet-shutdowns': ['welt', 'soziales', 'freiheit'],
   'press-freedom-nations': ['welt', 'soziales', 'freiheit'],
   'jailed-journalists': ['welt', 'soziales', 'freiheit'],
@@ -102,6 +104,14 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'covid-stringency': ['gesundheit', 'welt', 'soziales'],
   'covid-lockdowns': ['gesundheit', 'welt', 'soziales'],
   'covid-vax-percapita': ['gesundheit', 'welt'],
+  'real-wages': ['geld', 'deutschland', 'soziales'],
+  'house-price-income': ['geld', 'deutschland', 'soziales'],
+  homeownership: ['geld', 'welt', 'soziales'],
+  'cb-balance': ['geld', 'welt'],
+  'wealth-divergence': ['geld', 'soziales'],
+  'food-fertilizer': ['welt', 'geld', 'gesundheit'],
+  'pension-level': ['geld', 'deutschland', 'soziales'],
+  'rent-burden': ['geld', 'deutschland', 'soziales'],
 };
 for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
 
@@ -113,7 +123,7 @@ const FEATURED = new Set([
   'us-wars', 'us-bases', 'modern-slavery', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
   'world-pop', 'oil-consumption', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees',
-  'military', 'de-industry', 'recent-wars',
+  'military', 'de-industry', 'recent-wars', 'de-tax-quota', 'de-state-quota',
   'youth-unemployment', 'unemployment', 'poverty',
   'teen-mde', 'female-lfp',
   'teen-screen', 'teen-antidepressants', 'obesity-fastfood', 'surveillance',
@@ -122,6 +132,8 @@ const FEATURED = new Set([
   'un-resolutions', 'de-family', 'single-households', 'inflation',
   'digital-id', 'alcohol-nations', 'alcohol-deaths', 'c40-cities',
   'covid-stringency', 'covid-lockdowns', 'covid-vax-percapita',
+  'real-wages', 'house-price-income', 'homeownership', 'cb-balance',
+  'wealth-divergence', 'food-fertilizer', 'pension-level', 'rent-burden',
 ]);
 
 /**

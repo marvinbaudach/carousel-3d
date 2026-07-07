@@ -462,6 +462,38 @@ export const DE_FOREIGN_SUSPECTS_PANEL: TrendSeries = trend(
   ['2005', '2011', '2018', 'heute'],
 );
 
+// Germany's tax-and-contribution ratio: taxes plus compulsory social
+// security contributions as a share of GDP (OECD Revenue Statistics,
+// "tax-to-GDP", rounded). This is the broad measure of what the state
+// takes from the economy — it climbed from ~32% in the 1960s to a record
+// ~39% in the early 2020s. Pre-1990 is West Germany.
+export const DE_TAX_QUOTA_PANEL: TrendSeries = trend(
+  [
+    [1965, 31.6], [1970, 31.5], [1975, 34.3], [1980, 36.4], [1985, 36.1],
+    [1990, 34.8], [1995, 36.2], [2000, 36.2], [2005, 33.9], [2010, 34.9],
+    [2015, 36.8], [2018, 38.5], [2019, 38.6], [2020, 38.0], [2021, 39.3],
+    [2022, 39.3], [2023, 37.4],
+  ],
+  (v) => `${v.toFixed(1)}%`,
+  ['1965', '1985', '2005', 'heute'],
+);
+
+// Germany's government-spending ratio (Staatsquote): total general
+// government expenditure as a share of GDP (Destatis / BMF / Eurostat,
+// rounded). Crises spike it — the 1975 oil-shock recession, the 1995
+// reunification peak (partly Treuhand debt assumption), 2009's financial
+// crisis, and Corona's ~51% record in 2020/21. Pre-1990 is West Germany.
+export const DE_STATE_QUOTA_PANEL: TrendSeries = trend(
+  [
+    [1960, 32.9], [1970, 38.3], [1975, 48.9], [1980, 47.9], [1985, 46.4],
+    [1990, 44.5], [1995, 54.8], [2000, 45.1], [2005, 47.0], [2008, 44.3],
+    [2009, 47.6], [2010, 47.9], [2013, 44.7], [2015, 44.0], [2019, 45.2],
+    [2020, 50.9], [2021, 51.1], [2022, 49.5], [2023, 48.4], [2024, 49.5],
+  ],
+  (v) => `${v.toFixed(1)}%`,
+  ['1960', '1982', '2003', 'heute'],
+);
+
 // US unemployment: recent college graduates vs all workers, % (NY Fed /
 // BLS, rounded). Aggregate unemployment shows no AI effect yet — the
 // canary is the entry-level gap widening since 2023: the rungs AI
@@ -1000,4 +1032,108 @@ export const DOLLAR_PANEL: TrendSeries = trend(
   ],
   (v) => `${(v * 100).toFixed(0)}¢`,
   ['1913', '1950', '1987', 'heute'],
+);
+
+// Nominal vs. real gross wage index for Germany (Destatis Nominal-/Reallohn-
+// index, 2015 = 100; earlier years back-cast from the Verdienststatistik).
+// The gap is the point: nominal pay climbs steadily, but after inflation the
+// real line barely moves for two decades — and 2022 was the sharpest real-wage
+// loss since records began, only clawed back from 2023 on. You "earn more" in
+// numbers while your purchasing power stands still.
+export const DE_WAGE_COMPARE = compareSeries(
+  [
+    { name: 'Nominallohn', pts: [[2000, 78], [2005, 83], [2010, 89], [2015, 100], [2018, 107], [2020, 108], [2022, 112], [2024, 122]] },
+    { name: 'Reallohn', pts: [[2000, 92], [2005, 93], [2010, 95], [2015, 100], [2018, 104], [2020, 104], [2022, 100], [2024, 104]] },
+  ],
+  (v) => v.toFixed(0),
+  /** Latest real-wage index, for the headline. */
+  { realLatest: 104 },
+);
+
+// House-price-to-income ratio for Germany (OECD Analytical House Price
+// database, index 2015 = 100). Falling through the 2000s, then a steep climb
+// once the ECB pinned rates near zero (2015+): homes ran ~35% ahead of income
+// by 2022 before the rate-hike correction. Buying a home decoupled from what
+// work pays — the core of the ownership squeeze.
+export const DE_HOUSE_PRICE_INCOME_PANEL: TrendSeries = trend(
+  [
+    [2000, 101], [2005, 96], [2010, 92], [2013, 95], [2015, 100],
+    [2018, 112], [2020, 123], [2022, 136], [2023, 128], [2024, 126],
+  ],
+  (v) => `${Math.round(v)}`,
+  ['2000', '2008', '2016', 'heute'],
+);
+
+// Central-bank balance sheets, Fed (USD) vs ECB (EUR), trillions (Fed H.4.1 /
+// ECB weekly financial statement; rounded). Near-flat until 2008, then two
+// vertical legs: the QE response to the financial crisis and the 2020 pandemic
+// printing that roughly doubled both in under two years. This is the money
+// behind the M2 and asset-price cards.
+export const CB_BALANCE_COMPARE = compareSeries(
+  [
+    { name: '🇺🇸 Fed', pts: [[2000, 0.6], [2007, 0.9], [2008, 2.2], [2011, 2.9], [2014, 4.5], [2019, 4.2], [2021, 8.8], [2022, 8.5], [2024, 7.0]] },
+    { name: '🇪🇺 EZB', pts: [[2000, 0.8], [2007, 1.5], [2008, 2.0], [2012, 3.0], [2014, 2.2], [2018, 4.7], [2021, 8.6], [2022, 8.0], [2024, 6.4]] },
+  ],
+  (v) => `${v.toFixed(0)} Bio.`,
+  /** Latest Fed balance sheet, for the headline. */
+  { fedLatest: 7.0 },
+);
+
+// Wealth divergence indexed to 2010 = 1×: total billionaire net worth (Forbes
+// annual, ~$3.6T in 2010 → ~$14T) against Germany's real wage index. The
+// asset-owning tier compounds ~4× as money printing lifts stocks and property,
+// while wages after inflation gain barely a tenth — the Cantillon effect made
+// visible. Different populations, shared shape: who the new money reaches.
+export const WEALTH_DIVERGE_COMPARE = compareSeries(
+  [
+    { name: '💰 Milliardäre', pts: [[2010, 1.0], [2015, 1.96], [2018, 2.53], [2020, 2.22], [2021, 3.64], [2022, 3.53], [2024, 3.94]] },
+    { name: '👷 Reallohn 🇩🇪', pts: [[2010, 1.0], [2015, 1.05], [2018, 1.09], [2020, 1.09], [2022, 1.05], [2024, 1.09]] },
+  ],
+  (v) => `${v.toFixed(1)}×`,
+  /** Latest billionaire multiple, for the headline. */
+  { richLatest: 3.9 },
+);
+
+// Food vs. fertilizer price indices (FAO Food Price Index, 2014–16 = 100;
+// World Bank fertilizer index, rebased onto the same window). The two move
+// together, and fertilizer swings harder: natural gas is the feedstock for
+// nitrogen fertilizer, so an energy shock (2008, and the 2022 gas crisis)
+// spikes fertilizer first and feeds straight through to food. Any new energy
+// squeeze on the Gulf gas trade would transmit the same way.
+export const FOOD_FERT_COMPARE = compareSeries(
+  [
+    { name: '🌾 Nahrung', pts: [[2000, 53], [2005, 63], [2008, 118], [2011, 132], [2015, 93], [2020, 98], [2022, 144], [2023, 124], [2024, 122]] },
+    { name: '🧪 Dünger', pts: [[2000, 40], [2005, 60], [2008, 200], [2011, 145], [2015, 90], [2020, 75], [2022, 230], [2023, 120], [2024, 112]] },
+  ],
+  (v) => `${Math.round(v)}`,
+  /** Latest food index, for the headline. */
+  { foodLatest: 122 },
+);
+
+// German statutory pension level ("Sicherungsniveau vor Steuern": standard
+// pension as a share of the average wage), with the official projection out to
+// 2040 (Rentenversicherungsbericht). A slow slide from ~55% to a legislated
+// 48% floor that holds only through 2039 — after which projections drop toward
+// ~45%. Each retiree's pension buys a smaller slice of an average wage.
+export const DE_PENSION_LEVEL_PANEL: TrendSeries = trend(
+  [
+    [1990, 55.0], [2000, 52.9], [2005, 52.6], [2010, 51.6], [2015, 47.7],
+    [2020, 49.4], [2024, 48.2], [2030, 48.0], [2035, 46.5], [2040, 45.0],
+  ],
+  (v) => `${v.toFixed(0)}%`,
+  ['1990', '2007', '2024', '2040'],
+);
+
+// Rent burden on new lettings in Germany's seven largest cities: median asking
+// rent as a share of median household net income (empirica / IW estimates for
+// Berlin, Hamburg, München, Köln, Frankfurt, Stuttgart, Düsseldorf; rounded).
+// Roughly a fifth of income in 2010, now a third-plus — asking rents ran far
+// ahead of pay through the cheap-money years.
+export const DE_RENT_BURDEN_PANEL: TrendSeries = trend(
+  [
+    [2010, 22], [2013, 25], [2015, 27], [2018, 30], [2020, 32],
+    [2022, 33], [2024, 35],
+  ],
+  (v) => `${v.toFixed(0)}%`,
+  ['2010', '2015', '2020', 'heute'],
 );
