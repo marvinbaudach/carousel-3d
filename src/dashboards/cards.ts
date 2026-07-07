@@ -915,7 +915,7 @@ export const POOL: Dashboard[] = [
   trendCard('book-bans', 'Buchverbote an US-Schulen', 'Buchverbote · 🇺🇸 · Fälle/Schuljahr', BOOK_BANS_PANEL, orange, (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`), 179, eraMarkers(2021, 2024, [
     [2023, '📚 Höhepunkt 23/24'],
   ])),
-  trendCard('jailed-journalists', 'Inhaftierte Journalist:innen', 'Inhaftierte Journalist:innen · 🌍', JAILED_JOURNALISTS_PANEL, red, deInt, 181, eraMarkers(1992, 2024, [
+  trendCard('jailed-journalists', 'Inhaftierte Journalisten', 'Inhaftierte Journalisten · 🌍', JAILED_JOURNALISTS_PANEL, red, deInt, 181, eraMarkers(1992, 2024, [
     // The crackdowns that step the curve up on the 1992–2024 axis: Egypt after
     // the 2013 coup, Turkey's mass jailings after the 2016 coup attempt, Belarus
     // after the 2020 election protests, and Israel's detention of Palestinian
