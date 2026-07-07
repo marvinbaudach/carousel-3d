@@ -101,6 +101,7 @@ export function useCarouselRotation({
     const el = gl.domElement;
 
     const onDown = (e: PointerEvent) => {
+      if (pausedRef.current?.()) return; // a hero is open — the ring is not grabbable
       dragging.current = true;
       moved.current = 0;
       lastX.current = e.clientX;
