@@ -173,17 +173,16 @@ export function choroplethMap(f: Frame, cfg: ChoroplethCfg): void {
     ctx.lineJoin = 'round';
     for (const country of cfg.world) {
       const v = cfg.valueByIso?.[country.id];
-      // Linear ramp between a visible floor and full opacity. The floor can't
-      // be near-zero: a low value drawn as translucent dark red over the near
-      // black map reads *darker* than the light no-data grey, so faint data
-      // countries vanished. So any country with data starts at 0.28 with a
-      // brighter red (255,74,64) that actually shows on the dark background,
-      // and climbs to 0.92 — darker still means higher, but the low end stays
-      // clearly, legibly red instead of merging into the grey.
+      // On the near-black surface a bright red (255,74,64) reads brighter the
+      // more opaque it is, so higher value = more vivid red = more eye-catching
+      // (the label says "kräftiger rot = mehr"). The low end still starts at a
+      // visible 0.22 so faint-data countries stay legibly red instead of sinking
+      // into the no-data grey, and climbs to a punchy 0.98 so the worst cases
+      // clearly stand out. No-data countries render as a flat neutral grey.
       ctx.fillStyle =
         v === undefined
           ? 'rgba(214,222,236,0.05)'
-          : `rgba(255,74,64,${(0.28 + 0.64 * Math.min(1, v / ref) * p).toFixed(2)})`;
+          : `rgba(255,74,64,${(0.22 + 0.76 * Math.min(1, v / ref) * p).toFixed(2)})`;
       for (const ring of country.rings) {
         ctx.beginPath();
         ring.forEach(([lon, lat], i) => {

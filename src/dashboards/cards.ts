@@ -1417,7 +1417,7 @@ export const POOL: Dashboard[] = [
         // Transparency International CPI 2024, inverted (100 - score) so
         // the most corrupt countries render darkest on the red ramp.
         // The top-5 list below calls out the worst performers.
-        label: 'Korruption · dunkler = korrupter',
+        label: 'Korruption · kräftiger rot = korrupter',
         value: 57,
         fmt: (v) => `Ø ${v.toFixed(0)}/100`,
         valueByIso: CPI_INVERTED,
