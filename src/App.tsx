@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import { useEnvironment } from '@react-three/drei';
 import { Carousel3D } from './components/Carousel3D';
 import { MobileDeck } from './components/MobileDeck';
 import { PerfHud } from './components/PerfHud';
@@ -37,9 +38,12 @@ export default function App() {
     // Fire off the public-API fetches and the price socket during the boot
     // beat, so most panels already hold real data when the ring blooms.
     loadLiveData();
+    // Fetch + decode the scene's HDR environment during the boot beat too —
+    // otherwise it lands mid-handoff and stalls the converge/iris animation.
+    if (!isMobile) useEnvironment.preload({ preset: 'night' });
     const id = setTimeout(() => setDone(true), BOOT_MS);
     return () => clearTimeout(id);
-  }, []);
+  }, [isMobile]);
 
   return (
     <Stage>

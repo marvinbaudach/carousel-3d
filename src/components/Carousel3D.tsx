@@ -119,6 +119,9 @@ const LAYOUT_KEY = 'worldpulse-layout';
 // focused cards (Switzerland alone would otherwise show a single card).
 const DEFAULT_TAG: string | null = null;
 
+// How many ring panels are admitted per frame while the set mounts in.
+const MOUNT_BATCH = 3;
+
 interface RingProps {
   onSelect: (id: string, start: HeroStart) => void;
   selectedId: string | null;
@@ -148,6 +151,22 @@ function Ring({
   spinning,
 }: RingProps) {
   const interactive = selectedId === null;
+  // Every panel's first mount rasterises a 512px canvas texture; admitting
+  // the whole pool in one commit stalls the main thread for hundreds of ms —
+  // exactly while the loader's converge/iris animation plays. Admit a few
+  // panels per frame instead; the entrance stagger hides the spread.
+  const [mountBudget, setMountBudget] = useState(MOUNT_BATCH);
+  useEffect(() => {
+    if (mountBudget >= dashboards.length) return;
+    const since = performance.now();
+    const raf = requestAnimationFrame((now) => {
+      // Scale the batch with the actual frame time, so a throttled or slow
+      // frame rate still fills the ring within a bounded wall-clock time.
+      const frames = Math.max(1, Math.min(6, Math.round((now - since) / 16)));
+      setMountBudget((b) => b + MOUNT_BATCH * frames);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [mountBudget, dashboards.length]);
   const { groupRef, tiltRef, wasDrag, spinTo } = useCarouselRotation({
     // Space toggles the idle spin; drag, wheel and inertia stay alive.
     autoSpin: spinning ? -0.03 : 0,
@@ -189,7 +208,7 @@ function Ring({
     // translates the tilted ring as a whole.
     <group ref={tiltRef} position={[0, -radius * 0.12, 0]}>
       <group ref={groupRef}>
-        {dashboards.map((dashboard, i) => (
+        {dashboards.slice(0, mountBudget).map((dashboard, i) => (
           <CarouselItem
             key={dashboard.id}
             dashboard={dashboard}
