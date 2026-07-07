@@ -374,12 +374,14 @@ export const M2_PANEL: TrendSeries = trend(
 
 // Broad money (M2) indexed to 2000 = 1x — USA (Fed H.6) vs euro area (ECB)
 // vs Switzerland (SNB). Indexing makes the growth comparable across
-// currencies; anchors are rounded from the central banks' series.
+// currencies; anchors are rounded from the central banks' series. The euro
+// area did not exist before 1999, so its 1990 point is the ECB's back-cast
+// area-wide aggregate. All three span 1990–2024 so the lines align.
 export const M2_COMPARE = compareSeries(
   [
-    { name: 'USA', pts: [[1995, 0.73], [2000, 1.0], [2005, 1.37], [2010, 1.8], [2015, 2.51], [2020, 3.9], [2022, 4.43], [2024, 4.37]] },
-    { name: 'Eurozone', pts: [[1995, 0.75], [2000, 1.0], [2005, 1.35], [2010, 1.8], [2015, 2.05], [2020, 2.65], [2024, 2.85]] },
-    { name: 'Schweiz', pts: [[1995, 0.85], [2000, 1.0], [2005, 1.2], [2010, 1.75], [2015, 2.3], [2020, 2.55], [2024, 2.5]] },
+    { name: 'USA', pts: [[1990, 0.67], [1995, 0.73], [2000, 1.0], [2005, 1.37], [2010, 1.8], [2015, 2.51], [2020, 3.9], [2022, 4.43], [2024, 4.37]] },
+    { name: 'Eurozone', pts: [[1990, 0.6], [1995, 0.75], [2000, 1.0], [2005, 1.35], [2010, 1.8], [2015, 2.05], [2020, 2.65], [2024, 2.85]] },
+    { name: 'Schweiz', pts: [[1990, 0.72], [1995, 0.85], [2000, 1.0], [2005, 1.2], [2010, 1.75], [2015, 2.3], [2020, 2.55], [2024, 2.5]] },
   ],
   (v) => `${v.toFixed(1)}×`,
   /** Latest US multiple, for the headline. */
@@ -498,6 +500,28 @@ export const INTERNET_PANEL: TrendSeries = trend(
   ],
   (v) => `${(v / 1e9).toFixed(1)}B`,
   ['1990', '2001', '2013', 'heute'],
+);
+
+// RSF World Press Freedom Index — global average score (0–100, higher = freer).
+// RSF reset its methodology in 2022, so scores aren't comparable across that
+// break; this shows only the current-methodology window. 2024 (55.9) and 2025
+// (54.7) are RSF's published global averages; 2022–23 are approximate. 2025 is
+// the lowest in the index's 25-year history — the first time the global average
+// fell below 55, RSF's threshold into a "difficult situation".
+export const PRESS_FREEDOM_PANEL: TrendSeries = trend(
+  [[2022, 57.0], [2023, 56.2], [2024, 55.9], [2025, 54.7]],
+  (v) => v.toFixed(1),
+  ['2022', '2023', '2024', 'heute'],
+);
+
+// PEN America Index of School Book Bans — documented cases per US school year.
+// Bans exploded from 2,532 (2021–22) to a peak of 10,046 (2023–24), then eased
+// to 6,870 (2024–25) — though PEN notes titles pulled in earlier years stay off
+// the shelves uncounted, so the dip understates books still unavailable.
+export const BOOK_BANS_PANEL: TrendSeries = trend(
+  [[2021, 2532], [2022, 3362], [2023, 10046], [2024, 6870]],
+  (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`),
+  ['21/22', '22/23', '23/24', '24/25'],
 );
 
 // Undernourished people worldwide, millions (FAO State of Food Security 2024).
@@ -775,16 +799,18 @@ export const US_ENERGY_MIX = compareSeries(
   { renewLatest: 290 },
 );
 
-// German installed generating capacity by source over 30 years, GW (BNetzA /
-// Fraunhofer ISE). The Energiewende in one chart: nuclear collapses to zero
-// (2023), coal is drawn down, and wind+solar surge from a rounding error to
-// by far the largest block. All three span 1995–2024 so the lines align.
-// Nameplate GW — wind/solar's firm, on-demand output is a fraction of it.
+// German installed generating capacity by source since reunification, GW
+// (BNetzA / Fraunhofer ISE). The Energiewende in one chart: nuclear collapses
+// to zero (2023), coal is drawn down, and wind+solar surge from a rounding
+// error to by far the largest block. The 1990 anchor catches reunification —
+// the combined fleet still ran the East German lignite plants and the
+// Greifswald reactors (shut down that year). All three span 1990–2024 so the
+// lines align. Nameplate GW — wind/solar's firm output is a fraction of it.
 export const DE_ENERGY_MIX = compareSeries(
   [
-    { name: 'Kohle', pts: [[1995, 52], [2005, 50], [2015, 50], [2020, 44], [2024, 35]] },
-    { name: 'Kernkraft', pts: [[1995, 22.7], [2000, 22.4], [2010, 20.5], [2011, 12.7], [2015, 12.1], [2019, 9.5], [2022, 4.3], [2023, 0], [2024, 0]] },
-    { name: 'Wind + Solar', pts: [[1995, 2], [2000, 6], [2010, 45], [2015, 85], [2020, 115], [2024, 172]] },
+    { name: 'Kohle', pts: [[1990, 55], [1995, 52], [2005, 50], [2015, 50], [2020, 44], [2024, 35]] },
+    { name: 'Kernkraft', pts: [[1990, 24], [1995, 22.7], [2000, 22.4], [2010, 20.5], [2011, 12.7], [2015, 12.1], [2019, 9.5], [2022, 4.3], [2023, 0], [2024, 0]] },
+    { name: 'Wind + Solar', pts: [[1990, 0.5], [1995, 2], [2000, 6], [2010, 45], [2015, 85], [2020, 115], [2024, 172]] },
   ],
   (v) => `${Math.round(v)} GW`,
   /** Latest wind+solar capacity, for the headline. */
@@ -907,14 +933,16 @@ export const DE_SINGLE_HH_PANEL: TrendSeries = trend(
 // Female labour-force participation rate, Germany, % of women ~15–64
 // (census/Destatis). Definitions shifted over the century and pre-1990 figures
 // are West Germany only (the GDR ran far higher, ~80%), so the early points are
-// rough and comparability is limited — but the long climb is real.
+// rough and comparability is limited. The 1882 imperial census already counted
+// a high female share thanks to unpaid family labour in agriculture — the rate
+// dipped as the economy urbanised, then climbed steadily to today.
 export const DE_FEMALE_LFP_PANEL: TrendSeries = trend(
   [
-    [1907, 30], [1925, 35], [1950, 44], [1961, 47], [1970, 46],
+    [1882, 40], [1907, 30], [1925, 35], [1950, 44], [1961, 47], [1970, 46],
     [1980, 50], [1991, 57], [2000, 63], [2010, 70], [2016, 74], [2023, 76],
   ],
   (v) => `${v.toFixed(0)}%`,
-  ['1907', '1945', '1985', 'heute'],
+  ['1882', '1930', '1980', 'heute'],
 );
 
 // US alcohol-induced deaths per year (CDC WONDER, alcohol-induced causes:

@@ -21,6 +21,10 @@ import { plotRect, xAxisLabels } from './shared';
  * charts. Labels stack into as many rows as needed: each drops to the first row
  * whose already-placed labels it does not horizontally overlap, so a right-edge
  * label that flips left never collides with a left one on the same row.
+ *
+ * Every label is pinned to its own dashed line with a short horizontal leader
+ * ending in a dot at the join, so a label that flips to the opposite side or
+ * drops to a lower row can still be traced back to the line it belongs to.
  */
 export function drawEraMarkers(
   f: Frame,
@@ -43,7 +47,6 @@ export function drawEraMarkers(
     ctx.lineTo(mx, r.y1);
     ctx.stroke();
     ctx.restore();
-    ctx.fillStyle = 'rgba(236,182,132,0.9)';
     const labelW = ctx.measureText(m.label).width;
     const rightFits = mx + gap + labelW <= r.x1;
     const lx = mx + (rightFits ? gap : -gap);
@@ -52,8 +55,22 @@ export function drawEraMarkers(
     let row = 0;
     while (rowSpans[row]?.some((s) => x0 < s.x1 + gap && x1 + gap > s.x0)) row++;
     (rowSpans[row] ??= []).push({ x0, x1 });
+    const ly = r.y0 + (16 + row * 18) * u;
+    // Leader from the dashed line to the label's inner edge, at label height,
+    // capped with a dot on the line so the attachment point is unambiguous.
+    ctx.strokeStyle = 'rgba(224,156,96,0.8)';
+    ctx.fillStyle = 'rgba(224,156,96,0.8)';
+    ctx.lineWidth = 1.5 * u;
+    ctx.beginPath();
+    ctx.moveTo(mx, ly - 4 * u);
+    ctx.lineTo(lx, ly - 4 * u);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(mx, ly - 4 * u, 2 * u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(236,182,132,0.9)';
     ctx.textAlign = rightFits ? 'left' : 'right';
-    ctx.fillText(m.label, lx, r.y0 + (16 + row * 18) * u);
+    ctx.fillText(m.label, lx, ly);
   }
 }
 

@@ -34,12 +34,13 @@ import {
   M2_COMPARE,
   M2_PANEL,
   NUKE_TESTS_PANEL,
+  PRESS_FREEDOM_PANEL,
+  BOOK_BANS_PANEL,
   OIL_CONSUMPTION_PANEL,
   OVERDOSE_PANEL,
   REFUGEE_PANEL,
   SWISS_POP_FALLBACK,
   DE_ENERGY_MIX,
-  US_ENERGY_MIX,
   DE_FEMALE_LFP_PANEL,
   TEEN_MDE,
   TEEN_RX_PANEL,
@@ -59,6 +60,7 @@ export const TAGS: { id: string; label: string }[] = [
   { id: 'krieg', label: 'KRIEG' },
   { id: 'deutschland', label: 'DEUTSCHLAND' },
   { id: 'soziales', label: 'SOZIALES' },
+  { id: 'freiheit', label: 'FREIHEIT' },
   { id: 'gesundheit', label: 'GESUNDHEIT' },
   { id: 'welt', label: 'WELT' },
 ];
@@ -473,7 +475,7 @@ const POOL: Dashboard[] = [
           { name: '🇨🇭 CHF', color: red, data: M2_COMPARE.rows[2].data },
         ],
         ticks: M2_COMPARE.ticks,
-        xLabels: ['1995', '2005', '2014', 'heute'],
+        xLabels: ['1990', '2001', '2013', 'heute'],
       }),
   },
   trendCard('m2-history', 'US-Geldmenge seit 1900', 'US-Geldmenge M2 · seit 1900', M2_PANEL, yellow, (v) => `$${(v / 1e12).toFixed(1)}T`, 97, eraMarkers(1900, 2024, [
@@ -502,6 +504,10 @@ const POOL: Dashboard[] = [
         ],
         ticks: AI_JOBS_COMPARE.ticks,
         xLabels: ['2015', '2018', '2022', 'heute'],
+        markers: eraMarkers(2015, 2025, [
+          [2020, '🦠 Pandemie'],
+          [2023, '🤖 KI · Einstiegslücke'],
+        ]),
       }),
   },
   {
@@ -632,6 +638,40 @@ const POOL: Dashboard[] = [
   ])),
   trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
   {
+    id: 'internet-shutdowns',
+    title: 'Internet-Shutdowns · Top-Länder',
+    draw: (f) =>
+      hBarChart(f, {
+        // Access Now / #KeepItOn 2024: 296 staatlich verhängte Netzsperren in
+        // 54 Ländern — Rekord. Vier Staaten stehen für 69 % aller Fälle;
+        // Myanmar (Militärregime) verdrängte Indien erstmals von Platz 1.
+        label: 'Internet-Shutdowns · 🌐 · 2024',
+        value: 296,
+        delta: null,
+        color: red,
+        unit: '',
+        fmt: (v) => `${v}`,
+        rowFmt: (v) => `${v}`,
+        rows: [
+          { name: 'Myanmar', v: 85 },
+          { name: 'Indien', v: 84 },
+          { name: 'Pakistan', v: 21 },
+          { name: 'Russland', v: 19 },
+          { name: 'Irak', v: 5 },
+          { name: 'Bangladesch', v: 4 },
+          { name: 'Äthiopien', v: 3 },
+        ],
+      }),
+  },
+  trendCard('press-freedom', 'Pressefreiheit · Weltschnitt', 'Pressefreiheit · 🌍 · RSF-Score', PRESS_FREEDOM_PANEL, aqua, (v) => v.toFixed(1), 173, eraMarkers(2022, 2025, [
+    // Higher score = freer; the line falls. 2025 is the first year the global
+    // average dropped below 55 — RSF's line into a "difficult situation".
+    [2025, '⚠️ unter 55'],
+  ])),
+  trendCard('book-bans', 'Buchverbote an US-Schulen', 'Buchverbote · 🇺🇸 · Fälle/Schuljahr', BOOK_BANS_PANEL, orange, (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`), 179, eraMarkers(2021, 2024, [
+    [2023, '📚 Höhepunkt 23/24'],
+  ])),
+  {
     id: 'gdp-growth',
     title: 'Wirtschaftsleistung im Vergleich',
     draw: (f) =>
@@ -668,28 +708,6 @@ const POOL: Dashboard[] = [
   trendCard('extreme-poverty', 'Extreme Armut weltweit', 'Extreme Armut · < $2,15/Tag · Weltbank · SDG 1', EXTREME_POVERTY_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 73, eraMarkers(1990, 2024, [
     [2020, '🦠 Pandemie · 1. Anstieg seit Jahrzehnten'],
   ])),
-  {
-    id: 'sdg-progress',
-    title: 'Agenda 2030 · Zielerreichung',
-    draw: (f) =>
-      hBarChart(f, {
-        // UN Sustainable Development Goals Report 2024: of the 169 SDG targets,
-        // only ~17% are on track, ~48% show weak/moderate progress, and over a
-        // third have stalled or reversed. The plan is largely off-course.
-        label: 'SDG-Ziele · 169 Unterziele · UN 2024',
-        value: 17,
-        fmt: (v) => `${Math.round(v)}% auf Kurs`,
-        rowFmt: (v) => `${Math.round(v)}%`,
-        delta: null,
-        color: red,
-        unit: '',
-        rows: [
-          { name: 'Zu langsam', v: 48 },
-          { name: 'Stagniert / rückläufig', v: 35 },
-          { name: 'Auf Kurs', v: 17 },
-        ],
-      }),
-  },
   trendCard('nuke-tests', 'Atomtests pro Jahr', 'Atomtests · seit 1945', NUKE_TESTS_PANEL, red, (v) => `${Math.round(v)}`, 107, eraMarkers(1945, 2024, [
     [1963, '☢️ Teststopp 1963'],
     [1996, '✍️ CTBT 1996'],
@@ -1072,7 +1090,7 @@ const POOL: Dashboard[] = [
         shade: { mask: TEEN_MDE.mask, label: '📱 Soziale Medien' },
       }),
   },
-  trendCard('female-lfp', 'Frauenerwerbsquote · Deutschland', 'Frauenerwerbsquote · 🇩🇪 · seit 1907', DE_FEMALE_LFP_PANEL, aqua, (v) => `${v.toFixed(0)}%`, 211, eraMarkers(1907, 2023, [
+  trendCard('female-lfp', 'Frauenerwerbsquote · Deutschland', 'Frauenerwerbsquote · 🇩🇪 · seit 1882', DE_FEMALE_LFP_PANEL, aqua, (v) => `${v.toFixed(0)}%`, 211, eraMarkers(1882, 2023, [
     // One belegbarer milestone: from 1958 married women no longer needed the
     // husband's consent to take a job (Gleichberechtigungsgesetz).
     [1958, '⚖️ Gleichberechtigung 1958'],
@@ -1106,29 +1124,6 @@ const POOL: Dashboard[] = [
     [2012, '📱 Soziale Medien'],
   ])),
   {
-    id: 'us-energy-mix',
-    title: 'US-Strommix · Kohle, Kernkraft, Erneuerbare',
-    draw: (f) =>
-      lineChart(f, {
-        // EIA installed capacity by source: coal retires, nuclear holds flat,
-        // wind+solar overtake both. Nameplate GW — the intermittent sources'
-        // firm, on-demand output is a fraction of it.
-        label: 'Installierte Leistung · 🇺🇸 · GW',
-        value: US_ENERGY_MIX.renewLatest,
-        unit: '',
-        fmt: (v) => `${Math.round(v)} GW`,
-        delta: null,
-        seed: 217,
-        series: [
-          { name: 'Kohle', color: orange, data: US_ENERGY_MIX.rows[0].data },
-          { name: 'Kernkraft', color: yellow, data: US_ENERGY_MIX.rows[1].data },
-          { name: 'Wind + Solar', color: green, data: US_ENERGY_MIX.rows[2].data },
-        ],
-        ticks: US_ENERGY_MIX.ticks,
-        xLabels: ['2000', '2008', '2016', '2023'],
-      }),
-  },
-  {
     id: 'de-energy-mix',
     title: 'Deutscher Strommix · Kohle, Kernkraft, Erneuerbare',
     draw: (f) =>
@@ -1148,7 +1143,7 @@ const POOL: Dashboard[] = [
           { name: 'Wind + Solar', color: green, data: DE_ENERGY_MIX.rows[2].data },
         ],
         ticks: DE_ENERGY_MIX.ticks,
-        xLabels: ['1995', '2005', '2015', '2024'],
+        xLabels: ['1990', '2001', '2013', '2024'],
       }),
   },
   {
@@ -1201,7 +1196,10 @@ const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras · IHS · Schätzung', CAMERAS_PANEL, aqua, (v) => `${(v / 1e9).toFixed(2)} Mrd`, 183),
+  trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras · IHS · Schätzung', CAMERAS_PANEL, aqua, (v) => `${(v / 1e9).toFixed(2)} Mrd`, 183, eraMarkers(2000, 2025, [
+    [2008, '🏅 Peking · Ausbaustart China'],
+    [2021, '🎥 1 Mrd weltweit'],
+  ])),
   {
     id: 'gov-requests-country',
     title: 'Behördenanfragen an Big Tech · Top-Länder',
@@ -1608,10 +1606,12 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-industry': ['deutschland', 'geld'],
   'de-migration': ['deutschland', 'soziales'],
   'de-crime-foreign': ['deutschland', 'soziales'],
+  'internet-shutdowns': ['welt', 'soziales', 'freiheit'],
+  'press-freedom': ['welt', 'soziales', 'freiheit'],
+  'book-bans': ['soziales', 'welt', 'freiheit'],
   internet: ['welt'],
   'world-hunger': ['welt', 'gesundheit'],
   'extreme-poverty': ['welt', 'soziales'],
-  'sdg-progress': ['welt', 'soziales'],
   'nuke-tests': ['krieg'],
   'obesity-nations': ['gesundheit', 'welt'],
   'gdp-growth': ['geld', 'deutschland'],
@@ -1621,27 +1621,26 @@ const TAGS_BY_ID: Record<string, string[]> = {
   wealth: ['geld', 'soziales'],
   'tax-burden': ['geld', 'welt'],
   'power-prices': ['geld', 'welt'],
-  incarceration: ['soziales', 'welt'],
+  incarceration: ['soziales', 'welt', 'freiheit'],
   corruption: ['soziales', 'welt'],
   'us-bases': ['krieg', 'welt'],
-  'modern-slavery': ['welt', 'soziales'],
+  'modern-slavery': ['welt', 'soziales', 'freiheit'],
   'us-wars': ['krieg'],
   'recent-wars': ['krieg'],
   'teen-mde': ['gesundheit', 'soziales'],
   'female-lfp': ['deutschland', 'soziales'],
   'teen-screen': ['gesundheit', 'soziales'],
   'teen-antidepressants': ['gesundheit', 'soziales'],
-  'us-energy-mix': ['welt'],
   'de-energy-mix': ['deutschland', 'welt'],
   'obesity-fastfood': ['gesundheit'],
-  surveillance: ['welt', 'soziales'],
-  'cameras-world': ['welt', 'soziales'],
-  'gov-requests-country': ['welt', 'soziales'],
-  'youtube-removals': ['welt', 'soziales'],
+  surveillance: ['welt', 'soziales', 'freiheit'],
+  'cameras-world': ['welt', 'soziales', 'freiheit'],
+  'gov-requests-country': ['welt', 'soziales', 'freiheit'],
+  'youtube-removals': ['welt', 'soziales', 'freiheit'],
   cashless: ['geld', 'welt'],
   '5g-stations': ['welt'],
   inflation: ['geld', 'welt'],
-  'digital-id': ['welt', 'soziales'],
+  'digital-id': ['welt', 'soziales', 'freiheit'],
   'alcohol-nations': ['gesundheit', 'welt'],
   'alcohol-deaths': ['gesundheit'],
   'c40-cities': ['welt'],
@@ -1666,7 +1665,7 @@ const FEATURED = new Set([
   'youth-unemployment', 'unemployment', 'poverty',
   'teen-mde', 'female-lfp',
   'teen-screen', 'teen-antidepressants', 'obesity-fastfood', 'surveillance',
-  'cameras-world',
+  'cameras-world', 'internet-shutdowns', 'press-freedom', 'book-bans',
   'gov-requests-country', 'youtube-removals', '5g-stations',
   'un-resolutions', 'de-family', 'single-households', 'inflation',
   'digital-id', 'alcohol-nations', 'alcohol-deaths', 'c40-cities',
