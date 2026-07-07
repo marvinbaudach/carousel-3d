@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement, t
 import { Canvas } from '@react-three/fiber';
 import {
   EffectComposer,
+  SMAA,
   ChromaticAberration,
   Noise,
   Vignette,
@@ -449,6 +450,12 @@ export function Carousel3D() {
           invisible under the effect stack. */}
       <EffectComposer key={isMobile ? 'mobile' : 'desktop'} multisampling={0}>
         {[
+          // Edge antialiasing: the Canvas and the composer both run without
+          // MSAA (offscreen buffers make it costly), so panel silhouettes rely
+          // on this cheap post pass instead of hardware multisampling. Runs in
+          // both the ring and hero views; desktop-only, matching the rest of
+          // the effect stack's mobile-perf posture.
+          !isMobile && <SMAA key="smaa" />,
           // No bloom at all: its fullscreen glow ran every mipmap blur pass
           // each frame (even zeroed), which tanked the frame rate at the hero's
           // pinned dpr and hazed the hero text — removed entirely. Aberration

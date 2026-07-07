@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useEffect, useRef, type RefObject } from 'react';
 import { useFrame, useThree, type ThreeEvent } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
 import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
@@ -6,8 +6,9 @@ import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
 import type { HeroStart } from './HeroCard';
 import { GlassPlate, GLASS_OPACITY, GLASS_THICKNESS } from './GlassPlate';
 import type { Slot } from '../layouts';
-import { createDashboardTexture, SETTLED_T, type Dashboard } from '../dashboards';
+import { SETTLED_T, type Dashboard } from '../dashboards';
 import { onLiveUpdate } from '../data/store';
+import { useDashboardTexture } from '../hooks/useDashboardTexture';
 
 interface CarouselItemProps {
   /** The animated dashboard this panel renders. */
@@ -93,7 +94,6 @@ export function CarouselItem({
   const imgRef = useRef<Mesh>(null);
   const glassRef = useRef<Mesh>(null);
   const canvasEl = useThree((s) => s.gl.domElement);
-  const maxAnisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const entranceStart = useRef<number | null>(null);
   // True on the frame the panel stops being hidden, so it can snap back to full
   // opacity instead of fading in and leaving a transparent gap after the hero.
@@ -101,18 +101,13 @@ export function CarouselItem({
 
   // The dashboard is rendered once in its settled state and only refreshed
   // when live data lands — hovering no longer replays the intro animation.
-  const dash = useMemo(() => createDashboardTexture(dashboard, TEX_W, TEX_H), [dashboard]);
+  const dash = useDashboardTexture(dashboard, TEX_W, TEX_H);
   // Hover state; the frame loop eases `press` toward 1 while hovered so the
   // glass plate tilts down toward the cursor.
   const hovered = useRef(false);
   const press = useRef(0);
   // Cursor position on the panel, -1..1 from the center on both axes.
   const pointer = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    dash.tex.anisotropy = Math.min(8, maxAnisotropy);
-    return () => dash.dispose();
-  }, [dash, maxAnisotropy]);
 
   // Refresh the settled render when live data lands. A 'tick' only moves the
   // continuously-animated panels (the debt clock); a 'data' event only needs

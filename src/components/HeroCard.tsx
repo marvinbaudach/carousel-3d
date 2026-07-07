@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useMemo, useRef, type RefObject } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Image } from '@react-three/drei';
 import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
 import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
 import { GlassPlate, GLASS_OPACITY } from './GlassPlate';
-import { createDashboardTexture, type Dashboard } from '../dashboards';
+import type { Dashboard } from '../dashboards';
+import { useDashboardTexture } from '../hooks/useDashboardTexture';
 
 /** World-space transform captured from the clicked ring panel. */
 export interface HeroStart {
@@ -130,11 +131,10 @@ export function HeroCard({
   // throttled (static heroes never redraw).
   const lastDrawAt = useRef(-Infinity);
 
-  const dash = useMemo(() => {
-    const { w, h } = heroTextureSize();
-    return createDashboardTexture(dashboard, w, h);
-  }, [dashboard]);
-  useEffect(() => () => dash.dispose(), [dash]);
+  // Size the hero canvas once at mount (window dimensions don't change under
+  // it), then let the shared hook own the texture's creation and disposal.
+  const { w: texW, h: texH } = useMemo(heroTextureSize, []);
+  const dash = useDashboardTexture(dashboard, texW, texH);
 
   useFrame((state, delta) => {
     const pivot = pivotRef.current;
