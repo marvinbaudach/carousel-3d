@@ -58,6 +58,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-migration': ['deutschland', 'soziales'],
   'de-crime-foreign': ['deutschland', 'soziales'],
   'de-tax-quota': ['deutschland', 'geld'],
+  'de-power-prices': ['deutschland', 'geld', 'welt'],
   'de-state-quota': ['deutschland', 'geld'],
   'internet-shutdowns': ['welt', 'soziales', 'freiheit'],
   'press-freedom-nations': ['welt', 'soziales', 'freiheit'],
@@ -112,6 +113,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'food-fertilizer': ['welt', 'geld', 'gesundheit'],
   'pension-level': ['geld', 'deutschland', 'soziales'],
   'rent-burden': ['geld', 'deutschland', 'soziales'],
+  'de-underemployment': ['deutschland', 'soziales', 'geld'],
 };
 for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
 
@@ -123,7 +125,7 @@ const FEATURED = new Set([
   'us-wars', 'us-bases', 'modern-slavery', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
   'world-pop', 'oil-consumption', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees',
-  'military', 'de-industry', 'recent-wars', 'de-tax-quota', 'de-state-quota',
+  'military', 'de-industry', 'recent-wars', 'de-state-quota', 'de-tax-quota', 'de-power-prices',
   'youth-unemployment', 'unemployment', 'poverty',
   'teen-mde', 'female-lfp',
   'teen-screen', 'teen-antidepressants', 'obesity-fastfood', 'surveillance',
@@ -134,6 +136,7 @@ const FEATURED = new Set([
   'covid-stringency', 'covid-lockdowns', 'covid-vax-percapita',
   'real-wages', 'house-price-income', 'homeownership', 'cb-balance',
   'wealth-divergence', 'food-fertilizer', 'pension-level', 'rent-burden',
+  'de-underemployment',
 ]);
 
 /**

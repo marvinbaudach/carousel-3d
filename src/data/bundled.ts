@@ -464,8 +464,7 @@ export const DE_FOREIGN_SUSPECTS_PANEL: TrendSeries = trend(
 
 // Germany's tax-and-contribution ratio: taxes plus compulsory social
 // security contributions as a share of GDP (OECD Revenue Statistics,
-// "tax-to-GDP", rounded). This is the broad measure of what the state
-// takes from the economy — it climbed from ~32% in the 1960s to a record
+// "tax-to-GDP", rounded). Climbed from ~32% in the 1960s to a record
 // ~39% in the early 2020s. Pre-1990 is West Germany.
 export const DE_TAX_QUOTA_PANEL: TrendSeries = trend(
   [
@@ -478,20 +477,63 @@ export const DE_TAX_QUOTA_PANEL: TrendSeries = trend(
   ['1965', '1985', '2005', 'heute'],
 );
 
+// German household electricity price, euro cents per kWh incl. taxes and
+// levies (BDEW / Destatis / Eurostat, rounded). It roughly tripled since
+// 2000 as the EEG renewables surcharge, grid fees and the 2021 CO2 price
+// stacked on — then spiked with the 2022 energy crisis. Germany is now
+// among the most expensive electricity markets worldwide.
+export const DE_POWER_PRICE_PANEL: TrendSeries = trend(
+  [
+    [1991, 14], [1998, 17], [2000, 14], [2003, 17], [2006, 19],
+    [2009, 23], [2012, 26], [2015, 29], [2018, 30], [2020, 32],
+    [2021, 32], [2022, 37], [2023, 42], [2024, 40], [2025, 39],
+  ],
+  (v) => `${v.toFixed(0)} ct`,
+  ['1991', '2002', '2013', 'heute'],
+);
+
 // Germany's government-spending ratio (Staatsquote): total general
-// government expenditure as a share of GDP (Destatis / BMF / Eurostat,
-// rounded). Crises spike it — the 1975 oil-shock recession, the 1995
-// reunification peak (partly Treuhand debt assumption), 2009's financial
-// crisis, and Corona's ~51% record in 2020/21. Pre-1990 is West Germany.
+// government expenditure as a share of GDP (Destatis / BMF / Eurostat;
+// pre-1950 from Andic & Veverka / Flora historical estimates, rounded).
+// The long-run rise ("Wagner's law"): ~10% in the Kaiserreich, past 25%
+// after WWI, then crises ratchet it up — the Depression, the 1975 oil
+// shock, the 1995 reunification peak (partly Treuhand debt assumption),
+// 2009's financial crisis, and Corona's ~51% record in 2020/21. Pre-1950
+// covers the whole German Reich; pre-1990 is West Germany. War years
+// (1914-18, 1939-45) are left unanchored — their >60% spikes would swamp
+// the axis and hide the peacetime trend.
 export const DE_STATE_QUOTA_PANEL: TrendSeries = trend(
   [
-    [1960, 32.9], [1970, 38.3], [1975, 48.9], [1980, 47.9], [1985, 46.4],
-    [1990, 44.5], [1995, 54.8], [2000, 45.1], [2005, 47.0], [2008, 44.3],
-    [2009, 47.6], [2010, 47.9], [2013, 44.7], [2015, 44.0], [2019, 45.2],
-    [2020, 50.9], [2021, 51.1], [2022, 49.5], [2023, 48.4], [2024, 49.5],
+    [1880, 10], [1900, 14], [1913, 15], [1925, 26], [1929, 31],
+    [1932, 34], [1938, 42], [1950, 30], [1960, 32.9], [1970, 38.3],
+    [1975, 48.9], [1980, 47.9], [1985, 46.4], [1990, 44.5], [1995, 54.8],
+    [2000, 45.1], [2005, 47.0], [2008, 44.3], [2009, 47.6], [2010, 47.9],
+    [2013, 44.7], [2015, 44.0], [2019, 45.2], [2020, 50.9], [2021, 51.1],
+    [2022, 49.5], [2023, 48.4], [2024, 49.5],
   ],
   (v) => `${v.toFixed(1)}%`,
-  ['1960', '1982', '2003', 'heute'],
+  ['1880', '1930', '1975', 'heute'],
+);
+
+// Germany's official registered unemployment vs. the Bundesagentur für
+// Arbeit's own broader "Unterbeschäftigung" measure, with the long-term
+// unemployed as a subset — annual averages in millions (BA statistics;
+// Unterbeschäftigung ohne Kurzarbeit, published since 2009). The headline
+// "Arbeitslose" (§16 SGB III) excludes anyone in a labour-market measure,
+// short-term sick, in activation/training or under the 58+/§53a special rules —
+// the broader figure adds them back and runs roughly a million higher. The
+// long-term line (1+ year without work) sits below the official count and
+// shows how much of it is structurally stuck: about a third. Same source
+// throughout, so this is the state's own un-spun number.
+export const DE_UNDEREMPLOYMENT_COMPARE = compareSeries(
+  [
+    { name: 'Unterbeschäftigung', pts: [[2009, 4.60], [2011, 4.02], [2013, 3.85], [2015, 3.61], [2017, 3.36], [2019, 3.06], [2020, 3.52], [2022, 3.18], [2023, 3.40], [2024, 3.58]] },
+    { name: 'Arbeitslose (offiziell)', pts: [[2009, 3.42], [2011, 2.98], [2013, 2.95], [2015, 2.79], [2017, 2.53], [2019, 2.27], [2020, 2.70], [2022, 2.42], [2023, 2.61], [2024, 2.79]] },
+    { name: 'Langzeitarbeitslose', pts: [[2009, 1.13], [2011, 1.06], [2013, 1.07], [2015, 1.04], [2017, 0.90], [2019, 0.72], [2020, 0.82], [2021, 1.00], [2022, 0.93], [2024, 1.03]] },
+  ],
+  (v) => `${v.toFixed(1)} Mio`,
+  /** Latest underemployment figure, for the headline. */
+  { underLatest: 3.58 },
 );
 
 // US unemployment: recent college graduates vs all workers, % (NY Fed /

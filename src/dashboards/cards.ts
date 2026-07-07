@@ -40,7 +40,9 @@ import {
   DE_INSOLVENCY_JOBS_PANEL,
   DE_MIGRATION_PANEL,
   DE_TAX_QUOTA_PANEL,
+  DE_POWER_PRICE_PANEL,
   DE_STATE_QUOTA_PANEL,
+  DE_UNDEREMPLOYMENT_COMPARE,
   INDUSTRY_COMPARE,
   M2_COMPARE,
   M2_PANEL,
@@ -566,16 +568,31 @@ export const POOL: Dashboard[] = [
       }),
   },
   trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Jobs in Firmenpleiten · 🇩🇪 · Creditreform', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137),
-  trendCard('de-tax-quota', 'Steuer- & Abgabenquote · Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP · OECD', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 259, eraMarkers(1965, 2023, [
-    // Record take in the early 2020s — the state's share of the economy at its
-    // historical high.
-    [2021, '📈 Rekord ~39%'],
-  ])),
-  trendCard('de-state-quota', 'Staatsquote · Deutschland', 'Staatsausgaben · 🇩🇪 · % des BIP · Staatsquote', DE_STATE_QUOTA_PANEL, orange, (v) => `${v.toFixed(1)}%`, 263, eraMarkers(1960, 2024, [
-    // Crises ratchet it up: reunification in the mid-90s and Corona's ~51% peak.
-    [1995, '🧱 Einheit'],
-    [2020, '💸 Corona ~51%'],
-  ])),
+  {
+    id: 'de-underemployment',
+    title: 'Arbeitslosigkeit · offiziell vs. real',
+    draw: (f) =>
+      lineChart(f, {
+        // The BA's own "Unterbeschäftigung" runs ~1M above the headline
+        // "Arbeitslose": the gap is everyone in measures, short-term sick or
+        // under special rules who is removed from the official count. The
+        // long-term line below shows how much is structurally stuck.
+        label: 'Arbeitslosigkeit · 🇩🇪 · BA · Mio',
+        value: DE_UNDEREMPLOYMENT_COMPARE.underLatest,
+        unit: '',
+        fmt: (v) => `${v.toFixed(1)} Mio`,
+        delta: null,
+        seed: 269,
+        series: [
+          { name: 'Unterbeschäftigung', color: red, data: DE_UNDEREMPLOYMENT_COMPARE.rows[0].data },
+          { name: 'Arbeitslose (offiziell)', color: yellow, data: DE_UNDEREMPLOYMENT_COMPARE.rows[1].data },
+          { name: 'Langzeitarbeitslose', color: orange, data: DE_UNDEREMPLOYMENT_COMPARE.rows[2].data },
+        ],
+        ticks: DE_UNDEREMPLOYMENT_COMPARE.ticks,
+        xLabels: ['2009', '2014', '2019', 'heute'],
+        markers: eraMarkers(2009, 2024, [[2020, '🦠 Corona']]),
+      }),
+  },
   {
     id: 'de-industry',
     title: 'Industrieproduktion · DEU vs. USA vs. China',
@@ -613,21 +630,27 @@ export const POOL: Dashboard[] = [
     [2014, '🇺🇦 Ukraine 2014'],
   ])),
   trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
-  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP · OECD', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 223, eraMarkers(1965, 2023, [
-    // Taxes plus social contributions as a share of GDP on the 1965–2023 axis:
-    // the Soli levied from 1991, the mid-2000s Hartz-era dip, and the record
-    // high in the early 2020s.
+  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP · OECD', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 259, eraMarkers(1965, 2023, [
+    // Taxes plus social contributions as a share of GDP — the state's take hit
+    // a historical high of ~39% in the early 2020s.
     [1991, '🧱 Soli 1991'],
-    [2005, '📉 Hartz-Reformen'],
-    [2021, '📈 Rekordhoch'],
+    [2021, '📈 Rekord ~39%'],
   ])),
-  trendCard('de-state-quota', 'Staatsquote Deutschland', 'Staatsquote · 🇩🇪 · Staatsausgaben % des BIP', DE_STATE_QUOTA_PANEL, orange, (v) => `${v.toFixed(1)}%`, 227, eraMarkers(1960, 2024, [
-    // Government spending as a share of GDP on the 1960–2024 axis: every crisis
-    // spikes it — the 1975 oil-shock recession, the 1995 reunification peak,
-    // the 2009 financial crisis, and Corona's ~51% record in 2020.
+  trendCard('de-power-prices', 'Strompreis Deutschland', 'Strompreis · 🇩🇪 · Haushalte · ct/kWh', DE_POWER_PRICE_PANEL, blue, (v) => `${v.toFixed(0)} ct`, 271, eraMarkers(1991, 2025, [
+    // The household price roughly tripled since 2000. The EEG renewables law
+    // (2000) kicked off the green transition; the nuclear phase-out decision
+    // (2011) and the 2022 energy crisis pushed it to among the world's highest.
+    [2000, '🌱 EEG · Grüne Wende'],
+    [2011, '☢️ Atomausstieg'],
+    [2022, '⚡ Energiekrise'],
+  ])),
+  trendCard('de-state-quota', 'Staatsquote Deutschland', 'Staatsquote · 🇩🇪 · Staatsausgaben % des BIP', DE_STATE_QUOTA_PANEL, orange, (v) => `${v.toFixed(1)}%`, 227, eraMarkers(1880, 2024, [
+    // Government spending as a share of GDP on the 1880–2024 axis: the secular
+    // rise from ~10% in the Kaiserreich, the 1929 Depression, the 1975 oil
+    // shock, the 1995 reunification peak, and Corona's ~51% record in 2020.
+    [1929, '📉 Weltwirtschaftskrise'],
     [1975, '🛢️ Ölkrise'],
     [1990, '🧱 Wiedervereinigung'],
-    [2009, '🏦 Finanzkrise'],
     [2020, '💸 Corona'],
   ])),
   {
