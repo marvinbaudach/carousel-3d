@@ -33,7 +33,6 @@ import {
   DE_INSOLVENCY_JOBS_PANEL,
   DE_MIGRATION_PANEL,
   INDUSTRY_COMPARE,
-  GDP_COMPARE,
   M2_COMPARE,
   M2_PANEL,
   NUKE_TESTS_PANEL,
@@ -557,7 +556,7 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Betroffene Beschäftigte · 🇩🇪 · Creditreform', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137),
+  trendCard('de-insolvenz-jobs', 'Insolvenzen · betroffene Arbeitsplätze', 'Jobs in Firmenpleiten · 🇩🇪 · Creditreform', DE_INSOLVENCY_JOBS_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 137),
   {
     id: 'de-industry',
     title: 'Industrieproduktion · DEU vs. USA vs. China',
@@ -683,30 +682,6 @@ export const POOL: Dashboard[] = [
           [2008, '🏦 QE'],
           [2020, '💸 Corona'],
         ]),
-      }),
-  },
-  {
-    id: 'gdp-growth',
-    title: 'Wirtschaftsleistung im Vergleich',
-    draw: (f) =>
-      lineChart(f, {
-        // Real GDP indexed to 2015 = 1x; the headline tracks Germany,
-        // whose economy has been flat to shrinking since 2019.
-        label: 'BIP real · 🇩🇪 · 2015 = 1×',
-        value: GDP_COMPARE.deuLatest,
-        unit: '',
-        fmt: (v) => `${v.toFixed(2)}×`,
-        delta: null,
-        seed: 131,
-        series: [
-          { name: '🇮🇳 IND', color: yellow, data: GDP_COMPARE.rows[0].data },
-          { name: '🇨🇳 CHN', color: red, data: GDP_COMPARE.rows[1].data },
-          { name: '🇺🇸 USA', color: blue, data: GDP_COMPARE.rows[2].data },
-          { name: '🇩🇪 DEU', color: green, data: GDP_COMPARE.rows[3].data },
-          { name: '🇯🇵 JPN', color: violet, data: GDP_COMPARE.rows[4].data },
-        ],
-        ticks: GDP_COMPARE.ticks,
-        xLabels: ['1970', '1988', '2006', 'heute'],
       }),
   },
   trendCard('internet', 'Menschen online weltweit', 'Internetnutzer · ITU', INTERNET_PANEL, blue, (v) => `${(v / 1e9).toFixed(1)}B`, 103, [
