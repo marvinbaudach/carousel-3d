@@ -500,6 +500,32 @@ export const INTERNET_PANEL: TrendSeries = trend(
   ['1990', '2001', '2013', 'heute'],
 );
 
+// Undernourished people worldwide, millions (FAO State of Food Security 2024).
+// Hunger (SDG 2) fell for a decade, bottomed near 2017 (~570M), then climbed
+// with the pandemic and food-price shocks to ~733M in 2023 — the goal is
+// moving backwards. FAO revised its method over time, so treat as magnitudes.
+export const HUNGER_PANEL: TrendSeries = trend(
+  [
+    [2005, 810], [2010, 640], [2015, 589], [2017, 572], [2019, 581],
+    [2020, 638], [2021, 745], [2022, 735], [2023, 733],
+  ],
+  (v) => `${Math.round(v)} Mio`,
+  ['2005', '2011', '2017', 'heute'],
+);
+
+// Share of the world in extreme poverty, % below $2.15/day (World Bank PIP,
+// 2017 PPP). A historic collapse from ~38% (1990) to ~9%, but progress stalled
+// and 2020 brought the first rise in a generation (pandemic). Ending extreme
+// poverty by 2030 (SDG 1) will be missed — projections stay near 7%.
+export const EXTREME_POVERTY_PANEL: TrendSeries = trend(
+  [
+    [1990, 38], [2000, 29], [2010, 16], [2015, 10.8], [2019, 8.9],
+    [2020, 9.7], [2022, 9.0], [2024, 8.5],
+  ],
+  (v) => `${v.toFixed(1)}%`,
+  ['1990', '2001', '2013', 'heute'],
+);
+
 // Global oil consumption, million barrels per day (Energy Institute
 // Statistical Review of World Energy; pre-1965 from historical BP / Our World
 // in Data series). The only real dents before COVID-2020 are the 1973 and

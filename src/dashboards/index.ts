@@ -23,6 +23,8 @@ import {
   DOLLAR_PANEL,
   CONTINENT_FERTILITY,
   INTERNET_PANEL,
+  HUNGER_PANEL,
+  EXTREME_POVERTY_PANEL,
   LIFE_PANEL,
   DE_FOREIGN_SUSPECTS_PANEL,
   DE_INSOLVENCY_JOBS_PANEL,
@@ -660,6 +662,35 @@ const POOL: Dashboard[] = [
     { at: 0.5, label: '📱 Smartphone' },
     { at: 0.82, label: '🌍 Halbe Menschheit' },
   ]),
+  trendCard('world-hunger', 'Welthunger · Unterernährte', 'Unterernährte weltweit · FAO · SDG 2', HUNGER_PANEL, red, (v) => `${Math.round(v)} Mio`, 71, eraMarkers(2005, 2023, [
+    [2017, '📉 Tiefpunkt'],
+    [2020, '🦠 Pandemie'],
+  ])),
+  trendCard('extreme-poverty', 'Extreme Armut weltweit', 'Extreme Armut · < $2,15/Tag · Weltbank · SDG 1', EXTREME_POVERTY_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 73, eraMarkers(1990, 2024, [
+    [2020, '🦠 Pandemie · 1. Anstieg seit Jahrzehnten'],
+  ])),
+  {
+    id: 'sdg-progress',
+    title: 'Agenda 2030 · Zielerreichung',
+    draw: (f) =>
+      hBarChart(f, {
+        // UN Sustainable Development Goals Report 2024: of the 169 SDG targets,
+        // only ~17% are on track, ~48% show weak/moderate progress, and over a
+        // third have stalled or reversed. The plan is largely off-course.
+        label: 'SDG-Ziele · 169 Unterziele · UN 2024',
+        value: 17,
+        fmt: (v) => `${Math.round(v)}% auf Kurs`,
+        rowFmt: (v) => `${Math.round(v)}%`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Zu langsam', v: 48 },
+          { name: 'Stagniert / rückläufig', v: 35 },
+          { name: 'Auf Kurs', v: 17 },
+        ],
+      }),
+  },
   trendCard('nuke-tests', 'Atomtests pro Jahr', 'Atomtests · seit 1945', NUKE_TESTS_PANEL, red, (v) => `${Math.round(v)}`, 107, eraMarkers(1945, 2024, [
     [1963, '☢️ Teststopp 1963'],
     [1996, '✍️ CTBT 1996'],
@@ -1579,6 +1610,9 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-migration': ['deutschland', 'soziales'],
   'de-crime-foreign': ['deutschland', 'soziales'],
   internet: ['welt'],
+  'world-hunger': ['welt', 'gesundheit'],
+  'extreme-poverty': ['welt', 'soziales'],
+  'sdg-progress': ['welt', 'soziales'],
   'nuke-tests': ['krieg'],
   'obesity-nations': ['gesundheit', 'schweiz'],
   'gdp-growth': ['geld', 'deutschland'],
