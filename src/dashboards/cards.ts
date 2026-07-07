@@ -685,7 +685,7 @@ export const POOL: Dashboard[] = [
         markers: eraMarkers(1991, 2023, [
           [1992, '🧱 Balkan/Aussiedler'],
           [2015, '📈 Zuwanderung 2015'],
-          [2022, '🇺🇦 Ukraine-Krieg 2022'],
+          [2022, '🇺🇦 Vollinvasion 2022'],
         ]),
       }),
   },
@@ -694,7 +694,7 @@ export const POOL: Dashboard[] = [
     // ~84m after the 2015 and 2022 waves, since births stay below deaths.
     [1990, '🇩🇪 Wiedervereinigung 1990'],
     [2015, '📈 Zuwanderung 2015'],
-    [2022, '🇺🇦 Ukraine-Krieg 2022'],
+    [2022, '🇺🇦 Vollinvasion 2022'],
   ])),
   trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
   // NRW, not Germany: no honest nationwide knife-violence time series exists

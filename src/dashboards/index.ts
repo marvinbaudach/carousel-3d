@@ -56,6 +56,8 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-insolvenz-jobs': ['deutschland', 'geld'],
   'de-industry': ['deutschland', 'geld'],
   'de-migration': ['deutschland', 'soziales'],
+  'de-migration-flows': ['deutschland', 'soziales', 'welt'],
+  'de-population': ['deutschland', 'soziales'],
   'de-crime-foreign': ['deutschland', 'soziales'],
   'de-knife-attacks': ['deutschland', 'soziales'],
   'de-group-rape': ['deutschland', 'soziales'],
@@ -141,7 +143,7 @@ const FEATURED = new Set([
   'covid-stringency', 'covid-lockdowns', 'covid-vax-percapita',
   'real-wages', 'homeownership', 'cb-balance',
   'wealth-divergence', 'food-fertilizer', 'pension-level', 'rent-burden',
-  'de-underemployment',
+  'de-underemployment', 'de-migration-flows', 'de-population',
 ]);
 
 /**
