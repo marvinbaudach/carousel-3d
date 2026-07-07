@@ -36,6 +36,7 @@ import {
   EXTREME_POVERTY_PANEL,
   LIFE_PANEL,
   DE_FOREIGN_SUSPECTS_PANEL,
+  DE_ASSAULT_PANEL,
   DE_KNIFE_ATTACKS_PANEL,
   DE_INSOLVENCY_JOBS_PANEL,
   DE_MIGRATION_PANEL,
@@ -700,10 +701,15 @@ export const POOL: Dashboard[] = [
     [2015, '📈 Zuwanderung 2015'],
     [2022, '🇺🇦 Vollinvasion 2022'],
   ])),
-  trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151, eraMarkers(2005, 2024, [
-    // The share mechanically tracks the size of the foreign population, so the
-    // jump lines up with the 2015 wave — it is a share, not a per-capita rate.
-    [2015, '📈 Zuwanderung 2015'],
+  trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
+  // Nationwide long series, PKS aggravated-assault key 2220 (gefährliche und
+  // schwere Körperverletzung), cases/year — the honest deep-history violence
+  // metric where the knife-specific data does not reach back.
+  trendCard('de-assault', 'Gefährliche & schwere Körperverletzung', 'Gef. & schwere Körperverletzung · 🇩🇪 · PKS · Fälle/Jahr', DE_ASSAULT_PANEL, red, (v) => `${Math.round(v / 1000)}k`, 331, eraMarkers(1993, 2024, [
+    // Rose to a mid-2000s peak, fell through the 2010s, dipped in the pandemic
+    // year, then climbed back to that old high by 2023.
+    [2007, '📈 Höchststand 2000er'],
+    [2021, '🦠 Corona-Tief'],
   ])),
   // NRW, not Germany: no honest nationwide knife-violence time series exists
   // before the 2024 PKS, so this shows NRW's LKA public-space knife report.

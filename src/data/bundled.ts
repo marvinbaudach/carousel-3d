@@ -493,6 +493,23 @@ export const DE_FOREIGN_SUSPECTS_PANEL: TrendSeries = trend(
   ['2005', '2011', '2018', 'heute'],
 );
 
+// Aggravated and serious bodily harm (gefährliche und schwere Körperverletzung,
+// PKS key 2220), Germany, recorded cases per year, rounded from the PKS
+// yearbooks. This is the deepest honest violence series available nationwide
+// (unified all-Germany PKS runs since 1993): a rise to a mid-2000s peak, a
+// long decline through the 2010s, the pandemic dip, then a climb back to the
+// old high by 2023. Not knife-specific — knives are only broken out since 2020.
+export const DE_ASSAULT_PANEL: TrendSeries = trend(
+  [
+    [1993, 93_000], [1997, 110_000], [2000, 128_000], [2004, 151_000],
+    [2007, 155_000], [2010, 152_000], [2013, 138_000], [2016, 140_000],
+    [2018, 137_000], [2020, 132_000], [2021, 126_000], [2022, 134_000],
+    [2023, 154_000], [2024, 149_000],
+  ],
+  (v) => `${Math.round(v / 1000)}k`,
+  ['1993', '2003', '2013', 'heute'],
+);
+
 // Knife violence in NRW public space, cases per year — LKA NRW Lagebild
 // "Gewalt im öffentlichen Raum · Tatmittel Messer" (Tatmittel are only
 // recorded in the PKS since 2019). NRW is used deliberately: there is NO
