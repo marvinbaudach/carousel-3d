@@ -32,6 +32,8 @@ function shuffled<T>(list: T[]): T[] {
 // a Germany and a money story). Applied to the POOL right below.
 const TAGS_BY_ID: Record<string, string[]> = {
   military: ['krieg'],
+  'military-per-soldier': ['krieg', 'geld'],
+  'military-gdp': ['krieg', 'geld'],
   'us-debt': ['geld'],
   nukes: ['krieg'],
   'homicide-map': ['soziales', 'welt'],
@@ -132,7 +134,7 @@ const FEATURED = new Set([
   'us-wars', 'us-bases', 'modern-slavery', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
   'world-pop', 'oil-consumption', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees',
-  'military', 'de-industry', 'recent-wars', 'de-state-quota', 'de-tax-quota', 'de-power-prices', 'de-old-age-ratio', 'de-aging-nations', 'berlin-warrants',
+  'military', 'military-per-soldier', 'military-gdp', 'de-industry', 'recent-wars', 'de-state-quota', 'de-tax-quota', 'de-power-prices', 'de-old-age-ratio', 'de-aging-nations', 'berlin-warrants',
   'youth-unemployment', 'unemployment', 'poverty',
   'teen-mde', 'female-lfp',
   'teen-screen', 'teen-antidepressants', 'obesity-fastfood', 'surveillance',

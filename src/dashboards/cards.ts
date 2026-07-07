@@ -1118,6 +1118,60 @@ export const POOL: Dashboard[] = [
       }),
   },
   {
+    id: 'military-per-soldier',
+    title: 'Militärausgaben je Soldat',
+    draw: (f) =>
+      hBarChart(f, {
+        // Budget (SIPRI 2024) divided by active personnel (IISS 2024): how
+        // capital- vs. manpower-intensive an army is. Western forces spend
+        // ~$500-750k per head; manpower-heavy armies a fraction of that.
+        label: 'Ausgaben je aktivem Soldaten · 2024',
+        value: 750_000,
+        delta: null,
+        color: orange,
+        unit: '$',
+        rows: [
+          { name: 'USA', v: 750_000 },
+          { name: 'Großbritannien', v: 554_000 },
+          { name: 'Deutschland', v: 489_000 },
+          { name: 'Frankreich', v: 317_000 },
+          { name: 'Saudi-Arabien', v: 313_000 },
+          { name: 'China', v: 154_000 },
+          { name: 'Russland', v: 113_000 },
+          { name: 'Südkorea', v: 96_000 },
+          { name: 'Indien', v: 59_000 },
+        ],
+      }),
+  },
+  {
+    id: 'military-gdp',
+    title: 'Militärlast · % des BIP',
+    draw: (f) =>
+      hBarChart(f, {
+        // Military burden: spending as a share of GDP (SIPRI 2024). War and
+        // siege economies top it; the big absolute spenders sit far lower.
+        label: 'Militärausgaben · % des BIP · SIPRI 2024',
+        value: 34,
+        fmt: (v) => `${v.toFixed(1)}%`,
+        rowFmt: (v) => `${v.toFixed(1)}%`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Ukraine', v: 34.0 },
+          { name: 'Israel', v: 8.8 },
+          { name: 'Algerien', v: 8.0 },
+          { name: 'Saudi-Arabien', v: 7.3 },
+          { name: 'Oman', v: 7.3 },
+          { name: 'Russland', v: 7.1 },
+          { name: 'USA', v: 3.4 },
+          { name: 'Indien', v: 2.3 },
+          { name: 'Deutschland', v: 1.9 },
+          { name: 'China', v: 1.7 },
+        ],
+      }),
+  },
+  {
     id: 'wealth',
     title: 'Globale Vermögensverteilung',
     draw: (f) =>
