@@ -40,6 +40,7 @@ import {
   PRESS_FREEDOM_COMPARE,
   BOOK_BANS_PANEL,
   JAILED_JOURNALISTS_PANEL,
+  ASSET_MEGACOMPARE,
   OIL_CONSUMPTION_PANEL,
   OVERDOSE_PANEL,
   REFUGEE_PANEL,
@@ -655,6 +656,35 @@ export const POOL: Dashboard[] = [
     [2016, '🇹🇷 Türkei 2016'],
     [2020, '🇧🇾 Belarus 2020'],
   ])),
+  {
+    id: 'asset-correlation',
+    title: 'BTC · Gold · S&P 500 · M2 · seit 1915',
+    draw: (f) =>
+      lineChart(f, {
+        // Shared log dollar axis over 110 years: the absolute levels differ,
+        // the correlation is in the shape — each M2 surge (1971 gold-standard
+        // exit, 2008 QE, 2020 printing) drags gold, stocks and BTC up together.
+        label: 'BTC · Gold · S&P 500 · M2 · log$ · seit 1915',
+        value: ASSET_MEGACOMPARE.btcLatest,
+        unit: '',
+        fmt: (v) => `$${Math.round(v / 1000)}k`,
+        delta: null,
+        seed: 191,
+        series: [
+          { name: '💵 M2', color: yellow, data: ASSET_MEGACOMPARE.rows[0].data },
+          { name: '🥇 Gold', color: orange, data: ASSET_MEGACOMPARE.rows[1].data },
+          { name: '📈 S&P 500', color: blue, data: ASSET_MEGACOMPARE.rows[2].data },
+          { name: '₿ BTC', color: magenta, data: ASSET_MEGACOMPARE.rows[3].data },
+        ],
+        ticks: ASSET_MEGACOMPARE.ticks,
+        xLabels: ['1915', '1952', '1988', 'heute'],
+        markers: eraMarkers(1915, 2025, [
+          [1971, '⛓️‍💥 Gold-Ende'],
+          [2008, '🏦 QE'],
+          [2020, '💸 Corona'],
+        ]),
+      }),
+  },
   {
     id: 'gdp-growth',
     title: 'Wirtschaftsleistung im Vergleich',
