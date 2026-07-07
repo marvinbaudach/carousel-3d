@@ -1014,7 +1014,7 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
-  trendCard('pension-level', 'Rentenniveau · Deutschland', 'Sicherungsniveau vor Steuern · 🇩🇪 · % des Durchschnittslohns', DE_PENSION_LEVEL_PANEL, magenta, (v) => `${v.toFixed(0)}%`, 253, eraMarkers(1990, 2040, [
+  trendCard('pension-level', 'Rentenniveau · Deutschland', 'Rentenniveau · 🇩🇪 · % des Durchschnittslohns', DE_PENSION_LEVEL_PANEL, magenta, (v) => `${v.toFixed(0)}%`, 253, eraMarkers(1990, 2040, [
     // The legislated 48% floor holds only through 2039; projections then slide.
     [2025, '⚖️ Haltelinie 48%'],
     [2039, '📉 danach ~45%'],
@@ -1452,7 +1452,7 @@ export const POOL: Dashboard[] = [
         // Public CCTV cameras per city (Comparitech "Most surveilled cities",
         // rounded). Chinese megacities dominate; Delhi and London are the
         // non-Chinese outliers. Counts are estimates and vary by source.
-        label: 'CCTV-Kameras je Stadt · Comparitech · Schätzwerte',
+        label: 'CCTV-Kameras je Stadt · Comparitech',
         value: 4.6e6,
         fmt: (v) => `${(v / 1e6).toFixed(1)} Mio`,
         rowFmt: (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(2)} Mio` : `${Math.round(v / 1000)}k`),
@@ -1475,7 +1475,7 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras · IHS · Schätzung', CAMERAS_PANEL, aqua, (v) => `${(v / 1e9).toFixed(2)} Mrd`, 183, eraMarkers(2000, 2025, [
+  trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras · IHS', CAMERAS_PANEL, aqua, (v) => `${(v / 1e9).toFixed(2)} Mrd`, 183, eraMarkers(2000, 2025, [
     [2008, '🏅 Peking · Ausbaustart China'],
     [2021, '🎥 1 Mrd weltweit'],
   ])),
@@ -1652,7 +1652,7 @@ export const POOL: Dashboard[] = [
         // Bank ID4D / national programs, rounded estimates). Estonia and
         // India's Aadhaar are near-universal; Switzerland's state e-ID only
         // launches around 2026, so it anchors the low end.
-        label: 'Digitale ID · Bevölkerungsabdeckung · Schätzwerte',
+        label: 'Digitale ID · Bevölkerungsabdeckung',
         value: 99,
         fmt: (v) => `${Math.round(v)}%`,
         rowFmt: (v) => `${Math.round(v)}%`,
@@ -1790,7 +1790,7 @@ export const POOL: Dashboard[] = [
         // reported in the press (2020–2021). Melbourne's 262 days is the
         // world record for a single city; Buenos Aires and Manila follow.
         // Rounded estimates — definitions of "lockdown" vary by source.
-        label: 'Tage im Lockdown · Städte · 2020–21 · Schätzwerte',
+        label: 'Tage im Lockdown · Städte · 2020–21',
         value: 262,
         fmt: (v) => `${Math.round(v)} Tage`,
         rowFmt: (v) => `${Math.round(v)} T.`,
