@@ -148,9 +148,6 @@ const HINTS: { keys: string; label: string }[] = [
   { keys: '␣', label: 'Rotation pausieren' },
   { keys: '←  →', label: 'Nachbar-Panel' },
   { keys: '+  −', label: 'Zoom' },
-  { keys: 'F', label: 'Vollbild' },
-  { keys: 'H', label: 'Handsteuerung' },
-  { keys: '?', label: 'Dieses Panel' },
   { keys: 'Esc', label: 'Panel schließen' },
 ];
 

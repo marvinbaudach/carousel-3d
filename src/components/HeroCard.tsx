@@ -58,9 +58,12 @@ const X_AXIS = new Vector3(1, 0, 0);
 // Card aspect (4:5, = PANEL_W / PANEL_H) shared by the ring plate and hero.
 const CARD_ASPECT = 0.8;
 
-// Every panel intro has settled well before this; past it the hero stops
-// redrawing (unless it is a live panel) and just holds its last frame.
-const INTRO_SETTLE = 2.6;
+// A redraw rasterises the full multi-megapixel canvas and re-uploads the whole
+// texture to the GPU — at hero resolution that alone caps the frame rate. A
+// static chart is drawn settled once at mount (createDashboardTexture), so the
+// hero never redraws it; only a live panel keeps ticking, and even that is
+// throttled to ~30Hz since its animation is slow and smooth.
+const REDRAW_INTERVAL = 1 / 30;
 
 // Fraction of the visible frustum (at the hero's depth) the card may fill,
 // so all four edges sit comfortably inside the frame.
@@ -75,7 +78,7 @@ function heroTextureSize(): { w: number; h: number } {
   // Match the canvas dpr the hero is pinned to (1.75), so the texture is neither
   // upscaled soft nor needlessly oversized (which would only slow the redraw).
   const cssH = FIT * Math.min(window.innerHeight, window.innerWidth / CARD_ASPECT);
-  const h = Math.min(3072, Math.max(2560, Math.ceil((cssH * 1.75) / 128) * 128));
+  const h = Math.min(2048, Math.max(1280, Math.ceil((cssH * 1.75) / 128) * 128));
   return { w: Math.round(h * CARD_ASPECT), h };
 }
 
@@ -123,6 +126,9 @@ export function HeroCard({
   // animates in during the fly-in instead of making the viewer wait for the
   // card to land before anything happens.
   const openedAt = useRef<number | null>(null);
+  // Clock time of the last texture redraw, so a live panel's ticks can be
+  // throttled (static heroes never redraw).
+  const lastDrawAt = useRef(-Infinity);
 
   const dash = useMemo(() => {
     const { w, h } = heroTextureSize();
@@ -136,12 +142,15 @@ export function HeroCard({
     const img = imgRef.current;
     if (!pivot || !inner || !img) return;
 
+    // The chart is already drawn settled at mount, so a static hero never
+    // redraws — no per-frame canvas rasterise or texture upload while it is
+    // open. Only a live panel keeps ticking, throttled to ~30Hz.
     if (openedAt.current === null) openedAt.current = state.clock.elapsedTime;
-    // Redraw only while the intro is still playing (or for the live panels
-    // that keep ticking); afterwards the high-res canvas holds its last frame
-    // instead of re-rendering and re-uploading a big texture every frame.
-    const heroT = state.clock.elapsedTime - openedAt.current;
-    if (heroT < INTRO_SETTLE || dashboard.live) dash.render(heroT);
+    const now = state.clock.elapsedTime;
+    if (dashboard.live && now - lastDrawAt.current >= REDRAW_INTERVAL) {
+      dash.render(now - openedAt.current);
+      lastDrawAt.current = now;
+    }
 
     const scrubT = scrub?.current ?? null;
     if (scrubT !== null) {

@@ -131,8 +131,9 @@ export function useCarouselRotation({
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      if (e.ctrlKey) return; // Ctrl + wheel is the camera zoom, not a spin
       if (pausedRef.current?.()) return; // a hero card owns the wheel while open
-      velocity.current += e.deltaY * wheelSensitivity;
+      velocity.current -= e.deltaY * wheelSensitivity;
     };
 
     // Arrow keys spin the ring while no hero is open (the hero handles the

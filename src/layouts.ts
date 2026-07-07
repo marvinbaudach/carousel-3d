@@ -2,11 +2,10 @@
 // rotation-symmetric around the Y axis, so the drag/auto-spin, the fog and
 // the depth dimming keep working unchanged in every mode.
 
-export type LayoutMode = 'ring' | 'rows' | 'helix' | 'sphere';
+export type LayoutMode = 'ring' | 'helix' | 'sphere';
 
 export const LAYOUT_MODES: { id: LayoutMode; label: string }[] = [
   { id: 'ring', label: 'RING' },
-  { id: 'rows', label: 'REIHEN' },
   { id: 'helix', label: 'HELIX' },
   { id: 'sphere', label: 'KUGEL' },
 ];
@@ -35,20 +34,6 @@ export function layoutSlots(
         const a = (i * 2 * Math.PI) / n;
         return { x: Math.sin(a) * radius, y: 0, z: Math.cos(a) * radius, rotX: 0, rotY: a };
       });
-
-    // Two stacked rings, the lower one rotated by half a slot so the rows
-    // interleave instead of forming columns.
-    case 'rows': {
-      const top = Math.ceil(n / 2);
-      return Array.from({ length: n }, (_, i) => {
-        const row = i < top ? 0 : 1;
-        const count = row === 0 ? top : n - top;
-        const j = row === 0 ? i : i - top;
-        const a = (j * 2 * Math.PI) / count + row * (Math.PI / count);
-        const y = (row === 0 ? 1 : -1) * panelH * 0.62;
-        return { x: Math.sin(a) * radius, y, z: Math.cos(a) * radius, rotX: 0, rotY: a };
-      });
-    }
 
     // A spiral staircase: 1.5 turns from top to bottom. The height grows
     // with the panel count (capped so it stays inside the camera frame).

@@ -32,9 +32,15 @@ import {
 // Panel dimensions in world units (4:5 aspect ratio).
 const PANEL_W = 2.4;
 const PANEL_H = 3.0;
+// Per-panel pitch as a multiple of the panel width: the bare 1.0 packs the
+// panels edge-to-edge, so at any grazing viewing angle (the arc curving away
+// on a wide screen) they visibly overlap. The extra headroom leaves a real gap
+// between neighbours so the ring reads as separate plates, not a smeared strip.
+const PANEL_PITCH = 1.4;
 // Radius chosen so the panels do not overlap on the ring; grows with the
 // panel count, and CameraRig dollies the camera along smoothly.
-const radiusFor = (count: number) => (PANEL_W * count) / (2 * Math.PI) + 0.6;
+const radiusFor = (count: number) =>
+  (PANEL_W * PANEL_PITCH * count) / (2 * Math.PI) + 0.6;
 const DEFAULT_RADIUS = radiusFor(ALL_DASHBOARDS.length);
 
 // Zoom bounds and hold-to-zoom rate (factor per second) for the +/- dolly:
@@ -83,13 +89,13 @@ function Ring({
   const interactive = selectedId === null;
   const { groupRef, tiltRef, wasDrag } = useCarouselRotation({
     // Space toggles the idle spin; drag, wheel and inertia stay alive.
-    autoSpin: spinning ? 0.12 : 0,
+    autoSpin: spinning ? 0.03 : 0,
     paused,
     hand,
     // The visual lift of the front row is sin(tilt) * radius, so the start
     // tilt shrinks on big rings — otherwise a 30-panel ring opens with the
     // front row shoved to the top of the frame.
-    initialTilt: -0.32 * Math.min(1, DEFAULT_RADIUS / radius),
+    initialTilt: -0.11 * Math.min(1, DEFAULT_RADIUS / radius),
   });
   // Memoized so the slot objects keep their identity across unrelated
   // re-renders — CarouselItem detects a formation switch by slot identity.
@@ -101,7 +107,12 @@ function Ring({
   return (
     // Outer group tilts the formation (driven by vertical drag) so the far
     // side and the panels' back sides come into view. Inner group spins on Y.
-    <group ref={tiltRef}>
+    // The whole ring is shifted down so the tilt-lifted front row centres in
+    // frame — done on the ring, not the camera, so the camera stays head-on
+    // (no "from below" pitch) and the separately-mounted hero card stays
+    // centred. The tilt rotates about the ring's own origin, then this offset
+    // translates the tilted ring as a whole.
+    <group ref={tiltRef} position={[0, -radius * 0.12, 0]}>
       <group ref={groupRef}>
         {dashboards.map((dashboard, i) => (
           <CarouselItem
@@ -239,16 +250,20 @@ export function Carousel3D() {
   useEffect(() => {
     if (!selected || closing) return;
     const close = () => setClosing(true);
+    const onWheelClose = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // Ctrl + wheel zooms; it must not close the hero
+      close();
+    };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') close();
       const dir = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
       if (dir) switchHero(selected, dir);
     };
     window.addEventListener('keydown', onKey);
-    window.addEventListener('wheel', close, { passive: true });
+    window.addEventListener('wheel', onWheelClose, { passive: true });
     return () => {
       window.removeEventListener('keydown', onKey);
-      window.removeEventListener('wheel', close);
+      window.removeEventListener('wheel', onWheelClose);
     };
   }, [selected, closing, dashboards, switchHero]);
 
@@ -262,24 +277,6 @@ export function Carousel3D() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-
-  // Presenter shortcuts that work at any time: F toggles fullscreen, H the
-  // webcam hand tracking (desktop only — phones have no keyboard anyway, and
-  // the tracker is gated off there).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
-      const k = e.key.toLowerCase();
-      if (k === 'f') {
-        if (document.fullscreenElement) document.exitFullscreen();
-        else document.documentElement.requestFullscreen?.();
-      } else if (k === 'h' && !isMobile) {
-        handTracking.toggle();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [isMobile, handTracking.toggle]);
 
   // Hold +/- to zoom continuously: keydown latches a direction, keyup releases
   // it, and a rAF loop dollies the ring by ZOOM_RATE per second while held —
@@ -321,6 +318,22 @@ export function Carousel3D() {
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
     };
+  }, [heroOpen]);
+
+  // Ctrl + wheel dollies the camera, same bounds as the +/- keys (a trackpad
+  // pinch also arrives as a Ctrl-wheel event). preventDefault stops the
+  // browser's own page zoom. Like the keys, it only frames the ring, so it
+  // idles while a hero owns the screen.
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      e.preventDefault();
+      if (heroOpen) return;
+      const factor = Math.exp(-e.deltaY * 0.0015);
+      setZoom((z) => Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, z * factor)));
+    };
+    window.addEventListener('wheel', onWheel, { passive: false });
+    return () => window.removeEventListener('wheel', onWheel);
   }, [heroOpen]);
 
   const selectedDashboard = selected
