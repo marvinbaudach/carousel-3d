@@ -484,13 +484,22 @@ export const DE_POPULATION_PANEL: TrendSeries = trend(
 // excluding immigration-law offenses that only foreigners can commit.
 // Rounded from published PKS yearbooks; 2024 is a record 35.4%.
 // Suspect counts are not convictions and skew with age/urbanity/reporting.
-export const DE_FOREIGN_SUSPECTS_PANEL: TrendSeries = trend(
+// Two shares on one scale, so the suspect share can be read against the
+// population base it should be normalized to. Line 1: share of non-German
+// suspects in the PKS (excluding immigration-only offenses), rounded from the
+// yearbooks. Line 2: share of foreign nationals in the resident population
+// (Ausländeranteil, Destatis). Both use nationality, so they are comparable.
+// The gap between the lines is the over-representation: foreigners run at
+// roughly twice their population share among suspects — a level driven by the
+// young-male, urban age structure of the migrant population, not measured here.
+export const DE_FOREIGN_COMPARE = compareSeries(
   [
-    [2005, 22.5], [2010, 21.9], [2014, 24.3], [2016, 30.5],
-    [2019, 30.4], [2022, 33.4], [2023, 34.4], [2024, 35.4],
+    { name: 'Tatverdächtige', pts: [[2005, 22.5], [2010, 21.9], [2014, 24.3], [2016, 30.5], [2019, 30.4], [2022, 33.4], [2023, 34.4], [2024, 35.4]] },
+    { name: 'Ausländeranteil', pts: [[2005, 8.8], [2010, 8.7], [2014, 10.0], [2016, 11.2], [2019, 12.5], [2022, 14.6], [2023, 15.3], [2024, 16.0]] },
   ],
   (v) => `${v.toFixed(0)}%`,
-  ['2005', '2011', '2018', 'heute'],
+  /** Latest non-German suspect share, for the headline. */
+  { tvLatest: 35.4 },
 );
 
 // Aggravated and serious bodily harm (gefährliche und schwere Körperverletzung,

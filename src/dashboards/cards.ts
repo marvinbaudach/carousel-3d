@@ -35,7 +35,7 @@ import {
   HUNGER_PANEL,
   EXTREME_POVERTY_PANEL,
   LIFE_PANEL,
-  DE_FOREIGN_SUSPECTS_PANEL,
+  DE_FOREIGN_COMPARE,
   DE_ASSAULT_PANEL,
   DE_KNIFE_ATTACKS_PANEL,
   DE_INSOLVENCY_JOBS_PANEL,
@@ -701,7 +701,27 @@ export const POOL: Dashboard[] = [
     [2015, '📈 Zuwanderung 2015'],
     [2022, '🇺🇦 Vollinvasion 2022'],
   ])),
-  trendCard('de-crime-foreign', 'Nichtdeutsche Tatverdächtige · Anteil laut PKS', 'Nichtdeutsche Tatverdächtige · 🇩🇪', DE_FOREIGN_SUSPECTS_PANEL, magenta, (v) => `${v.toFixed(1)}%`, 151),
+  {
+    id: 'de-crime-foreign',
+    title: 'Nichtdeutsche Tatverdächtige · gegen Bevölkerungsanteil',
+    draw: (f) =>
+      lineChart(f, {
+        // Suspect share read against the foreign population share: most of the
+        // rise tracks the growing base; the gap above it is over-representation.
+        label: 'Nichtdeutsche · 🇩🇪 · Tatverdächtige vs. Bevölkerungsanteil',
+        value: DE_FOREIGN_COMPARE.tvLatest,
+        unit: '',
+        fmt: (v) => `${v.toFixed(1)}%`,
+        delta: null,
+        seed: 151,
+        series: [
+          { name: 'Tatverdächtige', color: magenta, data: DE_FOREIGN_COMPARE.rows[0].data },
+          { name: 'Ausländeranteil', color: blue, data: DE_FOREIGN_COMPARE.rows[1].data },
+        ],
+        ticks: DE_FOREIGN_COMPARE.ticks,
+        xLabels: ['2005', '2011', '2018', 'heute'],
+      }),
+  },
   // Nationwide long series, PKS aggravated-assault key 2220 (gefährliche und
   // schwere Körperverletzung), cases/year — the honest deep-history violence
   // metric where the knife-specific data does not reach back.
@@ -752,7 +772,7 @@ export const POOL: Dashboard[] = [
         // Old-age dependency ratio, 65+ per 100 of working age (20-64). The
         // headline stays on today's ~40 rather than the panel's 2060 endpoint,
         // so it reads as the current burden, with the projected climb behind it.
-        label: 'Altenquotient · 🇩🇪 · Rentner je 100 Erwerbstätige · Prognose bis 2060',
+        label: 'Altenquotient · 🇩🇪 · 65+ je 100 im Alter 20–64 · Prognose bis 2060',
         value: 40,
         fmt: (v) => `${v.toFixed(0)}`,
         delta: null,
