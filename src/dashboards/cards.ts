@@ -670,8 +670,8 @@ export const POOL: Dashboard[] = [
         delta: null,
         seed: 191,
         series: [
-          { name: '💵 M2', color: yellow, data: ASSET_MEGACOMPARE.rows[0].data },
-          { name: '🥇 Gold', color: orange, data: ASSET_MEGACOMPARE.rows[1].data },
+          { name: '💵 M2', color: green, data: ASSET_MEGACOMPARE.rows[0].data },
+          { name: '🥇 Gold', color: yellow, data: ASSET_MEGACOMPARE.rows[1].data },
           { name: '📈 S&P 500', color: blue, data: ASSET_MEGACOMPARE.rows[2].data },
           { name: '₿ BTC', color: magenta, data: ASSET_MEGACOMPARE.rows[3].data },
         ],
