@@ -502,6 +502,34 @@ export const INTERNET_PANEL: TrendSeries = trend(
   ['1990', '2001', '2013', 'heute'],
 );
 
+// Bitcoin, gold, the S&P 500 and US M2 money supply on one shared logarithmic
+// dollar axis since 1915. The absolute levels differ wildly; the point is the
+// shape — every surge in the money supply (1971 gold-standard exit, 2008 QE,
+// 2020 pandemic printing) pulls all three asset prices up with it. Figures are
+// approximate annual values (M2 in $, gold $/oz, S&P index level, BTC $); BTC
+// is floored to a cent before it existed (2009) so it reads flat-then-vertical.
+export const ASSET_MEGACOMPARE = (() => {
+  const LO = -2; // log10 of $0.01 — plot floor
+  const HI = 14; // log10 of $100T — plot ceiling
+  const N = 111; // one sample per year, 1915..2025
+  const defs: { name: string; pts: [number, number][] }[] = [
+    { name: 'M2', pts: [[1915, 13e9], [1929, 46e9], [1933, 32e9], [1940, 55e9], [1950, 151e9], [1960, 312e9], [1970, 626e9], [1980, 1.6e12], [1990, 3.28e12], [2000, 4.92e12], [2008, 8.19e12], [2015, 12.33e12], [2020, 19.13e12], [2022, 21.7e12], [2025, 21.6e12]] },
+    { name: 'Gold', pts: [[1915, 20.67], [1934, 35], [1968, 39], [1971, 41], [1980, 615], [2000, 280], [2008, 870], [2011, 1571], [2020, 1770], [2024, 2380], [2025, 2600]] },
+    { name: 'S&P 500', pts: [[1915, 9], [1929, 26], [1932, 7], [1942, 9], [1950, 20], [1968, 100], [1980, 120], [2000, 1430], [2009, 900], [2013, 1650], [2020, 3230], [2024, 5000], [2025, 6000]] },
+    { name: 'BTC', pts: [[1915, 0.01], [2009, 0.01], [2011, 5], [2013, 130], [2015, 300], [2017, 13000], [2019, 7000], [2021, 47000], [2023, 30000], [2024, 65000], [2025, 95000]] },
+  ];
+  // Interpolate in log space (geometric growth reads straight), then normalise
+  // every series against the same LO..HI decade window so all four share an axis.
+  const rows = defs.map((d) => ({
+    name: d.name,
+    data: norm(resample(yearly(d.pts.map(([yr, v]) => [yr, Math.log10(v)] as [number, number])), N), LO, HI),
+  }));
+  const fmtD = (v: number) =>
+    v >= 1e12 ? `$${v / 1e12}T` : v >= 1e9 ? `$${v / 1e9}B` : v >= 1e6 ? `$${v / 1e6}M` : v >= 1e3 ? `$${v / 1e3}k` : `$${v}`;
+  const ticks = Array.from({ length: 5 }, (_, i) => fmtD(10 ** (LO + (i * (HI - LO)) / 4)));
+  return { rows, ticks, btcLatest: 95000 };
+})();
+
 // Journalists jailed worldwide on 1 December each year (CPJ annual prison
 // census, running since 1992). Recent years are firm CPJ totals — the record
 // 370 in 2022, 320 (2023), 361 (2024), with 300+ every year since 2020;
@@ -520,14 +548,16 @@ export const JAILED_JOURNALISTS_PANEL: TrendSeries = trend(
 
 // RSF World Press Freedom Index — per-country score (0–100, higher = freer),
 // current post-2022 methodology. Germany holds in the 80s ("good"), the US has
-// slid out of the 70s toward the "problematic" band, and China sits near the
-// very bottom worldwide. Figures track RSF's annual country scores; the 2025
-// values are approximate.
+// slid out of the 70s toward the "problematic" band, Thailand sits mid-table,
+// and China and Saudi Arabia hug the very bottom worldwide. Figures track RSF's
+// annual country scores; the 2025 values are approximate.
 export const PRESS_FREEDOM_COMPARE = compareSeries(
   [
     { name: 'Deutschland', pts: [[2022, 82.0], [2023, 81.9], [2024, 83.8], [2025, 82.0]] },
     { name: 'USA', pts: [[2022, 72.7], [2023, 71.2], [2024, 66.6], [2025, 60.0]] },
+    { name: 'Thailand', pts: [[2022, 50.2], [2023, 45.1], [2024, 44.1], [2025, 43.0]] },
     { name: 'China', pts: [[2022, 25.2], [2023, 23.0], [2024, 23.4], [2025, 22.6]] },
+    { name: 'Saudi-Arabien', pts: [[2022, 28.3], [2023, 25.5], [2024, 27.6], [2025, 24.0]] },
   ],
   (v) => v.toFixed(1),
   /** Latest German score, for the headline. */

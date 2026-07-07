@@ -622,11 +622,12 @@ export const POOL: Dashboard[] = [
   },
   {
     id: 'press-freedom-nations',
-    title: 'Pressefreiheit · DE / USA / China',
+    title: 'Pressefreiheit · Ländervergleich',
     draw: (f) =>
       lineChart(f, {
         // RSF country scores (0–100, higher = freer). Germany stays high, the
-        // US falls year on year, China sits near the global floor.
+        // US falls year on year, Thailand sits mid-table, and China and Saudi
+        // Arabia hug the global floor.
         label: 'Pressefreiheit · RSF-Score · 0–100',
         value: PRESS_FREEDOM_COMPARE.deLatest,
         unit: '',
@@ -636,7 +637,9 @@ export const POOL: Dashboard[] = [
         series: [
           { name: '🇩🇪 Deutschland', color: green, data: PRESS_FREEDOM_COMPARE.rows[0].data },
           { name: '🇺🇸 USA', color: yellow, data: PRESS_FREEDOM_COMPARE.rows[1].data },
-          { name: '🇨🇳 China', color: red, data: PRESS_FREEDOM_COMPARE.rows[2].data },
+          { name: '🇹🇭 Thailand', color: orange, data: PRESS_FREEDOM_COMPARE.rows[2].data },
+          { name: '🇸🇦 Saudi-Arabien', color: magenta, data: PRESS_FREEDOM_COMPARE.rows[4].data },
+          { name: '🇨🇳 China', color: red, data: PRESS_FREEDOM_COMPARE.rows[3].data },
         ],
         ticks: PRESS_FREEDOM_COMPARE.ticks,
         xLabels: ['2022', '2023', '2024', 'heute'],
