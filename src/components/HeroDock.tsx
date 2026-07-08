@@ -61,9 +61,10 @@ const ExportButton = styled.button`
   ${glassSurface}
 `;
 
-// Tooltip above the button; a small padding bridge (bottom, no visual) keeps
-// the note reachable so it does not flicker out when the pointer crosses the
-// gap from the button up onto it.
+// Tooltip above the dock, shown only while the "i" button (or the note
+// itself) is hovered — star and export have their own labels and must not
+// pop the source. The visibility transition doubles as a grace period so the
+// note survives the pointer crossing the gap from the button up onto it.
 const SourceNote = styled.div`
   position: absolute;
   bottom: calc(100% + 12px);
@@ -84,7 +85,8 @@ const SourceNote = styled.div`
     visibility 0.18s;
   ${glassSurface}
 
-  ${Dock}:hover & {
+  ${InfoButton}:hover ~ &,
+  &:hover {
     opacity: 1;
     visibility: visible;
     transform: translateX(-50%) translateY(0);
@@ -100,10 +102,11 @@ export function HeroDock({ dashboard }: { dashboard: Dashboard }) {
     <Dock>
       {dashboard.source && (
         <>
+          {/* Note must follow the button: the hover rule uses `button ~ note`. */}
+          <InfoButton aria-label={`${tr('Quelle')}: ${tr(dashboard.source)}`}>i</InfoButton>
           <SourceNote role="tooltip">
             {tr('Quelle')}: {tr(dashboard.source)}
           </SourceNote>
-          <InfoButton aria-label={`${tr('Quelle')}: ${tr(dashboard.source)}`}>i</InfoButton>
         </>
       )}
       <FavButton
