@@ -443,7 +443,10 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       const dt = Math.min(0.1, (now - lastNow) / 1000);
       lastNow = now;
       spin += dt * (0.32 + (pctRef.current / 100) * 0.65);
-      const rot = spin + (1 - aEase) * 2.2 + ease * 1.6;
+      // Assembly swirl and exit spin-up both wind in the SAME direction as
+      // the idle spin (hence the minus: the offset unwinds forward), so the
+      // globe never visibly stops and reverses.
+      const rot = spin - (1 - aEase) * 2.2 + ease * 1.6;
 
       const sinR = Math.sin(rot);
       const cosR = Math.cos(rot);
