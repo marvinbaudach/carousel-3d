@@ -57,7 +57,9 @@ export function drawEraMarkers(
     let row = 0;
     while (rowSpans[row]?.some((s) => x0 < s.x1 + gap && x1 + gap > s.x0)) row++;
     (rowSpans[row] ??= []).push({ x0, x1 });
-    const ly = r.y0 + (16 + row * 18) * u;
+    // Labels sit at the bottom of the plot and stack upward — anchored to the
+    // x-axis whose years they annotate, instead of floating detached on top.
+    const ly = r.y1 - (10 + row * 18) * u;
     // Leader from the dashed line to the label's inner edge, at label height,
     // capped with a dot on the line so the attachment point is unambiguous.
     ctx.strokeStyle = 'rgba(224,156,96,0.8)';
