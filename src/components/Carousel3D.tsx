@@ -157,9 +157,9 @@ const DEFAULT_TAG: string = TAGS[0].id;
 // How many ring panels are admitted per frame while the set mounts in.
 const MOUNT_BATCH = 3;
 
-// Theme switch choreography: the old set collapses into the center for this
-// long before the next set mounts and erupts out. Covers the panels' exit
-// stagger (up to ~0.11s jitter) plus their 0.4s plunge.
+// Theme switch choreography: the old set plays its exit moves for this long
+// before the next set mounts and flies in. Covers the panels' exit stagger
+// (up to ~0.11s jitter) plus their 0.4s plunge.
 const EXIT_MS = 520;
 
 interface RingProps {
@@ -172,8 +172,10 @@ interface RingProps {
   hand: RefObject<HandState>;
   layout: LayoutMode;
   dashboards: Dashboard[];
-  /** True while the theme switches away — the set plays its collapse-out. */
+  /** True while the theme switches away — the set plays its exit moves. */
   exiting: boolean;
+  /** Choreography of the current theme switch (see CarouselItem's `move`). */
+  move: number;
   radius: number;
   poses: RefObject<Map<string, HeroStart>>;
   /** False while the user paused the auto-spin (Space). */
@@ -189,6 +191,7 @@ function Ring({
   layout,
   dashboards,
   exiting,
+  move,
   radius,
   poses,
   spinning,
@@ -196,6 +199,17 @@ function Ring({
   // Collapsing panels must not absorb clicks — the card would unmount from
   // under its own hero mid-flight.
   const interactive = selectedId === null && !exiting;
+  // Boot plays the uniform center-out supernova; from the first theme switch
+  // on, panels pick individual exit/entrance moves (see CarouselItem).
+  const firstSet = useRef(true);
+  const [varied, setVaried] = useState(false);
+  useEffect(() => {
+    if (firstSet.current) {
+      firstSet.current = false;
+      return;
+    }
+    setVaried(true);
+  }, [dashboards]);
   // Every panel's first mount rasterises a 512px canvas texture; admitting
   // the whole pool in one commit stalls the main thread for hundreds of ms —
   // exactly while the loader's converge/iris animation plays. Admit a few
@@ -279,6 +293,8 @@ function Ring({
             wasDrag={wasDrag}
             entranceDelay={entranceJitter[i]}
             exiting={exiting}
+            varied={varied}
+            move={move}
             interactive={interactive}
             poses={poses}
           />
@@ -319,8 +335,12 @@ export function Carousel3D() {
   // set erupts. Another chip click mid-collapse just retargets the timeout.
   const [stageTag, setStageTag] = useState(tag);
   const exiting = tag !== stageTag;
+  // One choreography per switch, drawn fresh each time (see CarouselItem's
+  // `move`): the whole set moves as one, but every switch looks different.
+  const [switchMove, setSwitchMove] = useState(0);
   useEffect(() => {
     if (tag === stageTag) return;
+    setSwitchMove(Math.floor(Math.random() * 4));
     const id = window.setTimeout(() => setStageTag(tag), EXIT_MS);
     return () => window.clearTimeout(id);
   }, [tag, stageTag]);
@@ -563,6 +583,7 @@ export function Carousel3D() {
         layout={layout}
         dashboards={dashboards}
         exiting={exiting}
+        move={switchMove}
         radius={radius}
         poses={posesRef}
         spinning={spinning}

@@ -31,9 +31,18 @@ interface CarouselItemProps {
   wasDrag: () => boolean;
   /** Per-panel delay (seconds) for the staggered entrance fly-out. */
   entranceDelay: number;
-  /** True while the theme filter is switching away — plays the collapse-out
-      (the entrance in reverse) before this panel unmounts. */
+  /** True while the theme filter is switching away — plays the exit
+      animation before this panel unmounts. */
   exiting: boolean;
+  /** False during the boot (always the supernova entrance); true from the
+      first theme switch on, where `move` picks the choreography. */
+  varied: boolean;
+  /** Choreography of the current theme switch, drawn per switch (not per
+      card): the whole set leaves and arrives in one coherent motion, but each
+      switch looks different. 0 supernova (implode/erupt center), 1 waterfall
+      (drop out / rain in from above), 2 breath (scatter out / dive in from
+      outside), 3 fountain (lift out / rise in from below). */
+  move: number;
   /** False while a hero is open, so panels stop absorbing click-away taps. */
   interactive: boolean;
   /** While a hero is open, every panel writes its live world pose here each
@@ -98,6 +107,8 @@ export function CarouselItem({
   wasDrag,
   entranceDelay,
   exiting,
+  varied,
+  move,
   interactive,
   poses,
 }: CarouselItemProps) {
@@ -124,7 +135,10 @@ export function CarouselItem({
   // (mid-entrance, hovered, floating) without a pop.
   const exitStart = useRef<number | null>(null);
   const exitFrom = useRef(new Vector3());
-  const exitSnapshot = useRef({ scale: 1, opacity: 1, glass: 0 });
+  const exitSnapshot = useRef({ scale: 1, opacity: 1, glass: 0, mode: 0, rotY: 0, spin: 1 });
+  // Spawn point of the entrance flight; stays at the origin for the boot's
+  // uniform supernova, varied per panel after a theme switch.
+  const entranceOrigin = useRef(new Vector3());
 
   // Refresh the settled render when live data lands. A 'tick' only moves the
   // continuously-animated panels (the debt clock); a 'data' event only needs
@@ -238,9 +252,10 @@ export function CarouselItem({
     if (glass) updateGlassLod(glass, eased);
     const glassMat = glass?.material as MeshPhysicalMaterial | undefined;
 
-    // Theme switch: collapse back into the center, staggered on the same
-    // per-panel jitter as the entrance, while the parent waits before
-    // swapping in the next theme's set.
+    // Theme switch: the set leaves in the switch's choreography (see `move`),
+    // staggered on the same per-panel jitter as the entrance, while the
+    // parent waits before swapping in the next theme's set. The per-card tip
+    // direction stays random so the shared motion still feels organic.
     if (exiting) {
       if (exitStart.current === null) {
         exitStart.current = now + entranceDelay * 0.5;
@@ -249,24 +264,64 @@ export function CarouselItem({
           scale: group.scale.x,
           opacity: mat.opacity,
           glass: glassMat?.opacity ?? 0,
+          mode: move,
+          rotY: group.rotation.y,
+          spin: Math.random() < 0.5 ? -1 : 1,
         };
       }
+      const snap = exitSnapshot.current;
       const q = MathUtils.clamp((now - exitStart.current) / EXIT_DURATION, 0, 1);
       const e = q * q * q; // easeInCubic: a beat of hang, then the plunge
-      group.position.copy(exitFrom.current).multiplyScalar(1 - e);
-      const s = exitSnapshot.current.scale * (1 - 0.45 * e);
+      const f = exitFrom.current;
+      switch (snap.mode) {
+        case 1: // waterfall: drop out of frame, tipping sideways
+          group.position.set(f.x, f.y - 4.5 * e, f.z);
+          group.rotation.z = 0.45 * e * snap.spin;
+          break;
+        case 2: // breath: scatter radially outward, swallowed by the fog
+          group.position.copy(f).multiplyScalar(1 + 1.3 * e);
+          break;
+        case 3: // fountain: lift out of frame, tipping slightly
+          group.position.set(f.x, f.y + 4.5 * e, f.z);
+          group.rotation.z = -0.3 * e * snap.spin;
+          break;
+        default: // supernova: implode into the center
+          group.position.copy(f).multiplyScalar(1 - e);
+      }
+      const s = snap.scale * (1 - 0.45 * e);
       group.scale.set(s, s, 1);
-      mat.opacity = exitSnapshot.current.opacity * (1 - e);
+      mat.opacity = snap.opacity * (1 - e);
       img.visible = mat.opacity > 0.002;
-      if (glassMat) glassMat.opacity = exitSnapshot.current.glass * (1 - e);
+      if (glassMat) glassMat.opacity = snap.glass * (1 - e);
       if (glass && glassMat) glass.visible = img.visible && glassMat.opacity > 0.005;
       return;
     }
     exitStart.current = null;
 
-    // One-time entrance: panels fly out from the center to their slot,
-    // staggered and scaling up to their focus size as they arrive.
-    if (entranceStart.current === null) entranceStart.current = now;
+    // One-time entrance: panels fly from their spawn point to their slot,
+    // staggered and scaling up to their focus size as they arrive. On boot
+    // every panel erupts from the center (the supernova moment, tied to the
+    // loader glow); after a theme switch the spawn matches the switch's
+    // choreography, continuing the motion the old set left with.
+    if (entranceStart.current === null) {
+      entranceStart.current = now;
+      if (varied) {
+        const o = entranceOrigin.current;
+        switch (move) {
+          case 1: // waterfall: rain in from above
+            o.set(target.x, target.y + 6, target.z);
+            break;
+          case 2: // breath: dive in from outside the ring
+            o.set(target.x * 2.4, target.y, target.z * 2.4);
+            break;
+          case 3: // fountain: rise in from below
+            o.set(target.x, target.y - 6, target.z);
+            break;
+          default: // supernova: erupt from the center
+            o.set(0, 0, 0);
+        }
+      }
+    }
     const p = MathUtils.clamp(
       (now - entranceStart.current - entranceDelay) / ENTRANCE_DURATION,
       0,
@@ -274,7 +329,12 @@ export function CarouselItem({
     );
     if (p < 1) {
       const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
-      group.position.set(target.x * e, target.y * e, target.z * e);
+      const o = entranceOrigin.current;
+      group.position.set(
+        o.x + (target.x - o.x) * e,
+        o.y + (target.y - o.y) * e,
+        o.z + (target.z - o.z) * e,
+      );
       group.rotation.x = target.rotX;
       group.rotation.y = target.rotY;
       const s = (0.5 + 0.5 * e) * focus;
