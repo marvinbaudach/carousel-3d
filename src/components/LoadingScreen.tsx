@@ -47,6 +47,15 @@ const drift = keyframes`
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-2.5%, -1.5%, 0); }
 `;
+// The exit flash pumps like a body barely containing its energy: two quick
+// unequal beats per cycle, more heartbeat than sine wave.
+const pump = keyframes`
+  0%, 100% { transform: scale(1); }
+  28% { transform: scale(1.16); }
+  46% { transform: scale(0.97); }
+  64% { transform: scale(1.09); }
+  82% { transform: scale(0.99); }
+`;
 
 // Exit: the dots implode into a swelling light at the center, and the whole
 // screen dissolves into the scene — a plain fade, no circle geometry left to
@@ -67,6 +76,11 @@ const Screen = styled.div<{ $leaving: boolean }>`
 
 // The light everything implodes into: a soft radial bloom at the exact
 // center, swelling up during the convergence and carried out by the fade.
+// It ignites hot and reddish, then cools into the bluish white the main
+// scene lives in — while pumping like a body overloaded with energy.
+// Three layers so nothing fights over transform: the outer div owns the
+// swell transition, the inner one the pump animation, and the color shift
+// is a warm gradient fading out over the cool one beneath it.
 const Flash = styled.div<{ $done: boolean }>`
   position: absolute;
   left: 50%;
@@ -75,6 +89,26 @@ const Flash = styled.div<{ $done: boolean }>`
   height: 90vmin;
   transform: translate(-50%, -50%) scale(${(p) => (p.$done ? 1 : 0.1)});
   opacity: ${(p) => (p.$done ? 1 : 0)};
+  transition:
+    transform ${CONVERGE_MS + 350}ms cubic-bezier(0.2, 0.7, 0.3, 1),
+    opacity ${CONVERGE_MS}ms ease-out;
+  pointer-events: none;
+`;
+
+const FlashPump = styled.div<{ $done: boolean }>`
+  position: absolute;
+  inset: 0;
+  animation: ${(p) => (p.$done ? pump : 'none')} 0.55s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+`;
+
+// Cool base: the bluish white the flash settles into.
+const FlashCool = styled.div`
+  position: absolute;
+  inset: 0;
   background: radial-gradient(
     circle,
     rgba(240, 246, 255, 0.85) 0%,
@@ -82,10 +116,22 @@ const Flash = styled.div<{ $done: boolean }>`
     rgba(57, 135, 229, 0.12) 45%,
     transparent 68%
   );
-  transition:
-    transform ${CONVERGE_MS + 350}ms cubic-bezier(0.2, 0.7, 0.3, 1),
-    opacity ${CONVERGE_MS}ms ease-out;
-  pointer-events: none;
+`;
+
+// Hot start: reddish-warm, fading out on top of the cool layer so the
+// bloom reads as cooling from ember-red into blue-white.
+const FlashHot = styled.div<{ $done: boolean }>`
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle,
+    rgba(255, 235, 220, 0.9) 0%,
+    rgba(250, 150, 110, 0.5) 22%,
+    rgba(226, 88, 66, 0.16) 45%,
+    transparent 68%
+  );
+  opacity: ${(p) => (p.$done ? 0 : 1)};
+  transition: opacity ${CONVERGE_MS + 250}ms ease-in;
 `;
 
 const Glow = styled.div<{ $x: string; $y: string; $color: string; $delay: string }>`
@@ -500,7 +546,12 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
 
       <StarCanvas ref={starRef} aria-hidden />
       <GlobeCanvas ref={canvasRef} aria-hidden />
-      <Flash $done={done} aria-hidden />
+      <Flash $done={done} aria-hidden>
+        <FlashPump $done={done}>
+          <FlashCool />
+          <FlashHot $done={done} />
+        </FlashPump>
+      </Flash>
 
       {/* Progress ring around the globe: track, percentage arc, scanner. */}
       <RingWrap $done={done} aria-hidden>
