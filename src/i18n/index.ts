@@ -72,11 +72,6 @@ export function setLocale(next: Locale): void {
   listeners.forEach((fn) => fn(next));
 }
 
-/** Cycle de → en → fr → it → de (the language hotkey). */
-export function cycleLocale(): void {
-  setLocale(LOCALES[(LOCALES.indexOf(LOCALE) + 1) % LOCALES.length]);
-}
-
 /**
  * Translate a German UI string into the active locale. Falls back to
  * translating the ' · '-separated segments individually, so composed labels

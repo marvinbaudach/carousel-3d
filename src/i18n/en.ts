@@ -2,7 +2,6 @@
 export const EN: Record<string, string> = {
   'Einstellungen': 'Settings',
   'SPRACHE': 'LANGUAGE',
-  'Sprache wechseln': 'Switch language',
   '5G-Basisstationen · Schätzwerte': '5G base stations · estimates',
   '7-Tage-Prognose': '7-day forecast',
   'Abgabenkeil · Single': 'Tax wedge · single',

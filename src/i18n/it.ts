@@ -2,7 +2,6 @@
 export const IT: Record<string, string> = {
   'Einstellungen': 'Impostazioni',
   'SPRACHE': 'LINGUA',
-  'Sprache wechseln': 'Cambia lingua',
   '5G-Basisstationen · Schätzwerte': 'Stazioni base 5G · valori stimati',
   '7-Tage-Prognose': 'Previsioni a 7 giorni',
   'Abgabenkeil · Single': 'Cuneo fiscale · single',

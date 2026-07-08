@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { LOCALE, cycleLocale, setLocale, t as tr, type Locale } from '../i18n';
+import { useEffect, useRef, useState } from 'react';
+import { LOCALE, setLocale, t as tr, type Locale } from '../i18n';
 import styled from 'styled-components';
 import { LAYOUT_MODES, type LayoutMode } from '../layouts';
 import { glassSurface } from './glass';
@@ -191,7 +191,6 @@ const HINTS: { keys: string; label: string }[] = [
   { keys: '←  →', label: 'Nachbar-Panel' },
   { keys: '+  −', label: 'Zoom' },
   { keys: 'Esc', label: 'Panel schließen' },
-  { keys: 'L', label: 'Sprache wechseln' },
 ];
 
 /**
@@ -211,6 +210,17 @@ export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
     steuerung: false,
   });
   const toggleFold = (k: Section) => setFolds((f) => ({ ...f, [k]: !f[k] }));
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Click/tap anywhere outside the panel dismisses it, like a popover.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (!wrapRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [open]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -224,11 +234,6 @@ export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
         setOpen((v) => !v);
         return;
       }
-      // Cycle de → en → fr → it; the pick is stored and survives reloads.
-      if (e.key === 'l' || e.key === 'L') {
-        cycleLocale();
-        return;
-      }
       const i = Number(e.key) - 1;
       if (i >= 0 && i < LAYOUT_MODES.length) onChange(LAYOUT_MODES[i].id);
     };
@@ -237,7 +242,7 @@ export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
   });
 
   return (
-    <Wrap $hidden={hidden}>
+    <Wrap ref={wrapRef} $hidden={hidden}>
       <Panel $open={open} role="region" aria-label={tr('Einstellungen')}>
         <Group>
           <GroupTitle
