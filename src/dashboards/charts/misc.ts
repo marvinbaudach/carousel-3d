@@ -29,7 +29,7 @@ import {
   SERIES,
 } from '../theme';
 import { drawSource, plotRect, xAxisLabels } from './shared';
-import { drawEraMarkers } from './line';
+import { curveYFn, drawEraMarkers, markerInsetRange } from './line';
 
 export interface WealthSplitCfg {
   label: string;
@@ -299,13 +299,15 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   // 125-year trend as a gradient area: flat for decades, then the wall.
   const r = plotRect(f, pad + 158 * u);
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
+  const marks = cfg.markers ?? [];
+  const d = markerInsetRange(r, marks, u);
   const grad = ctx.createLinearGradient(0, r.y0, 0, r.y1);
   grad.addColorStop(0, `${cfg.color}59`);
   grad.addColorStop(1, `${cfg.color}00`);
-  const end = linePath(ctx, cfg.series, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
+  const end = linePath(ctx, cfg.series, d.x0, d.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
   ctx.save();
   ctx.lineTo(end.x, r.y1);
-  ctx.lineTo(r.x0, r.y1);
+  ctx.lineTo(d.x0, r.y1);
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
@@ -313,15 +315,15 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   ctx.strokeStyle = cfg.color;
   ctx.lineWidth = 2.5 * u;
   ctx.lineJoin = 'round';
-  linePath(ctx, cfg.series, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
+  linePath(ctx, cfg.series, d.x0, d.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
   ctx.stroke();
   ctx.fillStyle = cfg.color;
   ctx.beginPath();
   ctx.arc(end.x, end.y, 4.5 * u, 0, Math.PI * 2);
   ctx.fill();
-  drawEraMarkers(f, r, cfg.markers ?? []);
+  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(cfg.series, r.y0 + 14 * u, r.y1 - 6 * u));
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-  xAxisLabels(f, ['1900', '1940', '1980', 'heute'], r.x0, r.x1, r.y1);
+  xAxisLabels(f, ['1900', '1940', '1980', 'heute'], d.x0, d.x1, r.y1);
 }
 
 export interface ForecastCfg {
