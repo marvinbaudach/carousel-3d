@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 
 // Small phones or any touch device: the scene trims its heavy post-processing
-// and pixel ratio here to stay smooth on mobile GPUs.
-const QUERY = '(max-width: 820px), (pointer: coarse)';
+// and pixel ratio here to stay smooth on mobile GPUs. Exported for one-shot
+// media checks outside React (e.g. the loader's canvas choreography).
+export const MOBILE_QUERY = '(max-width: 820px), (pointer: coarse)';
+const QUERY = MOBILE_QUERY;
 
 function match(): boolean {
   return typeof window !== 'undefined' && window.matchMedia(QUERY).matches;

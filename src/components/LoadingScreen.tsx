@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { LIVE_FEEDS } from '../data/sources';
+import { MOBILE_QUERY, useIsMobile } from '../hooks/useIsMobile';
 
 interface LoadingScreenProps {
   done: boolean;
@@ -306,6 +307,12 @@ function slerp(
 }
 
 export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
+  // The explosion handoff is choreographed for the desktop ring, which blooms
+  // out of the flash's center. The mobile deck's first card already sits
+  // there, so the burst would detonate on top of it — mobile exits with the
+  // calm variant instead: globe implosion + plain fade, the card's own chart
+  // fly-in is the reveal.
+  const isMobile = useIsMobile();
   const [leaving, setLeaving] = useState(false);
   const [pct, setPct] = useState(0);
   const pctRef = useRef(0);
@@ -355,6 +362,10 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
     }
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    // One-shot check (a viewport class change mid-boot is not a real case):
+    // mobile skips the shockwave/dust — they radiate from the center, where
+    // the deck's first card already sits (see the note on `isMobile` below).
+    const mobileExit = window.matchMedia(MOBILE_QUERY).matches;
 
     // Fibonacci sphere.
     const N = 2600;
@@ -524,7 +535,7 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       // Shockwave + dust: once the flash peaks, a pressure ring races outward
       // and drags a cloud of nebula dust with it. Each mote starts ember-warm
       // and cools to blue as it flies — the flash's color story, scattered.
-      const waveT = doneAt
+      const waveT = !mobileExit && doneAt
         ? Math.min(1, Math.max(0, (now - doneAt - WAVE_DELAY_MS) / WAVE_MS))
         : 0;
       if (waveT > 0 && waveT < 1) {
@@ -563,8 +574,9 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       }
 
       // Keep drawing behind the closing iris until the dots reach the center
-      // and the shockwave has run its course.
-      const waveDone = doneAt !== null && now - doneAt >= WAVE_DELAY_MS + WAVE_MS;
+      // and the shockwave has run its course (mobile skips the wave).
+      const waveDone =
+        mobileExit || (doneAt !== null && now - doneAt >= WAVE_DELAY_MS + WAVE_MS);
       if (conv < 1 || !waveDone) raf = requestAnimationFrame(draw);
     };
 
@@ -608,12 +620,14 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
 
       <StarCanvas ref={starRef} aria-hidden />
       <GlobeCanvas ref={canvasRef} aria-hidden />
-      <Flash $done={done} aria-hidden>
-        <FlashPump $done={done}>
-          <FlashCool />
-          <FlashHot $done={done} />
-        </FlashPump>
-      </Flash>
+      {!isMobile && (
+        <Flash $done={done} aria-hidden>
+          <FlashPump $done={done}>
+            <FlashCool />
+            <FlashHot $done={done} />
+          </FlashPump>
+        </Flash>
+      )}
 
       {/* Progress ring around the globe: track, percentage arc, scanner. */}
       <RingWrap $done={done} aria-hidden>
