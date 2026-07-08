@@ -239,8 +239,7 @@ export function CarouselItem({
       0.12,
     );
     if (glass) {
-      // Flat plate: sits at the box's former front-face depth (see GlassPlate).
-      glass.position.z = GLASS_GAP + GLASS_THICKNESS - pressed * PRESS_SINK;
+      glass.position.z = GLASS_GAP + GLASS_THICKNESS / 2 - pressed * PRESS_SINK;
     }
 
     // Push the panel back by exactly the distance the far edge would have
@@ -381,7 +380,7 @@ export function CarouselItem({
         }
       />
 
-      <GlassPlate width={width} height={height} meshRef={glassRef} flat />
+      <GlassPlate width={width} height={height} meshRef={glassRef} />
     </group>
   );
 }

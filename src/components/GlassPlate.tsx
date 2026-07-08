@@ -5,7 +5,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 
 // Thickness of the glass plate sitting in front of each dashboard, giving the
 // panels real depth instead of looking like flat sheets.
-export const GLASS_THICKNESS = 0.08;
+export const GLASS_THICKNESS = 0.05;
 // Base transparency of the glass; front panels get a touch clearer.
 export const GLASS_OPACITY = 0.16;
 
@@ -14,14 +14,6 @@ interface GlassPlateProps {
   height: number;
   /** Exposed so owners can fade or rescale the plate imperatively. */
   meshRef?: Ref<Mesh>;
-  /**
-   * Render a single plane at the front-face position instead of the box slab.
-   * The ring plates use this — their edges are only ever seen at grazing
-   * angles on dimmed side panels — while the hero keeps the box so its edge
-   * thickness stays visible up close. The plane sits exactly where the box's
-   * front face was, so the reflective surface doesn't shift on hero handoff.
-   */
-  flat?: boolean;
 }
 
 /**
@@ -38,7 +30,7 @@ interface GlassPlateProps {
  * stays cheap across every on-stage plate; the reflection there is just the
  * boosted env map on the low roughness.
  */
-export function GlassPlate({ width, height, meshRef, flat }: GlassPlateProps) {
+export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
   const isMobile = useIsMobile();
 
   const mats = useMemo(() => {
@@ -81,16 +73,12 @@ export function GlassPlate({ width, height, meshRef, flat }: GlassPlateProps) {
     <mesh
       ref={meshRef}
       material={mats.rich ?? mats.cheap}
-      // Only desktop ring plates get the swap pair; hero and mobile stay put.
-      userData={flat && mats.rich ? { glassLod: mats } : {}}
-      position={[0, 0, (flat ? GLASS_THICKNESS : GLASS_THICKNESS / 2) + 0.01]}
+      // Desktop plates carry the LOD swap pair; the hero simply never swaps.
+      userData={mats.rich ? { glassLod: mats } : {}}
+      position={[0, 0, GLASS_THICKNESS / 2 + 0.01]}
       raycast={() => null}
     >
-      {flat ? (
-        <planeGeometry args={[width, height]} />
-      ) : (
-        <boxGeometry args={[width, height, GLASS_THICKNESS]} />
-      )}
+      <boxGeometry args={[width, height, GLASS_THICKNESS]} />
     </mesh>
   );
 }
