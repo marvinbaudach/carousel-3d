@@ -19,27 +19,29 @@ import { plotRect, xAxisLabels } from './shared';
 
 /**
  * Vertical era markers (dashed line + label) shared by the area and line
- * charts. Labels stack into as many rows as needed: each drops to the first row
- * whose already-placed labels it does not horizontally overlap, so a right-edge
- * label that flips left never collides with a left one on the same row.
- *
- * Every label is pinned to its own dashed line with a short horizontal leader
- * ending in a dot at the join, so a label that flips to the opposite side or
- * drops to a lower row can still be traced back to the line it belongs to.
+ * charts. Each label rides at the height where its dashed line crosses the
+ * data curve (`curveY`), with a dot pinned on the crossing itself — the event
+ * reads against the value it changed instead of sitting detached on the
+ * x-axis. Labels that would collide nudge vertically until free.
  */
 export function drawEraMarkers(
   f: Frame,
   r: { x0: number; x1: number; y0: number; y1: number },
   marks: { at: number; label: string }[],
+  curveY: (frac: number) => number,
 ): void {
   if (!marks.length) return;
   const { ctx, u } = f;
   ctx.font = `500 ${13 * u}px ${FONT}`;
-  const rowSpans: { x0: number; x1: number }[][] = [];
   const gap = 6 * u;
+  const halfH = 9 * u;
+  const yMin = r.y0 + 16 * u;
+  const yMax = r.y1 - 12 * u;
+  const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
   for (const m of marks) {
     const label = tr(m.label);
-    const mx = r.x0 + (r.x1 - r.x0) * Math.min(1, Math.max(0, m.at));
+    const frac = Math.min(1, Math.max(0, m.at));
+    const mx = r.x0 + (r.x1 - r.x0) * frac;
     ctx.save();
     ctx.strokeStyle = 'rgba(224,156,96,0.8)';
     ctx.lineWidth = 1.5 * u;
@@ -54,26 +56,61 @@ export function drawEraMarkers(
     const lx = mx + (rightFits ? gap : -gap);
     const x0 = rightFits ? lx : lx - labelW;
     const x1 = rightFits ? lx + labelW : lx;
-    let row = 0;
-    while (rowSpans[row]?.some((s) => x0 < s.x1 + gap && x1 + gap > s.x0)) row++;
-    (rowSpans[row] ??= []).push({ x0, x1 });
-    const ly = r.y0 + (16 + row * 18) * u;
-    // Leader from the dashed line to the label's inner edge, at label height,
-    // capped with a dot on the line so the attachment point is unambiguous.
+    const overlaps = (y: number) =>
+      placed.some((s) => x0 < s.x1 + gap && x1 + gap > s.x0 && y - halfH < s.y1 && y + halfH > s.y0);
+    let ly = Math.min(yMax, Math.max(yMin, curveY(frac)));
+    while (overlaps(ly) && ly + 2 * halfH <= yMax) ly += 2 * halfH;
+    while (overlaps(ly) && ly - 2 * halfH >= yMin) ly -= 2 * halfH;
+    placed.push({ x0, x1, y0: ly - halfH, y1: ly + halfH });
+    // Leader from the crossing point to the label's inner edge, capped with a
+    // dot on the dashed line so the attachment point is unambiguous.
     ctx.strokeStyle = 'rgba(224,156,96,0.8)';
     ctx.fillStyle = 'rgba(224,156,96,0.8)';
     ctx.lineWidth = 1.5 * u;
     ctx.beginPath();
-    ctx.moveTo(mx, ly - 4 * u);
-    ctx.lineTo(lx, ly - 4 * u);
+    ctx.moveTo(mx, ly);
+    ctx.lineTo(lx, ly);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(mx, ly - 4 * u, 2 * u, 0, Math.PI * 2);
+    ctx.arc(mx, ly, 2 * u, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = 'rgba(236,182,132,0.9)';
     ctx.textAlign = rightFits ? 'left' : 'right';
-    ctx.fillText(label, lx, ly);
+    ctx.fillText(label, lx, ly + 4.5 * u);
+    ctx.textAlign = 'left';
   }
+}
+
+/**
+ * Data x-range for a plot with era markers: inset from the plot edge on any
+ * side where a marker sits at (or hugs) the range boundary, so the dashed
+ * line gets breathing room instead of merging with the y-axis.
+ */
+export function markerInsetRange(
+  r: { x0: number; x1: number },
+  marks: { at: number }[],
+  u: number,
+): { x0: number; x1: number } {
+  const inset = 18 * u;
+  return {
+    x0: r.x0 + (marks.some((m) => m.at <= 0.03) ? inset : 0),
+    x1: r.x1 - (marks.some((m) => m.at >= 0.97) ? inset : 0),
+  };
+}
+
+/** y-position of the (normalized 0..1) series at a fraction of the x-range,
+    matching linePath's point spacing and vertical mapping. */
+export function curveYFn(
+  data: number[],
+  yTop: number,
+  yBottom: number,
+): (frac: number) => number {
+  return (frac) => {
+    const pos = frac * (data.length - 1);
+    const i = Math.floor(pos);
+    const v = data[i] + (data[Math.min(i + 1, data.length - 1)] - data[i]) * (pos - i);
+    return yBottom - (yBottom - yTop) * v;
+  };
 }
 
 export interface LineCfg {
@@ -99,6 +136,8 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   drawSurface(f);
   const top = cfg.series.length > 1 ? drawCompareHeader(f, cfg.label) : drawHeader(f, cfg.label);
   const r = plotRect(f, top + 26 * u);
+  const marks = cfg.markers ?? [];
+  const d = markerInsetRange(r, marks, u);
 
   // Shaded bands (behind grid + series): contiguous true-runs of the mask.
   if (cfg.shade) {
@@ -114,8 +153,8 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
       }
       let j = i;
       while (j < n && mask[j]) j++;
-      const x0 = r.x0 + ((r.x1 - r.x0) * (i - 0.5)) / (n - 1);
-      const x1 = r.x0 + ((r.x1 - r.x0) * (j - 0.5)) / (n - 1);
+      const x0 = d.x0 + ((d.x1 - d.x0) * (i - 0.5)) / (n - 1);
+      const x1 = d.x0 + ((d.x1 - d.x0) * (j - 0.5)) / (n - 1);
       ctx.fillRect(x0, r.y0, x1 - x0, r.y1 - r.y0);
       if (firstBand) {
         bandStartX = x0;
@@ -139,13 +178,16 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   drawLegend(f, r.y0 - 10 * u, cfg.series);
 
   const p = easeOut(t / 1.4);
+  const datas = cfg.series.map(
+    (s, si) => s.data ?? makeSeries(cfg.seed + si * 97, 14, si === 0 ? 0.6 : 0.25),
+  );
   cfg.series.forEach((s, si) => {
-    const data = s.data ?? makeSeries(cfg.seed + si * 97, 14, si === 0 ? 0.6 : 0.25);
+    const data = datas[si];
     ctx.strokeStyle = s.color;
     ctx.lineWidth = 2.5 * u;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    const end = linePath(ctx, data, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
+    const end = linePath(ctx, data, d.x0, d.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
     ctx.stroke();
     // Endpoint marker; the front series gets a soft live pulse.
     ctx.fillStyle = s.color;
@@ -163,9 +205,9 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
       ctx.globalAlpha = 1;
     }
   });
-  drawEraMarkers(f, r, cfg.markers ?? []);
+  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(datas[0], r.y0 + 14 * u, r.y1 - 6 * u));
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-  xAxisLabels(f, cfg.xLabels ?? ['Q1', 'Q2', 'Q3', 'Q4'], r.x0, r.x1, r.y1);
+  xAxisLabels(f, cfg.xLabels ?? ['Q1', 'Q2', 'Q3', 'Q4'], d.x0, d.x1, r.y1);
 }
 
 export interface AreaCfg {
@@ -192,6 +234,8 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
   const top = drawHeader(f, cfg.label);
   const r = plotRect(f, top + 26 * u);
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
+  const marks = [...(cfg.marker ? [cfg.marker] : []), ...(cfg.markers ?? [])];
+  const d = markerInsetRange(r, marks, u);
 
   const data = cfg.data ?? makeSeries(cfg.seed, 18, 0.7);
   const p = easeOut(t / 1.4);
@@ -199,10 +243,10 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
   grad.addColorStop(0, `${cfg.color}59`);
   grad.addColorStop(1, `${cfg.color}00`);
 
-  const end = linePath(ctx, data, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
+  const end = linePath(ctx, data, d.x0, d.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
   ctx.save();
   ctx.lineTo(end.x, r.y1);
-  ctx.lineTo(r.x0, r.y1);
+  ctx.lineTo(d.x0, r.y1);
   ctx.closePath();
   ctx.fillStyle = grad;
   ctx.fill();
@@ -211,7 +255,7 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
   ctx.strokeStyle = cfg.color;
   ctx.lineWidth = 2.5 * u;
   ctx.lineJoin = 'round';
-  linePath(ctx, data, r.x0, r.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
+  linePath(ctx, data, d.x0, d.x1, r.y0 + 14 * u, r.y1 - 6 * u, p);
   ctx.stroke();
   ctx.fillStyle = cfg.color;
   ctx.beginPath();
@@ -219,8 +263,8 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
   ctx.fill();
 
   // Vertical era markers (dashed line + label), drawn on top of the curve.
-  drawEraMarkers(f, r, [...(cfg.marker ? [cfg.marker] : []), ...(cfg.markers ?? [])]);
+  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(data, r.y0 + 14 * u, r.y1 - 6 * u));
 
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
-  xAxisLabels(f, cfg.xLabels ?? ['Mon', 'Wed', 'Fri', 'Sun'], r.x0, r.x1, r.y1);
+  xAxisLabels(f, cfg.xLabels ?? ['Mon', 'Wed', 'Fri', 'Sun'], d.x0, d.x1, r.y1);
 }
