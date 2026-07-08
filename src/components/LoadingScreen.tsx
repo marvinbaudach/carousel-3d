@@ -385,6 +385,22 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       phase: i / stations.length,
     }));
 
+    // Supernova dust: motes hurled outward by the shockwave when the flash
+    // bursts. Each mote gets its own direction, launch delay, speed and a
+    // slight tangential curl so the cloud reads as turbulence, not spokes.
+    const dust = Array.from({ length: 260 }, () => ({
+      angle: Math.random() * Math.PI * 2,
+      speed: 0.4 + Math.random() ** 1.6 * 0.65,
+      size: 1.3 + Math.random() * 3.1,
+      delay: Math.random() * 0.14,
+      curl: (Math.random() - 0.5) * 0.7,
+      glow: Math.random(),
+    }));
+    // The wave fires as the iris starts closing (the moment the flash peaks)
+    // and rides out on the screen fade.
+    const WAVE_DELAY_MS = CONVERGE_MS * 0.45;
+    const WAVE_MS = 950;
+
     const TILT = 0.42;
     let raf = 0;
     let doneAt: number | null = null;
@@ -502,8 +518,51 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
         ctx.fillText(st.code, q.x + 9, q.y + 4);
       });
 
-      // Keep drawing behind the closing iris until the dots reach the center.
-      if (conv < 1) raf = requestAnimationFrame(draw);
+      // Shockwave + dust: once the flash peaks, a pressure ring races outward
+      // and drags a cloud of nebula dust with it. Each mote starts ember-warm
+      // and cools to blue as it flies — the flash's color story, scattered.
+      const waveT = doneAt
+        ? Math.min(1, Math.max(0, (now - doneAt - WAVE_DELAY_MS) / WAVE_MS))
+        : 0;
+      if (waveT > 0 && waveT < 1) {
+        const we = 1 - Math.pow(1 - waveT, 3); // easeOutCubic
+        const maxR = Math.min(w, h) * 0.72;
+        const fade = 1 - waveT;
+
+        // Pressure front: a thin bright ring with a soft trailing band.
+        ctx.strokeStyle = `rgba(205, 224, 255, ${0.55 * fade})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, we * maxR, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(120, 160, 235, ${0.22 * fade})`;
+        ctx.lineWidth = 10 + 26 * we;
+        ctx.beginPath();
+        ctx.arc(cx, cy, we * maxR * 0.9, 0, Math.PI * 2);
+        ctx.stroke();
+
+        for (const d of dust) {
+          const p = Math.min(1, Math.max(0, (waveT - d.delay) / (1 - d.delay)));
+          if (p <= 0) continue;
+          const pe = 1 - Math.pow(1 - p, 2.6);
+          const a = d.angle + d.curl * pe;
+          const r = pe * maxR * d.speed;
+          // Ember → blue: the warm channel decays as the mote flies out.
+          const warm = Math.max(0, 1 - p * 2.2);
+          const cr = Math.round(168 + 87 * warm);
+          const cg = Math.round(198 - 28 * warm);
+          const cb = Math.round(255 - 145 * warm);
+          const alpha = (1 - p) * (0.55 + d.glow * 0.45);
+          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
+          const s = d.size * (1 - p * 0.55);
+          ctx.fillRect(cx + Math.cos(a) * r - s / 2, cy + Math.sin(a) * r - s / 2, s, s);
+        }
+      }
+
+      // Keep drawing behind the closing iris until the dots reach the center
+      // and the shockwave has run its course.
+      const waveDone = doneAt !== null && now - doneAt >= WAVE_DELAY_MS + WAVE_MS;
+      if (conv < 1 || !waveDone) raf = requestAnimationFrame(draw);
     };
 
     raf = requestAnimationFrame(draw);
