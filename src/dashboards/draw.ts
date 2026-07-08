@@ -1,6 +1,7 @@
 // Shared drawing vocabulary for the dashboard renderers. Every renderer works
-// in "units" (u = width / 512), so the same code draws the 512px ring panels
-// and the 1024px hero crisply.
+// in "units" relative to a reference width (512 for the ring panels and the
+// 1024px hero; the mobile deck uses a smaller reference to boost type), so
+// the same code draws every surface crisply.
 
 import {
   BASELINE,
@@ -75,7 +76,8 @@ export interface Frame {
   h: number;
   /** Seconds since the current hover/hero started — drives the animations. */
   t: number;
-  /** 1 unit = 1 design pixel of the 512-wide reference layout. */
+  /** 1 unit = 1 design pixel of the reference layout (512-wide on the
+      ring/hero; the mobile deck uses a smaller reference width). */
   u: number;
   /** Mobile deck: skip tertiary chrome (the source footer) — on the phone
       the source already lives behind the info button. */
