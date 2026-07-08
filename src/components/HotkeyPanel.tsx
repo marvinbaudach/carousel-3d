@@ -238,7 +238,7 @@ export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
 
   return (
     <Wrap $hidden={hidden}>
-      <Panel $open={open} role="region" aria-label={tr('Tastenkürzel')}>
+      <Panel $open={open} role="region" aria-label={tr('Einstellungen')}>
         <Group>
           <GroupTitle
             type="button"
@@ -316,7 +316,7 @@ export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        ⌨ {tr('Tasten')}
+        ⚙ {tr('Einstellungen')}
       </Toggle>
     </Wrap>
   );

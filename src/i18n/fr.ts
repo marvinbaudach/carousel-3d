@@ -1,5 +1,6 @@
 // Dictionary FR: German source string -> French. Generated from strings.json.
 export const FR: Record<string, string> = {
+  'Einstellungen': 'Réglages',
   'SPRACHE': 'LANGUE',
   'Sprache wechseln': 'Changer de langue',
   '5G-Basisstationen · Schätzwerte': 'Stations de base 5G · estimations',

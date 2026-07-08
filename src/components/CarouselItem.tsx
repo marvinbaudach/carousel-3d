@@ -31,6 +31,9 @@ interface CarouselItemProps {
   wasDrag: () => boolean;
   /** Per-panel delay (seconds) for the staggered entrance fly-out. */
   entranceDelay: number;
+  /** True while the theme filter is switching away — plays the collapse-out
+      (the entrance in reverse) before this panel unmounts. */
+  exiting: boolean;
   /** False while a hero is open, so panels stop absorbing click-away taps. */
   interactive: boolean;
   /** While a hero is open, every panel writes its live world pose here each
@@ -67,6 +70,11 @@ const TEX_H = 960;
 // Duration of the one-time entrance fly-out per panel.
 const ENTRANCE_DURATION = 0.9;
 
+// Theme-switch exit: the entrance in reverse — the set collapses back into
+// the center before the next theme's cards erupt out. Shorter than the
+// entrance so the swap feels snappy rather than ceremonial.
+const EXIT_DURATION = 0.4;
+
 // Hover press: the cursor side of the panel gets pushed down (away from the
 // viewer) while the edge opposite the cursor stays put — the panel pivots on
 // that far edge, so it reads as being pressed, not as spinning around its
@@ -89,6 +97,7 @@ export function CarouselItem({
   onSelect,
   wasDrag,
   entranceDelay,
+  exiting,
   interactive,
   poses,
 }: CarouselItemProps) {
