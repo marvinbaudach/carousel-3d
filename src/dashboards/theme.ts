@@ -18,7 +18,7 @@ export const SERIES = [
   '#199e70', // aqua
   '#c98500', // yellow
   '#008300', // green
-  '#9085e9', // violet
+  '#7d55d9', // violet — darker/more saturated than the blue slot so the pair stays readable in dim light
   '#e66767', // red
   '#d55181', // magenta
   '#d95926', // orange
