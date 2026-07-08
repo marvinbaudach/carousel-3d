@@ -207,7 +207,11 @@ export function CarouselItem({
       mat.opacity = e;
       mat.grayscale = 0;
       mat.zoom = 1;
+      // Skip the draw calls entirely while the stagger delay holds the panel
+      // fully transparent at the center.
+      img.visible = e > 0.001;
       if (glassMat) glassMat.opacity = GLASS_OPACITY * e;
+      if (glassRef.current) glassRef.current.visible = e > 0.001;
       return;
     }
 
@@ -273,18 +277,25 @@ export function CarouselItem({
     const targetOpacity = 0.4 + eased * 0.6;
     const targetGray = (1 - eased) * 0.7;
     const targetZoom = 1 + (1 - eased) * 0.15;
-    // Pressed glass catches a touch more light, selling the contact.
-    const targetGlass = GLASS_OPACITY + pressed * 0.08;
+    // Pressed glass catches a touch more light, selling the contact. The whole
+    // sheen fades out toward the back of the ring: on a dimmed, fogged panel
+    // the 0.16-opacity clearcoat glint is invisible anyway, and fading (rather
+    // than a hard cutoff) means culling it below never pops while spinning.
+    const targetGlass =
+      (GLASS_OPACITY + pressed * 0.08) * MathUtils.smoothstep(eased, 0.05, 0.25);
     if (hidden) {
       // Hide at once: the hero copy launches from exactly this panel's pose, so
       // it covers the slot on the click frame. A gradual fade would instead be
       // left behind visibly in the ring as the hero flies off and the ring
       // rotates the emptied slot away. The pose keeps being published above.
       mat.opacity = 0;
+      img.visible = false;
       if (glassMat) glassMat.opacity = 0;
+      if (glass) glass.visible = false;
       wasHidden.current = true;
       return;
     }
+    img.visible = true;
     if (wasHidden.current) {
       // Just returned from the hero: snap to the settled look, no fade-in gap.
       mat.opacity = targetOpacity;
@@ -298,6 +309,8 @@ export function CarouselItem({
       mat.zoom = MathUtils.lerp(mat.zoom, targetZoom, 0.15);
       if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, targetGlass, 0.15);
     }
+    // The faded-out back-of-ring glass skips its (clearcoat-heavy) draw call.
+    if (glass && glassMat) glass.visible = glassMat.opacity > 0.005;
 
     // Front panels slightly larger -> "focus" feel (scales the whole group);
     // a hover adds a small extra lift so the panel rises toward the viewer.
