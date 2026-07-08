@@ -132,29 +132,10 @@ const RefreshPill = styled.div`
   ${glassSurface}
 `;
 
-// Small round glass "i" next to the share button; only rendered when the
-// active card declares a source. Sits below the swipe hint's pill (centered).
-const InfoButton = styled.button`
-  position: fixed;
-  left: 68px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-  z-index: 12;
-  width: 42px;
-  height: 42px;
-  border: none;
-  border-radius: 999px;
-  color: #cfe4ff;
-  font: 600 17px/1 inherit;
-  font-style: italic;
-  font-family: Georgia, serif;
-  cursor: pointer;
-  ${glassSurface}
-`;
-
-// Round glass share button anchoring the bottom-left cluster (it is always
-// available, while the "i" only shows when the card declares a source).
-// Web Share sheet where available, PNG download otherwise.
-const ShareButton = styled.button`
+// One "⋯" context button gathers the card actions (share, source, motion
+// opt-in): separate pills crowded the bottom edge and fought the swipe hint
+// on small phones.
+const MenuButton = styled.button`
   position: fixed;
   left: 16px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
@@ -164,24 +145,47 @@ const ShareButton = styled.button`
   border: none;
   border-radius: 999px;
   color: #cfe4ff;
-  font: 600 18px/1 inherit;
+  font: 700 20px/1 inherit;
   cursor: pointer;
   ${glassSurface}
 `;
 
-const MotionChip = styled.button`
+// Small glass action menu unfolding above the context button.
+const ActionMenu = styled.div`
   position: fixed;
-  right: 16px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
-  z-index: 12;
-  padding: 12px 16px;
-  border: none;
-  border-radius: 999px;
-  color: #cfe4ff;
-  font: 600 12px/1 inherit;
-  letter-spacing: 0.08em;
-  cursor: pointer;
+  left: 16px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 68px);
+  z-index: 13;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 16px;
+  animation: menu-up 0.18s ease;
   ${glassSurface}
+
+  @keyframes menu-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+`;
+
+const ActionItem = styled.button`
+  padding: 13px 16px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+  font: 600 13px/1 inherit;
+  letter-spacing: 0.06em;
+  text-align: left;
+  cursor: pointer;
 `;
 
 const TiltFrame = styled.div`
@@ -343,9 +347,10 @@ export function MobileDeck() {
   const [active, setActive] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
 
-  // Tooltip behavior for the source note: any tap outside the note or its
-  // "i" button (both carry data-source-ui) dismisses it.
+  // Tooltip behavior for the source note and the action menu: any tap outside
+  // the element (or the button that owns it) dismisses it.
   useEffect(() => {
     if (!infoOpen) return;
     const close = (e: PointerEvent) => {
@@ -354,6 +359,14 @@ export function MobileDeck() {
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
   }, [infoOpen]);
+  useEffect(() => {
+    if (!actionsOpen) return;
+    const close = (e: PointerEvent) => {
+      if (!(e.target as Element | null)?.closest?.('[data-actions-ui]')) setActionsOpen(false);
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  }, [actionsOpen]);
   const [swiped, setSwiped] = useState(() => localStorage.getItem('worldpulse-swiped') === '1');
   const [refreshing, setRefreshing] = useState(false);
   // Stable identity: SwipeDeck holds this in a prop, and a fresh closure per
@@ -424,30 +437,57 @@ export function MobileDeck() {
 
       {!swiped && dashboards.length > 1 && <Hint $gone={false}>{trans('← wischen zum Blättern →')}</Hint>}
 
-      {current && (
-        <ShareButton aria-label={trans('Karte teilen')} onClick={() => void shareCard(current)}>
-          <span aria-hidden>⤴</span>
-        </ShareButton>
-      )}
-      {source && (
-        <InfoButton
-          data-source-ui
-          aria-label={trans('Quelle anzeigen')}
-          onClick={() => setInfoOpen((o) => !o)}
-        >
-          i
-        </InfoButton>
+      <MenuButton
+        data-actions-ui
+        aria-label={trans('Aktionen')}
+        aria-expanded={actionsOpen}
+        onClick={() => {
+          setInfoOpen(false);
+          setActionsOpen((o) => !o);
+        }}
+      >
+        <span aria-hidden>⋯</span>
+      </MenuButton>
+      {actionsOpen && (
+        <ActionMenu data-actions-ui>
+          {current && (
+            <ActionItem
+              onClick={() => {
+                setActionsOpen(false);
+                void shareCard(current);
+              }}
+            >
+              {trans('Teilen')}
+            </ActionItem>
+          )}
+          {source && (
+            <ActionItem
+              onClick={() => {
+                setActionsOpen(false);
+                setInfoOpen(true);
+              }}
+            >
+              {trans('Quelle anzeigen')}
+            </ActionItem>
+          )}
+          {/* The click that picks this entry is the user gesture iOS needs
+              for DeviceOrientationEvent.requestPermission(). */}
+          {motion === 'ask' && (
+            <ActionItem
+              onClick={() => {
+                setActionsOpen(false);
+                void askMotion();
+              }}
+            >
+              {trans('Bewegungseffekte aktivieren')}
+            </ActionItem>
+          )}
+        </ActionMenu>
       )}
       {infoOpen && source && (
         <SourceNote data-source-ui onClick={() => setInfoOpen(false)}>
           {trans('Quelle')}: {trans(source)}
         </SourceNote>
-      )}
-
-      {/* The swipe hint owns the bottom edge until the first swipe — showing
-          both at once overlaps on narrow phones. */}
-      {motion === 'ask' && (swiped || dashboards.length <= 1) && (
-        <MotionChip onClick={askMotion}>{trans('Bewegungseffekte aktivieren')}</MotionChip>
       )}
 
       {menuOpen && (

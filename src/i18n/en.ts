@@ -1,5 +1,6 @@
 // Dictionary EN: German source string -> English. Generated from strings.json.
 export const EN: Record<string, string> = {
+  'Aktionen': 'Actions',
   'BiB/Destatis · Wanderungsstatistik; ab 2016 Methodenbruch, Werte nur bedingt vergleichbar.': 'BiB/Destatis · migration statistics; method break from 2016, values only broadly comparable.',
   'Einstellungen': 'Settings',
   'SPRACHE': 'LANGUAGE',
@@ -291,6 +292,7 @@ export const EN: Record<string, string> = {
   'Tasten': 'Keys',
   'Tastenkürzel': 'Keyboard shortcuts',
   'Tatverdächtige': 'Suspects',
+  'Teilen': 'Share',
   'Tokio 🇯🇵': 'Tokyo 🇯🇵',
   'Top-Artikel': 'Top articles',
   'Transparency International · Corruption Perceptions Index 2024, invertiert dargestellt (100 − Score).': 'Transparency International · Corruption Perceptions Index 2024, shown inverted (100 − score).',

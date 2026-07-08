@@ -1,5 +1,6 @@
 // Dictionary FR: German source string -> French. Generated from strings.json.
 export const FR: Record<string, string> = {
+  'Aktionen': 'Actions',
   'BiB/Destatis · Wanderungsstatistik; ab 2016 Methodenbruch, Werte nur bedingt vergleichbar.': 'BiB/Destatis · statistiques migratoires ; rupture méthodologique depuis 2016, valeurs peu comparables.',
   'Einstellungen': 'Réglages',
   'SPRACHE': 'LANGUE',
@@ -324,6 +325,7 @@ export const FR: Record<string, string> = {
   'Tasten': 'Touches',
   'Tastenkürzel': 'Raccourcis clavier',
   'Tatverdächtige': 'Suspects',
+  'Teilen': 'Partager',
   'Thailand': 'Thaïlande',
   'Tigray · 2020–22': 'Tigré · 2020–22',
   'Tokio 🇯🇵': 'Tokyo 🇯🇵',

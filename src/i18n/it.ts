@@ -1,5 +1,6 @@
 // Dictionary IT: German source string -> Italian. Generated from strings.json.
 export const IT: Record<string, string> = {
+  'Aktionen': 'Azioni',
   'BiB/Destatis · Wanderungsstatistik; ab 2016 Methodenbruch, Werte nur bedingt vergleichbar.': 'BiB/Destatis · statistiche migratorie; interruzione metodologica dal 2016, valori solo parzialmente comparabili.',
   'Einstellungen': 'Impostazioni',
   'SPRACHE': 'LINGUA',
@@ -321,6 +322,7 @@ export const IT: Record<string, string> = {
   'Tasten': 'Tasti',
   'Tastenkürzel': 'Scorciatoie da tastiera',
   'Tatverdächtige': 'Indagati',
+  'Teilen': 'Condividi',
   'Thailand': 'Thailandia',
   'Tokio 🇯🇵': 'Tokyo 🇯🇵',
   'Top-Artikel': 'Articoli più letti',
