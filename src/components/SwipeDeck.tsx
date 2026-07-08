@@ -2,7 +2,13 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { CardCanvas } from './CardCanvas';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import { useFavorites } from '../hooks/useFavorites';
+import { toggleFavorite } from '../favorites';
+import { hapticTick } from '../haptics';
+import { t as trans } from '../i18n';
 import type { Dashboard } from '../dashboards';
+import { SERIES } from '../dashboards/theme';
+import { glassSurface } from './glass';
 
 // Tinder-style throw: the top card follows the finger with a little rotation,
 // and past a threshold it flies off while the neighbour underneath takes its
@@ -37,6 +43,24 @@ const Card = styled.div`
   box-shadow:
     0 0 40px rgba(120, 160, 255, 0.08),
     0 24px 60px rgba(0, 0, 0, 0.55);
+`;
+
+// Star toggle riding the active card's top-right corner. Lives in the DOM, not
+// the canvas texture, so toggling never forces a card redraw. pointerdown is
+// stopped so a tap here can never arm the swipe drag underneath.
+const FavButton = styled.button<{ $active: boolean }>`
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 999px;
+  color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.7)')};
+  font: 600 18px/1 inherit;
+  cursor: pointer;
+  ${glassSurface}
 `;
 
 const CENTER = 'translate(-50%, -50%)';
@@ -76,6 +100,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
   });
   const animating = useRef(false);
   const reducedMotion = useReducedMotion();
+  const favoriteIds = useFavorites();
 
   // After every index change, snap the three roles back to their resting look
   // (imperative styles from the drag/throw would otherwise stick).
@@ -140,7 +165,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
     const n = dashboards.length;
     const wrap = n >= 3;
     if (goNext ? !(wrap || index < n - 1) : !(wrap || index > 0)) return;
-    navigator.vibrate?.(8);
+    hapticTick();
     throwCard(goNext);
   };
 
@@ -206,7 +231,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
     const committed = Math.abs(d.dx) > Math.min(60, d.w * 0.16);
     if (committed && !d.detent) {
       d.detent = true;
-      navigator.vibrate?.(8); // light notch (Android; iOS has no API)
+      hapticTick(); // light notch (vibration on Android, switch haptic on iOS)
     } else if (!committed && d.detent) {
       d.detent = false;
     }
@@ -234,7 +259,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
     if (d.axis === 'y') {
       if (d.dy > 110) {
         // Committed pull: trigger the refresh, then spring back.
-        navigator.vibrate?.(8);
+        hapticTick();
         onRefresh?.();
       }
       setCur(CENTER, SPRING);
@@ -261,7 +286,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
     if (goNext || goPrev) {
       // A quick flick can commit without the drag ever reaching the detent
       // distance — give it the same soft tick so the throw still confirms.
-      if (!d.detent) navigator.vibrate?.(8);
+      if (!d.detent) hapticTick();
       // Pin the current (drag) state with no transition first — on a fast flick
       // move/up can land in one frame with nothing painted between, and the
       // browser then jumps straight to the end (the effect looks skipped).
@@ -296,6 +321,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
   const prev = wrap ? dashboards[(index - 1 + n) % n] : index > 0 ? dashboards[index - 1] : null;
   const next = wrap ? dashboards[(index + 1) % n] : index < n - 1 ? dashboards[index + 1] : null;
   if (!cur) return <Stack />;
+  const curFav = favoriteIds.includes(cur.id);
 
   return (
     <Stack>
@@ -327,6 +353,18 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
             same slot rather than mounting fresh. So `animate` flipping
             false -> true here is what replays CardCanvas's fly-in on landing. */}
         <CardCanvas dashboard={cur} animate={!reducedMotion} onColor={onColor} />
+        <FavButton
+          $active={curFav}
+          aria-pressed={curFav}
+          aria-label={trans(curFav ? 'Favorit entfernen' : 'Zu Favoriten')}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() => {
+            hapticTick();
+            toggleFavorite(cur.id);
+          }}
+        >
+          <span aria-hidden>{curFav ? '★' : '☆'}</span>
+        </FavButton>
       </Card>
     </Stack>
   );

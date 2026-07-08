@@ -73,7 +73,7 @@ const FRAG = /* glsl */ `
   void main() {
     vec2 uv = vUv;
     uv.x *= uAspect;
-    float t = uTime * 0.06;
+    float t = uTime * 0.085;
 
     // Domain warp: feed one fbm into the next so the flow curls. The warp
     // field drifts on its own so the whole nebula visibly breathes and slides.
@@ -84,27 +84,30 @@ const FRAG = /* glsl */ `
     float n = fbm(uv * 2.0 + q * 1.5 + vec2(t * 0.9, t * 0.3));
     float n2 = fbm(uv * 3.5 - q * 1.2 - vec2(t * 0.6, t * 0.4));
 
-    vec3 base = vec3(0.016, 0.023, 0.043);
+    // Lifted base + layer weights: the cards are dark, so the room behind
+    // them carries the light — a hazy dusk rather than near-black space.
+    vec3 base = vec3(0.030, 0.042, 0.078);
     // The main and tertiary layers lean toward the theme tint; the violet
     // layer stays fixed so the nebula keeps depth instead of going monochrome.
-    vec3 blue = mix(vec3(0.05, 0.13, 0.32), uTint, 0.6);
-    vec3 violet = vec3(0.16, 0.09, 0.30);
-    vec3 teal = mix(vec3(0.04, 0.18, 0.22), uTint, 0.45);
+    vec3 blue = mix(vec3(0.07, 0.17, 0.40), uTint, 0.6);
+    vec3 violet = vec3(0.20, 0.12, 0.38);
+    vec3 teal = mix(vec3(0.06, 0.23, 0.28), uTint, 0.45);
 
     vec3 col = base;
-    col += blue * smoothstep(0.35, 0.95, n) * 0.55;
-    col += violet * smoothstep(0.55, 1.05, n2) * 0.40;
-    col += teal * smoothstep(0.6, 1.0, n * n2) * 0.25;
+    col += blue * smoothstep(0.30, 0.92, n) * 0.70;
+    col += violet * smoothstep(0.50, 1.02, n2) * 0.50;
+    col += teal * smoothstep(0.55, 1.0, n * n2) * 0.34;
 
     // Keep the center calm so the panels stay readable; let the aurora glow
-    // toward the edges.
+    // toward the edges and breathe slowly.
     float d = distance(vUv, vec2(0.5));
-    col *= mix(0.7, 1.15, smoothstep(0.1, 0.75, d));
+    float breath = 1.3 + 0.08 * sin(uTime * 0.4);
+    col *= mix(0.82, breath, smoothstep(0.1, 0.75, d));
 
     // Stars on top: two layers at different depths, added after the vignette
     // so they read evenly across the whole field.
     float s = starLayer(uv, 55.0, 2.2) + starLayer(uv, 90.0, 1.4) * 0.7;
-    col += vec3(0.75, 0.82, 1.0) * s * 0.9;
+    col += vec3(0.75, 0.82, 1.0) * s * 1.05;
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -116,8 +119,8 @@ interface AuroraProps {
 }
 
 // The accents are bright chart colors; scaled down to nebula luminance so the
-// tinted layers sit in the same band as the original blue (max ~0.32).
-const TINT_SCALE = 0.38;
+// tinted layers sit in the same band as the base blue (max ~0.40).
+const TINT_SCALE = 0.48;
 
 export function Aurora({ accent }: AuroraProps) {
   const mat = useRef<ShaderMaterial>(null);

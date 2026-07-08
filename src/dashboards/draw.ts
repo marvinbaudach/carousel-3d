@@ -8,7 +8,6 @@ import {
   FONT,
   GRID,
   INK_SECONDARY,
-  MUTED,
   SURFACE,
   SURFACE_DEEP,
 } from './theme';
@@ -79,6 +78,9 @@ export interface Frame {
   /** Mobile deck: skip tertiary chrome (the source footer) — on the phone
       the source already lives behind the info button. */
   compact?: boolean;
+  /** Set by drawSource once a source line is on the canvas, so the PNG export
+      knows whether it still needs to stamp its own attribution footer. */
+  sourceDrawn?: boolean;
 }
 
 /** Panel background: soft vertical gradient plus a faint top light. */
@@ -97,17 +99,24 @@ export function drawSurface({ ctx, w, h }: Frame): void {
 
 /** Tracked eyebrow label, wrapped onto a second line when it would overflow
     the panel. Returns the extra y-shift (0 or one line) for content below. */
-function drawEyebrow({ ctx, u, w }: Frame, label: string): number {
+function drawEyebrow({ ctx, u, w, compact }: Frame, label: string): number {
   const pad = 36 * u;
+  // Mobile deck: the DOM star button rides the card's top-right corner
+  // (40px + 12px inset ≈ 52 CSS px). pad + this reserve keeps the eyebrow's
+  // wrap width clear of that footprint at phone widths, so no title runs
+  // underneath the button.
+  const rightReserve = compact ? 40 * u : 0;
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
-  ctx.fillStyle = MUTED;
+  // INK_SECONDARY, not MUTED: the eyebrow is the card's only heading and the
+  // muted gray was too dim to read comfortably (user feedback).
+  ctx.fillStyle = INK_SECONDARY;
   ctx.font = `600 ${17 * u}px ${FONT}`;
   const tracking = 2.4 * u;
   // All panel labels arrive in German; translation happens at this single
   // choke point so the card definitions stay untouched.
   const upper = tr(label).toUpperCase();
-  const maxW = w - 2 * pad;
+  const maxW = w - 2 * pad - rightReserve;
   if (trackedWidth(ctx, upper, tracking) > maxW) {
     const [l1, l2] = wrapTwo(ctx, upper, tracking, maxW);
     drawTracked(ctx, l1, pad, pad + 14 * u, tracking);
@@ -230,8 +239,15 @@ export function drawGridLabels(
   ctx.fillStyle = INK_SECONDARY;
   ctx.font = `400 ${15 * u}px ${FONT}`;
   ctx.textAlign = 'left';
+  // Surface-colored halo behind each tick: the labels sit inside the plot
+  // area, so on dense/multi-series charts curves would otherwise run straight
+  // through the text.
+  ctx.strokeStyle = SURFACE;
+  ctx.lineWidth = 5 * u;
+  ctx.lineJoin = 'round';
   labels.forEach((label, i) => {
     const y = bottom - ((bottom - top) * i) / (labels.length - 1);
+    ctx.strokeText(label, pad, y - 6 * u);
     ctx.fillText(label, pad, y - 6 * u);
   });
 }
@@ -243,7 +259,19 @@ export function drawLegend(
   entries: { name: string; color: string }[],
 ): void {
   const { ctx, w, u } = f;
-  ctx.font = `500 ${15 * u}px ${FONT}`;
+  // Shrink to fit: translated names plus emoji/flags can outgrow the panel,
+  // and a legend running past the left padding would sit over the y-axis
+  // labels. Each entry spans its text width plus 30u of dot + gaps; the last
+  // (leftmost) one carries no trailing gap.
+  const maxW = w - 72 * u;
+  let size = 15;
+  const rowWidth = () =>
+    entries.reduce((acc, e) => acc + ctx.measureText(tr(e.name)).width + 30 * u, -18 * u);
+  ctx.font = `500 ${size * u}px ${FONT}`;
+  while (size > 11 && rowWidth() > maxW) {
+    size -= 1;
+    ctx.font = `500 ${size * u}px ${FONT}`;
+  }
   ctx.textAlign = 'right';
   let x = w - 36 * u;
   for (let i = entries.length - 1; i >= 0; i--) {

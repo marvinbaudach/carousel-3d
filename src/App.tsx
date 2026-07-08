@@ -18,7 +18,7 @@ const BOOT_MS = 2400;
 const Stage = styled.main`
   position: fixed;
   inset: 0;
-  background: #05070c;
+  background: #080b14;
   overflow: hidden;
 
   & canvas {

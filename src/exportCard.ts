@@ -1,4 +1,7 @@
 import { SETTLED_T, type Dashboard } from './dashboards';
+import { CARD_SOURCES } from './dashboards/cardSources';
+import { drawSource } from './dashboards/charts/shared';
+import type { Frame } from './dashboards/draw';
 
 // Card → PNG: the chart renderers are pure functions of (ctx, size, t), so an
 // export is just one settled draw into an offscreen canvas at poster size.
@@ -15,7 +18,16 @@ export function cardToPngBlob(dashboard: Dashboard): Promise<Blob | null> {
   if (!ctx) return Promise.resolve(null);
   // Full (non-compact) frame: the export should carry the source line even
   // though the mobile deck hides it behind the info button.
-  dashboard.draw({ ctx, w: EXPORT_W, h: EXPORT_H, t: SETTLED_T, u: EXPORT_W / 512 });
+  const frame: Frame = { ctx, w: EXPORT_W, h: EXPORT_H, t: SETTLED_T, u: EXPORT_W / 512 };
+  dashboard.draw(frame);
+  // A shared PNG travels without the app UI, so it must carry its own
+  // attribution: unless the chart painted a source line itself (maps/misc),
+  // stamp the institution — or, failing that, the card's caveat text —
+  // bottom-left in the same muted footer style.
+  if (!frame.sourceDrawn) {
+    const source = CARD_SOURCES[dashboard.id]?.name ?? dashboard.source;
+    if (source) drawSource(frame, source);
+  }
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
 }
 
@@ -26,6 +38,16 @@ function saveBlob(blob: Blob, name: string): void {
   a.download = name;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * True when the browser can hand a PNG file to the native share sheet —
+ * lets the UI label the action "share" vs "save" honestly.
+ */
+export function canShareFiles(): boolean {
+  return (
+    navigator.canShare?.({ files: [new File([], 'probe.png', { type: 'image/png' })] }) ?? false
+  );
 }
 
 /** Trigger a browser download of the card as PNG. */

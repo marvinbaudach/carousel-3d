@@ -11,7 +11,7 @@ import styled from 'styled-components';
 // prefers reduced motion.
 const RES_CAP = 480;
 // Accents are bright chart colors; scaled to nebula luminance (desktop match).
-const TINT_SCALE = 0.38;
+const TINT_SCALE = 0.48;
 
 const VERT = `
   attribute vec2 aPos;
@@ -73,15 +73,17 @@ const FRAG = `
     float n = fbm(uv * 2.0 + q * 1.5 + vec2(t * 0.9, t * 0.3));
     float n2 = fbm(uv * 3.5 - q * 1.2 - vec2(t * 0.6, t * 0.4));
 
-    vec3 base = vec3(0.016, 0.023, 0.043);
-    vec3 blue = mix(vec3(0.05, 0.13, 0.32), uTint, 0.6);
-    vec3 violet = vec3(0.16, 0.09, 0.30);
-    vec3 teal = mix(vec3(0.04, 0.18, 0.22), uTint, 0.45);
+    // Lifted base + layer weights (desktop match): the card is dark, so the
+    // room behind it carries the light — hazy dusk, not near-black space.
+    vec3 base = vec3(0.030, 0.042, 0.078);
+    vec3 blue = mix(vec3(0.07, 0.17, 0.40), uTint, 0.6);
+    vec3 violet = vec3(0.20, 0.12, 0.38);
+    vec3 teal = mix(vec3(0.06, 0.23, 0.28), uTint, 0.45);
 
     vec3 col = base;
-    col += blue * smoothstep(0.35, 0.95, n) * 0.55;
-    col += violet * smoothstep(0.55, 1.05, n2) * 0.40;
-    col += teal * smoothstep(0.6, 1.0, n * n2) * 0.25;
+    col += blue * smoothstep(0.30, 0.92, n) * 0.70;
+    col += violet * smoothstep(0.50, 1.02, n2) * 0.50;
+    col += teal * smoothstep(0.55, 1.0, n * n2) * 0.34;
 
     // Light shafts: two soft diagonal beams panning at different speeds.
     // Multiplied by the nebula density so they read as light through haze,
@@ -99,8 +101,8 @@ const FRAG = `
 
     // Calm center so the card stays readable; the edge glow breathes slowly.
     float d = distance(vUv, vec2(0.5));
-    float breath = 1.14 + 0.1 * sin(uTime * 0.45);
-    col *= mix(0.7, breath, smoothstep(0.1, 0.75, d));
+    float breath = 1.3 + 0.1 * sin(uTime * 0.45);
+    col *= mix(0.82, breath, smoothstep(0.1, 0.75, d));
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -125,7 +127,7 @@ const GlCanvas = styled.canvas`
   pointer-events: none;
   /* Stage color behind the GL buffer: if a driver fails to composite the
      canvas at all, the element still reads as the dark page, never white. */
-  background: #05070c;
+  background: #080b14;
 `;
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -174,7 +176,7 @@ export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
 
     // Paint the stage color before anything else, so the buffer is never
     // uninitialized memory (white garbage on some drivers).
-    gl.clearColor(0.02, 0.027, 0.047, 1);
+    gl.clearColor(0.03, 0.042, 0.078, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
 
     const vs = compile(gl, gl.VERTEX_SHADER, VERT);

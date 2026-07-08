@@ -62,7 +62,7 @@ export function wealthSplit(f: Frame, cfg: WealthSplitCfg): void {
   const gap = 1.5 * u;
 
   ctx.font = `600 ${13 * u}px ${FONT}`;
-  ctx.fillStyle = MUTED;
+  ctx.fillStyle = INK_SECONDARY; // axis captions — muted gray is too dim here
   ctx.fillText(tr(cfg.axisTop).toUpperCase(), x0, yPop - 12 * u);
   ctx.fillText(tr(cfg.axisBottom).toUpperCase(), x0, yWealth + bh + 26 * u);
 
@@ -171,7 +171,7 @@ export function timelineChart(f: Frame, cfg: TimelineCfg): void {
     ctx.moveTo(x, y0);
     ctx.lineTo(x, y1);
     ctx.stroke();
-    ctx.fillStyle = MUTED;
+    ctx.fillStyle = INK_SECONDARY; // axis reading — muted gray is too dim here
     ctx.fillText(`${yr}`, x, y1 + 24 * u);
   }
   ctx.textAlign = 'left';
@@ -253,33 +253,24 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   ctx.font = `600 ${17 * u}px ${FONT}`;
   drawTracked(ctx, tr(cfg.label).toUpperCase(), pad, pad + 16 * u, 2.4 * u);
 
-  // The running figure, auto-fitted so all 17 digits stay inside the panel.
-  const now = cfg.latest + Math.max(0, Date.now() - cfg.latestMs) * cfg.ratePerMs;
-  const text = `$${Math.round(now * p).toLocaleString('en-US')}`;
-  let size = 44 * u;
-  ctx.font = `700 ${size}px ${FONT}`;
-  const maxW = w - 2 * pad;
-  const tw = ctx.measureText(text).width;
-  if (tw > maxW) {
-    size *= maxW / tw;
-    ctx.font = `700 ${size}px ${FONT}`;
-  }
-  ctx.fillStyle = INK;
-  ctx.fillText(text, pad, pad + 74 * u);
-
+  // No 17-digit running total anymore (the big headline figures were retired
+  // across the board): the YoY chip and the per-second rate carry the live
+  // story, and the freed space goes to the trend chart below.
   // Rising debt is the alarming direction: the YoY chip stays critical-red.
   const chipText = `▲ ${localePct(cfg.yoyPct, 1)} YoY`;
   ctx.font = `600 ${19 * u}px ${FONT}`;
   const cw = ctx.measureText(chipText).width;
-  const cy = pad + 106 * u;
+  const cy = pad + 52 * u;
   ctx.fillStyle = 'rgba(208,59,59,0.14)';
   roundRect(ctx, pad - 6 * u, cy - 20 * u, cw + 20 * u, 30 * u, 15 * u);
   ctx.fill();
   ctx.fillStyle = CRITICAL;
   ctx.fillText(chipText, pad + 4 * u, cy + 2 * u);
 
+  // With the big counter gone this rate IS the headline reading — secondary
+  // ink, not muted, so it holds up on the dark surface.
   const perSec = cfg.ratePerMs * 1000;
-  ctx.fillStyle = MUTED;
+  ctx.fillStyle = INK_SECONDARY;
   ctx.font = `400 ${17 * u}px ${FONT}`;
   ctx.fillText(
     `${perSec >= 0 ? '+' : '−'}$${Math.abs(Math.round(perSec)).toLocaleString('de-CH')} / ${tr('Sekunde')}`,
@@ -297,7 +288,7 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   ctx.fillText(cfg.isLive ? 'LIVE' : 'SYNC', w - pad - 32 * u, pad + 15 * u);
 
   // 125-year trend as a gradient area: flat for decades, then the wall.
-  const r = plotRect(f, pad + 158 * u);
+  const r = plotRect(f, pad + 92 * u);
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
   const marks = cfg.markers ?? [];
   const d = markerInsetRange(r, marks, u);
@@ -470,7 +461,7 @@ export function weatherForecast(f: Frame, cfg: ForecastCfg): void {
 
     drawWeatherIcon(ctx, iconFor(d.code), pad + 92 * u, y, 17 * u);
 
-    ctx.fillStyle = MUTED;
+    ctx.fillStyle = INK_SECONDARY; // data reading — muted gray is too dim here
     ctx.font = `500 ${16 * u}px ${FONT}`;
     ctx.textAlign = 'right';
     ctx.fillText(`${Math.round(d.min)}°`, barX0 - 10 * u, y + 6 * u);

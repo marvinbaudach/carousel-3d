@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { t as tr } from '../i18n';
 import { TAGS } from '../dashboards';
+import { useFavorites } from '../hooks/useFavorites';
 import { glassSurface } from './glass';
 
 interface LayoutControlsProps {
@@ -74,10 +75,13 @@ const Chip = styled.button<{ $active: boolean }>`
  * formation switcher moved into the HotkeyPanel (bottom-right).
  */
 export function LayoutControls({ tag, onTagChange, hidden }: LayoutControlsProps) {
+  // The FAVORITEN chip only exists once something is starred.
+  const favoriteIds = useFavorites();
+  const visibleTags = TAGS.filter((t) => t.id !== 'favoriten' || favoriteIds.length > 0);
   return (
     <Wrap $hidden={hidden}>
       <Bar>
-        {TAGS.map((t) => (
+        {visibleTags.map((t) => (
           <Chip key={t.id} $active={tag === t.id} onClick={() => onTagChange(t.id)}>
             {tr(t.label)}
           </Chip>

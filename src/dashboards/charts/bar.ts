@@ -13,7 +13,7 @@ import {
   stagger,
   type Frame,
 } from '../draw';
-import { FONT, GRID, INK, INK_SECONDARY, MUTED } from '../theme';
+import { FONT, GRID, INK, INK_SECONDARY } from '../theme';
 import { MONTHS, barGradient, lighten, plotRect, withAlpha, withFlag } from './shared';
 
 export interface BarCfg {
@@ -64,7 +64,9 @@ export function barChart(f: Frame, cfg: BarCfg): void {
       ctx.fillText(fmtCompact(cfg.peak ?? cfg.value * v), x + bw / 2, r.y1 - bh - 8 * u);
       ctx.textAlign = 'left';
     }
-    ctx.fillStyle = MUTED;
+    // Axis text uses INK_SECONDARY, not MUTED — muted gray sits below
+    // comfortable reading contrast on the dark surface.
+    ctx.fillStyle = INK_SECONDARY;
     ctx.font = `400 ${13 * u}px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.fillText(tr(labels[i] ?? ''), x + bw / 2, r.y1 + 22 * u);

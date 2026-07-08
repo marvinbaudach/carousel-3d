@@ -53,7 +53,7 @@ const Blob = styled.div`
   height: 45vmax;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, var(--wp-accent), transparent 62%);
-  opacity: 0.14;
+  opacity: 0.2;
   will-change: transform;
   /* Base scale matches the keyframes' range, so the reduced-motion resting
      pose (animation off, base transform applies) keeps the full-size glow. */
@@ -69,14 +69,14 @@ const Blob = styled.div`
 const BlobA = styled(Blob)`
   top: -15vmax;
   left: -12vmax;
-  opacity: 0.17;
+  opacity: 0.24;
   animation: ${driftA} 16s ease-in-out -4s infinite;
 `;
 
 const BlobB = styled(Blob)`
   right: -15vmax;
   bottom: -18vmax;
-  opacity: 0.12;
+  opacity: 0.18;
   animation: ${driftB} 22s ease-in-out -9s infinite;
 `;
 
@@ -87,7 +87,7 @@ const BlobC = styled(Blob)`
   left: 28%;
   width: 34vmax;
   height: 34vmax;
-  opacity: 0.09;
+  opacity: 0.14;
   animation: ${driftC} 19s ease-in-out -13s infinite;
 `;
 

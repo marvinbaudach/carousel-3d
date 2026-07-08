@@ -96,3 +96,38 @@ export const EU_DEBT_GDP: Record<string, number> = {
   POL: 55, ROU: 52, MLT: 47, CZE: 45, LVA: 45, NLD: 44, IRL: 42,
   LTU: 38, SWE: 33, DNK: 30, LUX: 27, BGR: 24, EST: 24,
 };
+
+// States criminalising consensual same-sex acts (ILGA World 2025), graded by
+// maximum penalty: 3 = death penalty possible (12 states, incl. sharia
+// jurisdictions in Nigeria and Uganda's 2023 "aggravated homosexuality" law),
+// 2 = long or life imprisonment, 1 = shorter prison terms or fines (Egypt via
+// "debauchery" laws, Indonesia partial/Aceh). Simplified — the legal map keeps
+// moving in both directions: Iraq recriminalised 2024, Trinidad's appeals
+// court re-instated its ban 2025, while Mauritius, Namibia, Dominica and
+// St. Vincent struck theirs down 2023–24.
+export const LGBT_CRIMINAL: Record<string, number> = {
+  // Death penalty possible
+  IRN: 3, SAU: 3, YEM: 3, AFG: 3, PAK: 3, QAT: 3, ARE: 3, MRT: 3,
+  NGA: 3, SOM: 3, UGA: 3, BRN: 3,
+  // Long or life imprisonment
+  TZA: 2, KEN: 2, MWI: 2, ZMB: 2, GMB: 2, SLE: 2, GUY: 2, JAM: 2,
+  BGD: 2, MMR: 2, MYS: 2, PNG: 2, SLB: 2, KIR: 2, TON: 2, SDN: 2,
+  SSD: 2, ETH: 2, IRQ: 2, LKA: 2, MDV: 2, PSE: 2, GRD: 2, LCA: 2,
+  TTO: 2, TUV: 2,
+  // Prison terms or fines
+  EGY: 1, LBY: 1, KWT: 1, OMN: 1, SYR: 1, IDN: 1, TCD: 1, CMR: 1,
+  SEN: 1, GIN: 1, GHA: 1, TGO: 1, DZA: 1, MAR: 1, TUN: 1, COM: 1,
+  ZWE: 1, SWZ: 1, BDI: 1, UZB: 1, TKM: 1, LBN: 1, WSM: 1, ERI: 1,
+};
+
+// Recorded executions in 2024 (Amnesty International, "Death Sentences and
+// Executions 2024"): at least 1,518 across 15 states — the highest since
+// 2015, with Iran, Saudi Arabia and Iraq accounting for over 90% of the
+// recorded total. China is a floor estimate: execution numbers are a state
+// secret, believed to run into the thousands — more than the rest of the
+// world combined. North Korea and Vietnam also execute but publish nothing,
+// so they stay off the map. Minimum figures throughout.
+export const EXECUTIONS_2024: Record<string, number> = {
+  CHN: 2000, IRN: 972, SAU: 345, IRQ: 63, SOM: 34, USA: 25,
+  EGY: 13, SGP: 9, KWT: 6, AFG: 6, YEM: 1,
+};

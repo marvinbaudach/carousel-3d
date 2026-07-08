@@ -11,6 +11,9 @@ export interface Dashboard {
   dynamic?: boolean;
   /** Theme tags for the filter chips; assigned from TAGS_BY_ID. */
   tags?: string[];
+  /** ISO timestamp of when the card was added; assigned from ADDED_BY_ID and
+      used by the NEU chip to order the deck newest-first. */
+  added?: string;
   /** Data source and key caveats, shown behind the mobile info button. */
   source?: string;
   draw: (f: Frame) => void;

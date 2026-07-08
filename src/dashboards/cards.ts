@@ -10,18 +10,23 @@ import {
   hBarChart,
   lineChart,
   nukeMap,
+  tempMap,
   timelineChart,
   treemap,
   wealthSplit,
 } from './charts';
-import { CPI_INVERTED, EU_DEBT_GDP, NUKE_STATES, NUKE_TOTAL, US_TROOPS_ABROAD } from './geo';
+import { CPI_INVERTED, EU_DEBT_GDP, EXECUTIONS_2024, LGBT_CRIMINAL, NUKE_STATES, NUKE_TOTAL, US_TROOPS_ABROAD } from './geo';
 import type { Dashboard } from './types';
 import { live } from '../data/store';
+import { FALLBACK_TEMPS, FALLBACK_TEMP_ROWS, HOLOCENE_PANEL } from '../data/climate';
 import {
+  AFRICA_ROUTES_COMPARE,
   AI_JOBS_COMPARE,
   CAMERAS_PANEL,
   CB_BALANCE_COMPARE,
   CONFLICT_PANEL,
+  WARS_1918_PANEL,
+  WARS_1946_PANEL,
   DEBT_TREND_FALLBACK,
   DE_FAMILY,
   DE_PENSION_LEVEL_PANEL,
@@ -38,6 +43,14 @@ import {
   DOLLAR_PANEL,
   CONTINENT_FERTILITY,
   INTERNET_PANEL,
+  AI_COMPUTE_PANEL,
+  CHATGPT_USERS_PANEL,
+  DATACENTER_POWER_PANEL,
+  pow10Label,
+  GENDER_REJECT_PANEL,
+  GENDER_IDEOLOGY_COMPARE,
+  SELF_ID_PANEL,
+  TRANS_YOUTH_PANEL,
   HUNGER_PANEL,
   EXTREME_POVERTY_PANEL,
   LIFE_PANEL,
@@ -48,16 +61,19 @@ import {
   DE_INSOLVENCY_JOBS_PANEL,
   DE_MIGRATION_PANEL,
   DE_MIGRATION_FLOWS,
+  DE_NATIONALITY_COMPARE,
   DE_POPULATION_PANEL,
   DE_TAX_QUOTA_PANEL,
   DE_POWER_PRICE_PANEL,
   BERLIN_WARRANTS_PANEL,
   DE_OLD_AGE_PANEL,
   DE_STATE_QUOTA_PANEL,
+  DE_PUBLIC_EMPLOYMENT_PANEL,
   DE_UNDEREMPLOYMENT_COMPARE,
   INDUSTRY_COMPARE,
   M2_COMPARE,
   M2_PANEL,
+  WEALTH_TOP1_COMPARE,
   NUKE_TESTS_PANEL,
   PL_MIGRATION_COMPARE,
   PRESS_FREEDOM_COMPARE,
@@ -89,6 +105,31 @@ import {
   GENE_THERAPY_PANEL,
   SMARTPHONE_PANEL,
   AUTOCRACY_SHARE_PANEL,
+  FACE_RECOGNITION_PANEL,
+  GOLD_ANON_PANEL,
+  OIL_PRICE_PANEL,
+  VIX_PANEL,
+  RHEINMETALL_PANEL,
+  GOLD_PRICE_PANEL,
+  US_10Y_PANEL,
+  MARGIN_DEBT_PANEL,
+  BUFFETT_PANEL,
+  CAPE_PANEL,
+  MAG7_PANEL,
+  US_INTEREST_TAX_PANEL,
+  US_DEFICIT_PANEL,
+  US_CARD_DEBT_PANEL,
+  AUTO_DELINQ_PANEL,
+  OFFICE_VACANCY_PANEL,
+  DOLLAR_RESERVES_PANEL,
+  ZOMBIE_PANEL,
+  CB_GOLD_PANEL,
+  DE_FARMS_PANEL,
+  PISA_COMPARE,
+  MEDIA_TRUST_PANEL,
+  FREE_SPEECH_PANEL,
+  ICE_BAN_PANEL,
+  DE_TFR_PANEL,
 } from '../data/bundled';
 import {
   blue,
@@ -210,6 +251,49 @@ export const POOL: Dashboard[] = [
     },
   },
   {
+    id: 'temp-map',
+    title: 'Welt-Temperaturen · jetzt',
+    source:
+      'Open-Meteo · aktuelle 2-m-Temperatur, ein Messpunkt nahe der Landesmitte je Land; offline: Breitengrad-Klimatologie als Näherung.',
+    dynamic: true,
+    draw: (f) => {
+      const wt = live.worldTemp;
+      tempMap(f, {
+        label: 'Temperatur · jetzt',
+        tempByIso: wt?.byIso ?? FALLBACK_TEMPS,
+        world: live.worldMap,
+        rows: wt?.rows ?? FALLBACK_TEMP_ROWS,
+        rowFmt: (v) => `${localeNum(v, 1)} °C`,
+        source: wt ? 'Open-Meteo · live · 1 Punkt je Land' : 'Klimatologie-Näherung · offline',
+      });
+    },
+  },
+  {
+    id: 'holocene',
+    title: 'Globale Temperatur · 10.000 Jahre',
+    source:
+      'Kaufman et al. 2020 (Temp12k, Multi-Methoden-Median) · ab 1850 HadCRUT5. Band: 90-%-Unsicherheit. Proxys mitteln über ~100–200 Jahre — kurze Ausschläge wären geglättet; das Holozän-Optimum war v. a. in Nordsommern warm, das globale Mittel hier ist flacher als regionale Reihen.',
+    draw: (f) => {
+      const p = HOLOCENE_PANEL;
+      areaChart(f, {
+        label: 'Temperatur-Anomalie · vs. 1800–1900',
+        value: p.latest,
+        fmt: (v) => `+${localeNum(v, 1)} °C`,
+        delta: null,
+        seed: 41,
+        color: orange,
+        data: p.median,
+        band: { lo: p.lo, hi: p.hi },
+        ticks: p.ticks,
+        xLabels: ['≈8000 v. Chr.', '≈4700 v. Chr.', '≈1300 v. Chr.', 'heute'],
+        markers: eraMarkers(-8000, 2025, [
+          [-4500, '☀️ Holozän-Optimum'],
+          [1650, '❄️ Kleine Eiszeit'],
+        ]),
+      });
+    },
+  },
+  {
     id: 'swiss-pop',
     title: 'Schweizer Bevölkerung · 500 Jahre',
     source:
@@ -314,6 +398,86 @@ export const POOL: Dashboard[] = [
       }),
   },
   {
+    id: 'wars-interwar',
+    title: 'Kriegstote 1918–1945',
+    source:
+      'UCDP/COW via Our World in Data · Kriegstote inkl. Zivilisten; gerundete Anker, interpoliert.',
+    draw: (f) =>
+      areaChart(f, {
+        // Zoom window of conflict-deaths: the Russian civil war, the interwar
+        // lull, then the climb into WWII.
+        label: 'Kriegstote · 1918–1945',
+        value: WARS_1918_PANEL.latest,
+        fmt: (v) => `${localeNum(v / 1e6, 0)} ${tr('Mio')}`,
+        delta: null,
+        seed: 409,
+        color: magenta,
+        data: WARS_1918_PANEL.series,
+        ticks: WARS_1918_PANEL.ticks,
+        xLabels: WARS_1918_PANEL.xLabels,
+        markers: eraMarkers(1918, 1945, [
+          [1920, '⚔️ Russ. Bürgerkrieg'],
+          [1937, '⚔️ China & Spanien'],
+          [1942, '⚔️ 2. Weltkrieg'],
+        ]),
+      }),
+  },
+  {
+    id: 'wars-coldwar',
+    title: 'Kriegstote 1946–2000',
+    source:
+      'UCDP/COW via Our World in Data · Kriegstote inkl. Zivilisten; gerundete Anker, interpoliert.',
+    draw: (f) =>
+      areaChart(f, {
+        // The Cold-War decades on their own axis: Korea, Vietnam, Iran-Iraq
+        // and Rwanda become visible once WWII no longer sets the scale.
+        label: 'Kriegstote · 1946–2000',
+        value: WARS_1946_PANEL.latest,
+        fmt: (v) => `${Math.round(v / 1000)}k`,
+        delta: null,
+        seed: 419,
+        color: magenta,
+        data: WARS_1946_PANEL.series,
+        ticks: WARS_1946_PANEL.ticks,
+        xLabels: WARS_1946_PANEL.xLabels,
+        markers: eraMarkers(1946, 2000, [
+          [1950, '🇰🇷 Korea'],
+          [1968, '🇻🇳 Vietnam'],
+          [1984, '🇮🇷 Iran-Irak'],
+          [1994, '🇷🇼 Ruanda'],
+        ]),
+      }),
+  },
+  {
+    id: 'ukraine-deaths',
+    title: 'Tote im Ukraine-Krieg · seit 2014',
+    source:
+      'OHCHR · Mediazona/BBC · UALosses, Stand Mitte 2026. Namentlich belegte Zahlen sind harte Untergrenzen; Schätzungen unsicher. Zivilistenzahl laut OHCHR deutlich unvollständig (v.a. Mariupol).',
+    draw: (f) =>
+      hBarChart(f, {
+        // Deliberately shows floor vs. estimate per category instead of one
+        // fake total: named/documented counts are hard lower bounds (OHCHR,
+        // Mediazona+BBC, UALosses), the estimate bars are demographic or
+        // intelligence-based. Methodologies and as-of dates differ per row —
+        // no serious source publishes a single total.
+        label: 'Tote · Ukraine-Krieg seit 2014 · Tsd.',
+        value: 352,
+        fmt: (v) => `${deInt(v)}k`,
+        rowFmt: (v) => `${deInt(v)}k`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: '🇷🇺 Soldaten · Schätzung', v: 352 },
+          { name: '🇷🇺 Soldaten · namentlich belegt', v: 229 },
+          { name: '🇺🇦 Soldaten · Schätzung', v: 100 },
+          { name: '🇺🇦 Soldaten · namentlich belegt', v: 97 },
+          { name: '🕯️ Zivilisten · dokumentiert', v: 16 },
+          { name: '⚔️ Donbas 2014–21 · gesamt', v: 14 },
+        ],
+      }),
+  },
+  {
     id: 'refugees',
     title: 'Vertriebene weltweit',
     source: 'UNHCR Global Trends · gewaltsam Vertriebene weltweit, gerundet.',
@@ -366,6 +530,38 @@ export const POOL: Dashboard[] = [
           [2001, '🇦🇫 Afghanistan · NATO'],
           [2003, '🇮🇶 Irak · US-Koalition'],
           [2011, '🇱🇾 Libyen · NATO'],
+        ]),
+      }),
+  },
+  {
+    id: 'africa-eu-routes',
+    title: 'Irreguläre Migration · Afrika → Europa',
+    source:
+      'Frontex · aufgegriffene irreguläre Grenzübertritte auf den drei Afrika-Routen, pro Jahr. Aufgriffe, keine Personen — Doppelzählungen möglich; legale Zuwanderung nicht enthalten.',
+    draw: (f) =>
+      lineChart(f, {
+        // The three Frontex routes out of Africa, each with its own wave:
+        // Central Med peaks in the Libya years 2014-17 and again 2023,
+        // Western Med spikes 2018 (Spain), the Canaries route explodes
+        // from near zero in 2019 to ~47k in 2024.
+        label: 'Grenzübertritte · Afrika-Routen · Tsd. pro Jahr',
+        value: AFRICA_ROUTES_COMPARE.latestTotal,
+        unit: '',
+        fmt: (v) => `${Math.round(v)}k`,
+        delta: null,
+        seed: 349,
+        series: [
+          { name: 'Zentrales Mittelmeer', color: orange, data: AFRICA_ROUTES_COMPARE.rows[0].data },
+          { name: 'Westl. Mittelmeer', color: aqua, data: AFRICA_ROUTES_COMPARE.rows[1].data },
+          { name: 'Kanaren-Route', color: violet, data: AFRICA_ROUTES_COMPARE.rows[2].data },
+        ],
+        ticks: AFRICA_ROUTES_COMPARE.ticks,
+        xLabels: ['2009', '2014', '2020', 'heute'],
+        markers: eraMarkers(2009, 2025, [
+          [2011, '🌊 Arabischer Frühling'],
+          [2015, '📈 Krise 2015/16'],
+          [2020, '🛶 Kanaren-Welle'],
+          [2023, '🛥️ Lampedusa 2023'],
         ]),
       }),
   },
@@ -521,6 +717,35 @@ export const POOL: Dashboard[] = [
         ],
         ticks: M2_COMPARE.ticks,
         xLabels: ['1990', '2001', '2013', 'heute'],
+      }),
+  },
+  {
+    id: 'wealth-top1',
+    title: 'Vermögenskonzentration · Top 1 %',
+    source:
+      'Piketty „Das Kapital im 21. Jahrhundert" / World Inequality Database · Anteil des obersten 1 % am privaten Nettovermögen, gerundete Anker.',
+    draw: (f) =>
+      lineChart(f, {
+        // The two-century U-curve: Belle Époque rentier peak, the 1914–1980
+        // compression, re-concentration since the 1980s (steepest in the US).
+        label: 'Vermögensanteil · reichstes 1 %',
+        value: WEALTH_TOP1_COMPARE.usLatest,
+        unit: '',
+        fmt: (v) => localePct(v, 0),
+        delta: null,
+        seed: 401,
+        series: [
+          { name: '🇬🇧 UK', color: violet, data: WEALTH_TOP1_COMPARE.rows[0].data },
+          { name: '🇫🇷 Frankreich', color: blue, data: WEALTH_TOP1_COMPARE.rows[1].data },
+          { name: '🇺🇸 USA', color: yellow, data: WEALTH_TOP1_COMPARE.rows[2].data },
+        ],
+        ticks: WEALTH_TOP1_COMPARE.ticks,
+        xLabels: ['1810', '1881', '1951', 'heute'],
+        // The two turning points of the U-curve on the 1810–2022 axis.
+        markers: eraMarkers(1810, 2022, [
+          [1914, '⚔️ Kriege & Steuern'],
+          [1980, '📈 Deregulierung'],
+        ]),
       }),
   },
   trendCard('m2-history', 'US-Geldmenge seit 1900', 'US-Geldmenge M2 · seit 1900', M2_PANEL, yellow, (v) => `$${localeNum(v / 1e12, 1)} ${tr('Bio.')}`, 97, eraMarkers(1900, 2024, [
@@ -717,6 +942,40 @@ export const POOL: Dashboard[] = [
       }),
   },
   {
+    id: 'de-buergergeld',
+    title: 'Bürgergeld nach Staatsangehörigkeit',
+    source:
+      'Bundesagentur für Arbeit · Migrations-Monitor, Regelleistungsberechtigte SGB II, Feb 2026. Staatsangehörigkeit, keine Ethnie; Eingebürgerte zählen als Deutsche. Ukrainer seit Juni 2022 per Rechtskreiswechsel im SGB II; Bezug ≠ arbeitslos (Aufstocker).',
+    draw: (f) =>
+      hBarChart(f, {
+        // BA Migrations-Monitor, Feb 2026: 5.19M Regelleistungsberechtigte,
+        // 46.5% without German citizenship (2005: ~19%). Official statistics
+        // record nationality, never ethnicity — naturalized citizens count as
+        // German. The Ukrainian bar exists because of the June 2022
+        // Rechtskreiswechsel that routes refugees straight into SGB II.
+        // The share belongs in the eyebrow: hBarChart never renders `value`,
+        // so the headline number has to travel inside the label itself.
+        label: 'Bürgergeld · 🇩🇪 · 46,5 % Nichtdeutsche',
+        value: 659,
+        fmt: (v) => `${deInt(v)}k`,
+        rowFmt: (v) => `${deInt(v)}k`,
+        delta: null,
+        color: magenta,
+        unit: '',
+        rows: [
+          { name: '🇺🇦 Ukraine', v: 659 },
+          { name: '🇸🇾 Syrien', v: 429 },
+          { name: '🇦🇫 Afghanistan', v: 202 },
+          { name: '🇹🇷 Türkei', v: 184 },
+          { name: '🇧🇬 Bulgarien', v: 104 },
+          { name: '🇮🇶 Irak', v: 84 },
+          { name: '🇷🇴 Rumänien', v: 78 },
+          { name: '🇵🇱 Polen', v: 48 },
+          { name: '🇮🇹 Italien', v: 40 },
+        ],
+      }),
+  },
+  {
     id: 'de-industry',
     title: 'Industrieproduktion · DEU vs. USA vs. China',
     source:
@@ -841,6 +1100,39 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
+  {
+    id: 'de-emigration-dest',
+    title: 'Wohin Deutsche auswandern',
+    source:
+      'Destatis Wanderungsstatistik / BAMF Migrationsbericht 2024 · Fortzüge deutscher Staatsangehöriger. Rund die Hälfte der 270k Fortzüge ohne gemeldetes Ziel — das Ranking deckt nur gemeldete Ziele ab.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Departures of German citizens by destination, 2024: Switzerland has
+        // led this list for years, the Alps and the Mediterranean beat the
+        // anglosphere. Headline is the 270k yearly total; about half of all
+        // deregistrations state no destination, so the ranking covers only
+        // the reported half.
+        label: 'Auswanderung Deutscher · Zielländer · 2024',
+        value: 20.7,
+        fmt: (v) => `${deInt(v)}k`,
+        rowFmt: (v) => `${localeNum(v, 1)}k`,
+        delta: null,
+        color: aqua,
+        unit: '',
+        rows: [
+          { name: '🇨🇭 Schweiz', v: 20.7 },
+          { name: '🇦🇹 Österreich', v: 13.3 },
+          { name: '🇺🇸 USA', v: 9.3 },
+          { name: '🇪🇸 Spanien', v: 8.9 },
+          { name: '🇫🇷 Frankreich', v: 5.5 },
+          { name: '🇹🇷 Türkei', v: 5.2 },
+          { name: '🇬🇧 Vereinigtes Königreich', v: 4.5 },
+          { name: '🇵🇱 Polen', v: 4.3 },
+          { name: '🇳🇱 Niederlande', v: 3.7 },
+          { name: '🇮🇹 Italien', v: 3.4 },
+        ],
+      }),
+  },
   trendCard('de-population', 'Bevölkerung Deutschland · seit 1950', 'Bevölkerung · 🇩🇪 · Jahresende', DE_POPULATION_PANEL, blue, (v) => `${localeNum(v, 1)} ${tr('Mio.')}`, 319, eraMarkers(1950, 2024, [
     // The population only moves on migration: near-flat for decades, a record
     // ~84m after the 2015 and 2022 waves, since births stay below deaths.
@@ -848,6 +1140,40 @@ export const POOL: Dashboard[] = [
     [2015, '📈 Zuwanderung 2015'],
     [2022, '🇺🇦 Vollinvasion 2022'],
   ]), 'Destatis · Bevölkerungsstand in heutigen Grenzen; vor 1990 beide deutsche Staaten summiert, gerundet.'),
+  {
+    id: 'de-pop-nationality',
+    title: 'Wachstum nur durch Zuwanderung',
+    source:
+      'Destatis Bevölkerungsfortschreibung · Deutsche = Bevölkerung minus Ausländer; Eingebürgerte und Aussiedler zählen als Deutsche. Vor 1990 beide deutsche Staaten, Zensusrevisionen geglättet, gerundet. Ab 2025 Prognose: Gesamt nach 15. koordinierter Vorausberechnung (moderate Variante), deutsche Linie als Trendfortschreibung inkl. Einbürgerungen — keine Messung.',
+    draw: (f) =>
+      lineChart(f, {
+        // Total population vs German citizens: the gap between the lines is
+        // the foreign population, i.e. the immigration share of the growth.
+        // Deaths exceed births every year since 1972, so the German line
+        // peaks ~2005 at ~75m and falls to ~70m while the total climbs to a
+        // record ~84m — the entire growth is immigration. The shaded band
+        // right of "heute" extrapolates to 2050: total ~84m, Germans ~65m.
+        label: 'Bevölkerung nach Staatsangehörigkeit · 🇩🇪 · Mio. · Prognose bis 2050',
+        value: DE_NATIONALITY_COMPARE.deLatest,
+        unit: '',
+        fmt: (v) => `${localeNum(v, 1)} ${tr('Mio.')}`,
+        delta: null,
+        seed: 331,
+        series: [
+          { name: 'Gesamtbevölkerung', color: blue, data: DE_NATIONALITY_COMPARE.rows[0].data },
+          { name: 'Deutsche Staatsangehörige', color: orange, data: DE_NATIONALITY_COMPARE.rows[1].data },
+        ],
+        ticks: DE_NATIONALITY_COMPARE.ticks,
+        xLabels: ['1970', '1996', '2023', '2050'],
+        shade: { mask: DE_NATIONALITY_COMPARE.mask, label: 'Prognose' },
+        markers: eraMarkers(1970, 2050, [
+          [1972, '⚰️ Mehr Tote als Geburten'],
+          [1990, '🇩🇪 Wiedervereinigung 1990'],
+          [2015, '📈 Zuwanderung 2015'],
+          [2024, '📍 heute'],
+        ]),
+      }),
+  },
   {
     id: 'de-crime-foreign',
     title: 'Nichtdeutsche Tatverdächtige · gegen Bevölkerungsanteil',
@@ -996,18 +1322,16 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP', DE_TAX_QUOTA_PANEL, yellow, (v) => `${localePct(v, 1)}`, 259, eraMarkers(1965, 2023, [
-    // Taxes plus social contributions as a share of GDP — the state's take hit
-    // a historical high of ~39% in the early 2020s.
-    // Rise through the 1970s: expansion of the welfare state and social
-    // insurance contributions under Brandt/Schmidt.
+  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland · seit 1900', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP', DE_TAX_QUOTA_PANEL, yellow, (v) => `${localePct(v, 1)}`, 259, eraMarkers(1900, 2023, [
+    // Taxes plus social contributions as a share of GDP, now on a 123-year
+    // axis: ~10% in the Kaiserreich, the 1920 Erzberger reform doubling the
+    // take, the welfare-state climb under Brandt/Schmidt, record ~39% in the
+    // early 2020s. Fewer markers than before — on this axis the 1991/2005
+    // events would crowd the final quarter.
+    [1920, '💰 Erzberger-Reform'],
     [1970, '🏛️ Sozialstaatsausbau'],
-    [1991, '🧱 Soli 1991'],
-    // Low point: final stage of the Schröder tax reform (top rate 53→42%,
-    // base rate to 15%) took effect Jan 2005, plus a weak economy.
-    [2005, '✂️ Steuerreform 2005'],
     [2021, '📈 Rekord ~39%'],
-  ]), 'OECD Revenue Statistics · Steuern plus Sozialabgaben in % des BIP, gerundet; vor 1990 Westdeutschland.'),
+  ]), 'OECD Revenue Statistics ab 1965; davor historische Schätzungen (Statistisches Reichsamt / Bundesbank), gerundet. Steuern plus Sozialabgaben in % des BIP; Weltkriegsjahre interpoliert (Kriegsfinanzierung lief über Schulden und Inflation), vor 1990 Reichsgebiet bzw. Westdeutschland.'),
   trendCard('de-power-prices', 'Strompreis Deutschland', 'Strompreis · 🇩🇪 · Haushalte · ct/kWh', DE_POWER_PRICE_PANEL, blue, (v) => `${localeNum(v, 0)} ct`, 271, eraMarkers(1991, 2025, [
     // The household price roughly tripled since 2000. The EEG renewables law
     // (2000) kicked off the green transition; the nuclear phase-out decision
@@ -1026,6 +1350,15 @@ export const POOL: Dashboard[] = [
     [1990, '🧱 Wiedervereinigung'],
     [2020, '💸 Corona'],
   ]), 'Destatis / BMF / Eurostat · Staatsausgaben in % des BIP; vor 1950 historische Schätzungen, Kriegsjahre ausgespart, vor 1990 Westdeutschland.'),
+  trendCard('de-public-employment', 'Öffentlicher Dienst Deutschland · seit 1900', 'Öffentlicher Dienst · 🇩🇪 · % der Erwerbstätigen', DE_PUBLIC_EMPLOYMENT_PANEL, aqua, (v) => `${localePct(v, 1)}`, 313, eraMarkers(1900, 2024, [
+    // Who works for the state: the climb to the 1991 reunification peak
+    // (~17%), then the drop — Bahn, Post and Telekom left the statistic via
+    // privatization in the mid-90s, not via layoffs. Slow rise again since
+    // the mid-2010s. Only the two decisive markers: a third (1970s welfare
+    // state) crowds this stretch of the axis, and the climb reads by itself.
+    [1991, '🧱 Peak · Ost-Übernahme'],
+    [1995, '📦 Bahn & Post privatisiert'],
+  ]), 'Destatis Personal des öffentlichen Dienstes (inkl. Soldaten) je Erwerbstätige ab 1991; davor historische Schätzungen inkl. Reichs-/Bundesbahn und Post als Staatsbetriebe — der Knick nach 1991 ist ihre Privatisierung. Kriegsjahre interpoliert, vor 1990 Reich bzw. Westdeutschland.'),
   {
     id: 'de-old-age-ratio',
     title: 'Altenquotient Deutschland · die Rentnerlast',
@@ -1099,8 +1432,8 @@ export const POOL: Dashboard[] = [
         delta: null,
         color: red,
         unit: '',
-        fmt: (v) => `${v}`,
-        rowFmt: (v) => `${v}`,
+        fmt: (v) => `${Math.round(v)}`,
+        rowFmt: (v) => `${Math.round(v)}`,
         rows: [
           { name: 'Myanmar', v: 85 },
           { name: 'Indien', v: 84 },
@@ -1569,6 +1902,33 @@ export const POOL: Dashboard[] = [
           { name: 'Tschad', v: 53.7 },
           { name: 'Lesotho', v: 53.6 },
         ],
+      }),
+  },
+  {
+    id: 'de-income-tax-share',
+    title: 'Einkommensteuer · wer trägt sie? · 🇩🇪',
+    source:
+      'BMF Datensammlung zur Steuerpolitik · Anteile am Lohn-/Einkommensteueraufkommen nach Perzentilen der Steuerzahler, gerundet. Basis sind Steuerzahler, nicht die Gesamtbevölkerung: Kinder, viele Rentner und Minijobber zahlen keine Einkommensteuer — Konsumsteuern (MwSt., Energie) zahlen dagegen alle.',
+    draw: (f) =>
+      wealthSplit(f, {
+        // BMF / income-tax statistics: the top decile of taxpayers carries
+        // over half the revenue, the bottom half almost nothing. Deliberately
+        // NOT the viral "only 15% pay taxes" framing — that number has no
+        // official basis, and "civil servants don't really count" is a
+        // net-payer model assumption, not statistics (they do pay income
+        // tax). The concentration story below is the documented version.
+        label: 'Wer zahlt die Einkommensteuer? · 🇩🇪',
+        value: 324e9,
+        fmt: (v) => `${localeNum(v / 1e9, 0)} ${tr('Mrd')} €`,
+        axisTop: 'Steuerzahler',
+        axisBottom: 'Steueraufkommen',
+        groups: [
+          { name: 'Top 1 %', pop: 1, wealth: 23, color: red },
+          { name: 'Nächste 9 %', pop: 9, wealth: 32, color: yellow },
+          { name: 'Mittlere 40 %', pop: 40, wealth: 39, color: blue },
+          { name: 'Untere Hälfte', pop: 50, wealth: 6, color: '#4a5468' },
+        ],
+        source: 'BMF Datensammlung zur Steuerpolitik · Lohn-/ESt 2024',
       }),
   },
   {
@@ -2426,7 +2786,7 @@ export const POOL: Dashboard[] = [
         label: 'Fiat-Währungen · Jahre bis Kollaps oder Reform',
         value: 54,
         fmt: (v) => `${Math.round(v)} J.`,
-        rowFmt: (v) => `${v} J.`,
+        rowFmt: (v) => `${Math.round(v)} J.`,
         delta: null,
         color: red,
         unit: '',
@@ -2595,4 +2955,498 @@ export const POOL: Dashboard[] = [
     [2008, '🤖 Android'],
     [2016, '🌍 Jeder Dritte'],
   ]), 'Statista / DataReportal · Smartphone-Nutzer weltweit, gerundete Schätzwerte.'),
+  trendCard('ai-compute', 'KI-Training · Rechenleistung', 'KI-Training · Frontier-Modelle · FLOP', AI_COMPUTE_PANEL, violet, (v) => {
+    // The panel stores log10(FLOP); the headline shows the real magnitude
+    // ("5·10²⁶ FLOP") instead of the fractional exponent.
+    const e = Math.floor(v);
+    return `${Math.round(10 ** (v - e))}·${pow10Label(e)} FLOP`;
+  }, 311, eraMarkers(2012, 2025, [
+    // Each vertical is a jump on a log axis — the curve spans nine orders
+    // of magnitude, a billionfold increase in 13 years.
+    [2012, '🧠 AlexNet'],
+    [2020, 'GPT-3'],
+    [2022, '💬 ChatGPT'],
+  ]), 'Epoch AI · Trainingsrechenleistung führender KI-Modelle in FLOP, logarithmische Achse; 2025 geschätzt.'),
+  {
+    id: 'ai-investment',
+    title: 'KI-Investitionen international',
+    source: 'Stanford AI Index 2025 · private KI-Investitionen 2024, Mrd. US-Dollar, gerundet.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Private AI investment 2024 (Stanford AI Index 2025). The story is
+        // the gap: the US invests ~12x China and ~24x the UK — the entire
+        // rest of the world combined is a rounding error next to it. Europe
+        // barely registers.
+        label: 'Private KI-Investitionen · 2024',
+        value: 109.1,
+        fmt: (v) => `🇺🇸 $${localeNum(v, 0)} ${tr('Mrd')}`,
+        rowFmt: (v) => `$${localeNum(v, 1)} ${tr('Mrd')}`,
+        delta: null,
+        color: violet,
+        unit: '',
+        rows: [
+          { name: 'USA', v: 109.1 },
+          { name: 'China', v: 9.3 },
+          { name: 'Großbritannien', v: 4.5 },
+          { name: 'Kanada', v: 2.9 },
+          { name: 'Israel', v: 2.5 },
+          { name: 'Deutschland', v: 2.2 },
+          { name: 'Frankreich', v: 2.1 },
+          { name: 'Südkorea', v: 1.3 },
+          { name: 'Indien', v: 1.2 },
+          { name: 'Japan', v: 0.9 },
+        ],
+      }),
+  },
+  trendCard('ai-datacenter-power', 'Stromhunger der Rechenzentren', 'Rechenzentren · Strom · TWh · Prognose bis 2030', DATACENTER_POWER_PANEL, orange, (v) => `${localeNum(v, 0)} TWh`, 313, eraMarkers(2015, 2030, [
+    [2022, '💬 ChatGPT'],
+    [2025, '📈 IEA-Prognose'],
+  ]), 'IEA · Stromverbrauch aller Rechenzentren weltweit, TWh pro Jahr; ab 2025 IEA-Basisszenario — Prognose, keine Messung.'),
+  trendCard('ai-users', 'ChatGPT · Nutzerwachstum', 'ChatGPT · aktive Nutzer', CHATGPT_USERS_PANEL, aqua, (v) => `${localeNum(v / 1e6, 0)} ${tr('Mio')}`, 317, eraMarkers(2022, 2025, [
+    [2023, '🚀 100 Mio in 2 Monaten'],
+  ]), 'OpenAI-Angaben · aktive Nutzer, gerundete Meilensteine; bis 2023 monatlich, danach wöchentlich aktive Nutzer.'),
+  // Facial recognition by state authorities — the tech the user now walks
+  // past at every airport gate. Airport milestones ride as era markers.
+  trendCard('face-recognition', 'Gesichtserkennung · Staaten', 'Staaten mit Gesichtserkennung', FACE_RECOGNITION_PANEL, aqua, deInt, 331, eraMarkers(2015, 2026, [
+    [2018, '🛫 Atlanta · 1. Biometrie-Terminal'],
+    [2020, '😷 Corona · Kontaktlos-Schub'],
+    [2025, '🇪🇺 EES an EU-Grenzen'],
+  ]), 'Carnegie AI Global Surveillance Index (2019: 64 Länder) und Surfshark (2021: ~100) · Staaten mit behördlicher Gesichtserkennung; Zwischenjahre geschätzt.'),
+  // The vanishing anonymous gold counter sale: GwG cash-ID threshold
+  // 15.000 € → 10.000 € (2017) → 2.000 € (2020), drawn as a staircase.
+  trendCard('gold-anonymous', 'Anonymer Goldkauf · Bargeldgrenze', 'Tafelgeschäft 🇩🇪 · anonym kaufen bis', GOLD_ANON_PANEL, yellow, (v) => `${deInt(v)} €`, 337, eraMarkers(2010, 2026, [
+    // Halfway down each staircase drop, so the label rides the slope instead
+    // of being struck through by the flat runs before/after the cut.
+    [2016.5, '⚖️ GwG-Novelle · 10.000 €'],
+    [2019.5, '🪙 nur 2.000 €'],
+  ]), 'Geldwäschegesetz · Bargeld-Schwelle für anonyme Edelmetallkäufe (Tafelgeschäft): 15.000 € → 10.000 € (2017) → 2.000 € (2020).'),
+  // The rejection rose WHILE the practice spread through broadcasters and
+  // agencies — the gap between institutions and population is the story.
+  trendCard('gender-language', 'Gendersprache · Ablehnung', 'Gegen Gendersprache · 🇩🇪 · Umfragen', GENDER_REJECT_PANEL, red, (v) => `${localePct(v, 0)}`, 347, eraMarkers(2020, 2024, [
+    [2024, '🚫 Bayern & Hessen: Verbot'],
+  ]), 'infratest dimap u. a. · Anteil der Deutschen, die Gendersprache ablehnen; gerundete Umfragewerte, Fragestellung variiert.'),
+  {
+    id: 'gender-divide',
+    title: 'Geschlechter-Kluft · jung & politisch',
+    source:
+      'Gallup · Anteil der 18–29-Jährigen in den USA, die sich als „liberal“ einstufen; Mehrjahres-Durchschnitte, gerundet. Gleiche Muster zeigen Umfragen in Deutschland, Südkorea und UK.',
+    draw: (f) =>
+      lineChart(f, {
+        // Two parallel lines until ~2014, then young women pull away while
+        // young men stay flat — the headline is the gap itself, now ~15
+        // points where it used to be ~3. The divergence, not either line
+        // alone, is the story.
+        label: 'Links-liberal · 18–29 J. · 🇺🇸',
+        value: GENDER_IDEOLOGY_COMPARE.gapLatest,
+        unit: '',
+        fmt: (v) => `Δ ${localeNum(v, 0)} ${tr('Punkte')}`,
+        delta: null,
+        seed: 367,
+        series: [
+          { name: 'Frauen', color: magenta, data: GENDER_IDEOLOGY_COMPARE.rows[0].data },
+          { name: 'Männer', color: blue, data: GENDER_IDEOLOGY_COMPARE.rows[1].data },
+        ],
+        ticks: GENDER_IDEOLOGY_COMPARE.ticks,
+        xLabels: ['2001', '2009', '2017', 'heute'],
+        markers: eraMarkers(2001, 2024, [
+          [2014, '📱 Social-Media-Ära'],
+          [2017, '✊ #MeToo'],
+        ]),
+      }),
+  },
+  trendCard('self-id-laws', 'Selbstbestimmung per Gesetz', 'Länder mit Geschlechtseintrag per Selbst-ID', SELF_ID_PANEL, violet, deInt, 349, eraMarkers(2012, 2025, [
+    [2012, '🇦🇷 Argentinien zuerst'],
+    [2024, '🇩🇪 Selbstbestimmungsgesetz'],
+  ]), 'ILGA / nationale Gesetze · Staaten, in denen der amtliche Geschlechtseintrag per Selbsterklärung änderbar ist, kumuliert; Zählweise variiert, gerundet.'),
+  {
+    id: 'rainbow-camps',
+    title: 'Regenbogen · die zwei Lager',
+    source:
+      'ILGA World 2025 · Rechtslage gleichgeschlechtlicher Beziehungen in den 193 UN-Staaten; Todesstrafe-Zeile ist Teilmenge der Strafbarkeit, gerundet.',
+    draw: (f) =>
+      hBarChart(f, {
+        // The world splits into two blocs moving in opposite directions:
+        // 39 states with marriage equality (plus recognition short of it)
+        // versus 64 that criminalise — a dozen of them with the death
+        // penalty on the books. The middle (legal, no recognition) shrinks
+        // from both sides.
+        label: 'Homosexualität · Rechtslage weltweit',
+        value: 64,
+        fmt: (v) => `${localeNum(v, 0)} ${tr('Staaten: strafbar')}`,
+        rowFmt: (v) => `${localeNum(v, 0)}`,
+        delta: null,
+        color: violet,
+        unit: '',
+        rows: [
+          { name: 'Legal · keine Anerkennung', v: 78 },
+          { name: 'Strafbar', v: 64 },
+          { name: 'Ehe für alle', v: 39 },
+          { name: 'Partnerschaft anerkannt', v: 12 },
+          { name: 'Davon Todesstrafe möglich', v: 12 },
+        ],
+      }),
+  },
+  {
+    id: 'lgbt-criminal-map',
+    title: 'Homosexualität · wo strafbar',
+    source:
+      'ILGA World 2025 · Staaten mit Strafgesetzen gegen einvernehmliche gleichgeschlechtliche Handlungen, abgestuft nach Höchststrafe; vereinfacht — die Rechtslage ändert sich laufend in beide Richtungen.',
+    draw: (f) =>
+      choroplethMap(f, {
+        // Map twin of the rainbow-camps bars: the ~62 criminalising states
+        // shaded by maximum penalty (severity 1..3), death-penalty states
+        // most vivid. Legal countries stay neutral — the belt from North
+        // Africa through the Middle East to South Asia IS the picture.
+        label: 'Homosexualität strafbar · 2025',
+        value: 62,
+        fmt: (v) => `${localeNum(v, 0)} ${tr('Staaten')}`,
+        valueByIso: LGBT_CRIMINAL,
+        world: live.worldMap,
+        rows: [
+          { name: 'Lange Haft / lebenslang', v: 26 },
+          { name: 'Haft / Geldstrafe', v: 24 },
+          { name: 'Todesstrafe möglich', v: 12 },
+        ],
+        rowFmt: (v) => localeNum(v, 0),
+        source: 'ILGA World 2025 · nach Höchststrafe',
+      }),
+  },
+  {
+    id: 'executions-map',
+    title: 'Todesstrafe · Hinrichtungen 2024',
+    source:
+      'Amnesty International · Death Sentences and Executions 2024: mindestens 1.518 Hinrichtungen in 15 Staaten, höchster Stand seit 2015 — ohne China, wo die Zahl Staatsgeheimnis ist (vermutlich Tausende, mehr als der Rest der Welt zusammen); Nordkorea und Vietnam veröffentlichen nichts. Mindestzahlen.',
+    draw: (f) =>
+      choroplethMap(f, {
+        // Iran, Saudi Arabia and Iraq carry over 90% of the recorded total;
+        // China enters as a floor estimate so the ramp doesn't pretend the
+        // recorded numbers are the whole story.
+        label: 'Hinrichtungen · 2024',
+        value: 1518,
+        fmt: (v) => `≥ ${deInt(v)}`,
+        valueByIso: EXECUTIONS_2024,
+        world: live.worldMap,
+        rows: [
+          { name: 'China', v: 2000 },
+          { name: 'Iran', v: 972 },
+          { name: 'Saudi-Arabien', v: 345 },
+          { name: 'Irak', v: 63 },
+          { name: 'USA', v: 25 },
+        ],
+        rowFmt: (v) => (v >= 1000 ? tr('Tausende · geschätzt') : `≥ ${deInt(v)}`),
+        source: 'Amnesty International 2024 · Mindestzahlen, China geschätzt',
+      }),
+  },
+  trendCard('trans-youth', 'Genderklinik England · Ansturm', 'Minderjährige · Überweisungen an GIDS · pro Jahr', TRANS_YOUTH_PANEL, magenta, deInt, 353, eraMarkers(2010, 2022, [
+    [2014, '📱 Tumblr-Ära'],
+    [2020, '⚖️ Fall Keira Bell'],
+  ]), 'NHS / Cass-Review · Überweisungen Minderjähriger an die englische Genderklinik GIDS (Tavistock), pro Jahr; Klinik nach dem Cass-Review 2024 geschlossen.'),
+  // --- MÄRKTE cluster: prices, yields and leverage. Annual averages — the
+  // intraday extremes (VIX 80+, WTI below zero) ride as era markers.
+  trendCard('oil-price', 'Ölpreis · Brent', 'Ölpreis · Brent · $/Barrel · Jahresschnitt', OIL_PRICE_PANEL, orange, (v) => `$${localeNum(v, 0)}`, 409, eraMarkers(1970, 2025, [
+    [1973, '⛽ Ölkrise 1973'],
+    [2008, '📈 Peak $147'],
+    [2020, '📉 Corona · WTI unter null'],
+  ]), 'BP Statistical Review / EIA · Brent-Jahresdurchschnitt, vor 1976 Arabian Light; nominal, nicht inflationsbereinigt.'),
+  trendCard('vix', 'VIX · Angstbarometer der Börse', 'VIX · Volatilitätsindex · Jahresschnitt', VIX_PANEL, violet, (v) => localeNum(v, 0), 419, eraMarkers(1990, 2025, [
+    [2008, '🏦 Lehman · Peak 80'],
+    [2017, '😴 Rekordtief'],
+    [2020, '😷 Corona · Peak 82'],
+  ]), 'CBOE · VIX, Jahresdurchschnitt der Tagesschlusskurse; die Panik-Spitzen 2008 und 2020 lagen intraday über 80.'),
+  trendCard('defense-stocks', 'Rheinmetall · Zeitenwende an der Börse', 'Rheinmetall-Aktie · € · Jahresende', RHEINMETALL_PANEL, red, (v) => `${localeNum(v, 0)} €`, 421, eraMarkers(2014, 2025, [
+    [2022, '⚔️ Zeitenwende'],
+    [2025, '🇪🇺 ReArm Europe'],
+  ]), 'Xetra-Schlusskurse, gerundet · Rheinmetall als Proxy für europäische Rüstungswerte: rund ×20 seit dem Angriff auf die Ukraine.'),
+  trendCard('gold-price', 'Goldpreis seit 1970', 'Goldpreis · $/Unze · Jahresschnitt', GOLD_PRICE_PANEL, yellow, (v) => `$${localeNum(v, 0)}`, 431, eraMarkers(1970, 2025, [
+    [1971, '⛓️‍💥 Gold-Ende 1971'],
+    [1980, '📈 Inflations-Peak'],
+    [2025, '🚀 über $4.000'],
+  ]), 'LBMA / World Gold Council · Jahresdurchschnitt des Londoner Fixings, nominal; letzter Wert Stand Ende 2025.'),
+  trendCard('us-10y', 'US-Anleihen · 10 Jahre Rendite', 'US-Staatsanleihen · 10J-Rendite · Jahresschnitt', US_10Y_PANEL, blue, (v) => localePct(v, 1), 433, eraMarkers(1962, 2025, [
+    [1981, '🎙️ Volcker · 15,8 %'],
+    [2020, '0️⃣ Nullzins-Tief'],
+    [2022, '⚡ Zinswende'],
+  ]), 'Federal Reserve H.15 · 10-jährige Treasury Constant Maturity, Jahresdurchschnitt; Intraday-Tief 0,5 % im März 2020.'),
+  // Billions throughout (no Mrd/Bio. mix): the top tick lands on $1,250 Mrd,
+  // which a 1-decimal Bio. format would misround to "1,3". No marker on the
+  // final anchor either — a dashed line on the plot's right edge reads as a
+  // second y-axis with the curve punching through it.
+  trendCard('margin-debt', 'Margin Debt · Spekulation auf Kredit', 'Margin Debt · 🇺🇸 · Wertpapierkredite · Jahresende', MARGIN_DEBT_PANEL, magenta, (v) => `$${localeNum(v / 1e9, 0)} ${tr('Mrd')}`, 439, eraMarkers(1997, 2025, [
+    [2000, '💻 Dotcom-Hoch'],
+    [2007, '🏦 Vor-Lehman-Hoch'],
+    [2021, '🎰 Meme-Mania'],
+  ]), 'FINRA · Debit-Salden in Margin-Konten der US-Broker, Jahresendstände — 2025 erstmals über $1 Bio.; jeder Gipfel fiel bisher mit einem Markt-Top zusammen.'),
+  {
+    id: 'genocides',
+    title: 'Völkermorde · seit 1900',
+    source:
+      'Historische Forschung / UN-Völkermordkonvention 1948 · Opferzahlen sind Bandbreiten, hier gerundete Mittelwerte. „Umstritten“ meint die völkerrechtliche Einstufung als Völkermord, nicht die Toten selbst: Holodomor (von ~35 Staaten anerkannt), Armenier (Türkei bestreitet), Bangladesch (kaum anerkannt), Gaza (IGH-Verfahren Südafrika ./. Israel seit 2024 anhängig). Uiguren: Vorwurf „kultureller Genozid“, kein dokumentiertes Massentöten — daher ohne Balken.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Death tolls of the major genocides since 1900, contested legal
+        // classifications flagged in the row itself. The linear scale is the
+        // point: Srebrenica (8,300, court-confirmed) is barely a sliver next
+        // to the Holocaust — and both are genocide under the convention,
+        // which counts intent to destroy a group, not a body-count threshold.
+        label: 'Völkermorde seit 1900 · Todesopfer',
+        value: 15e6,
+        fmt: (v) => `≈ ${localeNum(v / 1e6, 0)} ${tr('Mio')}`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Holocaust · 1941–45', v: 6.0e6 },
+          { name: 'Holodomor · 1932–33 · Einstufung umstritten', v: 3.9e6 },
+          { name: 'Kambodscha · Rote Khmer · 1975–79', v: 1.7e6 },
+          { name: 'Armenier · 1915–17 · Türkei bestreitet', v: 1.2e6 },
+          { name: 'Bangladesch · 1971 · Einstufung umstritten', v: 1.0e6 },
+          { name: 'Ruanda · Tutsi · 1994', v: 0.8e6 },
+          { name: 'Darfur · seit 2003', v: 0.3e6 },
+          { name: 'Herero & Nama · 1904–08', v: 80e3 },
+          { name: 'Gaza · seit 2023 · IGH prüft', v: 60e3 },
+          { name: 'Srebrenica · 1995 · vom IGH bestätigt', v: 8300 },
+        ],
+        rowFmt: (v) =>
+          v >= 1e6 ? `~${localeNum(v / 1e6, 1)} ${tr('Mio')}` : `~${deInt(v)}`,
+      }),
+  },
+  // --- AGENDA-2030 scorecard cluster: the SDGs measured against their own
+  // promises, plus the institutions and policies moving in their slipstream.
+  {
+    id: 'sdg-progress',
+    title: 'Agenda 2030 · Zielerreichung',
+    source:
+      'UN SDG Report 2024 · Bewertung der ~135 messbaren Unterziele der 17 Nachhaltigkeitsziele, fünf Jahre vor Zieldatum 2030; Anteile gerundet.',
+    draw: (f) =>
+      hBarChart(f, {
+        // The UN's own midterm grade for its 2030 Agenda: only ~17% of the
+        // assessable targets are on track, half crawl too slowly, a third
+        // stand still or move backwards. The linear scale makes the gap
+        // between promise and delivery the chart.
+        label: 'Agenda 2030 · Stand der UN-Ziele · % der Unterziele',
+        value: 17,
+        fmt: (v) => `${localePct(v, 0)}`,
+        rowFmt: (v) => `${localePct(v, 0)}`,
+        delta: null,
+        color: violet,
+        unit: '',
+        rows: [
+          { name: 'Auf Kurs bis 2030', v: 17 },
+          { name: 'Fortschritt zu langsam', v: 48 },
+          { name: 'Stillstand oder Rückschritt', v: 35 },
+        ],
+      }),
+  },
+  {
+    id: 'who-funding',
+    title: 'WHO · Wer bezahlt die Weltgesundheit?',
+    source:
+      'WHO Programme Budget Portal · Biennium 2024–25, größte Geldgeber; USA seit Januar 2026 offiziell ausgetreten, damit ist die Gates-Stiftung größter Geber. Plätze 3–6 gerundete Schätzwerte.',
+    draw: (f) =>
+      hBarChart(f, {
+        // WHO's biggest funders in the 2024–25 biennium. With the US exit
+        // (announced Jan 2025, effective Jan 2026) a private foundation is
+        // now the WHO's single largest financier — ahead of every state.
+        label: 'WHO-Geldgeber · 2024–25 · Mio. $',
+        value: 761e6,
+        delta: null,
+        color: aqua,
+        unit: '$',
+        rows: [
+          { name: 'Gates-Stiftung', v: 761e6 },
+          { name: 'USA · ausgetreten 2026', v: 752e6 },
+          { name: 'Deutschland 🇩🇪', v: 560e6 },
+          { name: 'Großbritannien 🇬🇧', v: 480e6 },
+          { name: 'Gavi-Impfallianz', v: 450e6 },
+          { name: 'EU-Kommission', v: 400e6 },
+        ],
+      }),
+  },
+  {
+    id: 'excess-mortality',
+    title: 'Übersterblichkeit · 2020–2023',
+    source:
+      'The Lancet Regional Health – Europe (2024) · relative Übersterblichkeit 2020–23 gegenüber der erwarteten Sterblichkeit, gerundet; Schweden nach OWID-P-Score. Schweden verzichtete weitgehend auf Lockdowns.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Cumulative excess mortality 2020–23 relative to the pre-pandemic
+        // baseline (Lancet Reg. Health Europe). Eastern Europe paid the
+        // highest toll; no-lockdown Sweden anchors the bottom of the chart.
+        label: 'Übersterblichkeit · 2020–23 · % über Erwartung',
+        value: 17,
+        fmt: (v) => `+${localePct(v, 0)}`,
+        rowFmt: (v) => `+${localePct(v, 0)}`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Bulgarien 🇧🇬', v: 17.2 },
+          { name: 'Litauen 🇱🇹', v: 16.1 },
+          { name: 'Slowakei 🇸🇰', v: 14.9 },
+          { name: 'Polen 🇵🇱', v: 13.7 },
+          { name: 'Italien 🇮🇹', v: 8.7 },
+          { name: 'Deutschland 🇩🇪', v: 5.6 },
+          { name: 'Schweden 🇸🇪 · ohne Lockdown', v: 3 },
+        ],
+      }),
+  },
+  trendCard('cb-gold', 'Zentralbanken kaufen Gold', 'Zentralbanken · Netto-Goldkäufe · Tonnen/Jahr', CB_GOLD_PANEL, yellow, (v) => `${localeNum(v, 0)} t`, 443, eraMarkers(2000, 2025, [
+    [2008, '🏦 Finanzkrise'],
+    [2022, '❄️ Russlands Reserven eingefroren'],
+  ]), 'World Gold Council · Gold Demand Trends, Netto-Käufe der Zentralbanken pro Jahr; in den 2000ern Netto-Verkäufer, seit 2022 über bzw. nahe 1.000 t — De-Dollarisierung der Reserven.'),
+  trendCard('farm-decline', 'Höfesterben · Deutschland', 'Landwirtschaftliche Betriebe · 🇩🇪 · Tausend', DE_FARMS_PANEL, green, (v) => `${localeNum(v, 0)}k`, 449, eraMarkers(1950, 2024, [
+    [1962, '🇪🇺 EWG-Agrarmarkt'],
+    [1990, 'Wiedervereinigung'],
+  ]), 'BMEL/Destatis · Zahl der landwirtschaftlichen Betriebe; bis 1990 früheres Bundesgebiet, Erfassungsgrenzen mehrfach geändert — Größenordnungen. Von 1,6 Mio. Höfen sind 255.000 übrig.'),
+  {
+    id: 'pisa',
+    title: 'PISA-Absturz · Deutschland',
+    source:
+      'OECD PISA · Mittelwerte Deutschland, Mathematik und Lesekompetenz; 2022 in beiden Feldern der tiefste je gemessene Wert.',
+    draw: (f) =>
+      lineChart(f, {
+        // OECD PISA means for Germany: a slow climb into the early 2010s,
+        // then the slide — and 2022 the lowest scores ever measured, far
+        // beyond what school closures alone explain (OECD attribution).
+        label: 'PISA · 🇩🇪 · Punkte',
+        value: PISA_COMPARE.mathLatest,
+        unit: '',
+        fmt: (v) => localeNum(v, 0),
+        delta: null,
+        seed: 457,
+        series: [
+          { name: 'Mathematik', color: blue, data: PISA_COMPARE.rows[0].data },
+          { name: 'Lesen', color: orange, data: PISA_COMPARE.rows[1].data },
+        ],
+        ticks: PISA_COMPARE.ticks,
+        xLabels: ['2000', '2007', '2015', 'heute'],
+        markers: eraMarkers(2000, 2022, [
+          [2012, '📈 Höchststand'],
+          [2020, '😷 Schulschließungen'],
+        ]),
+      }),
+  },
+  trendCard('media-trust', 'Vertrauen in Medien · Deutschland', 'Vertrauen in Nachrichten · 🇩🇪 · Anteil', MEDIA_TRUST_PANEL, blue, (v) => `${localePct(v, 0)}`, 461, eraMarkers(2015, 2025, [
+    [2021, '😷 Corona-Hoch'],
+  ]), 'Reuters Institute Digital News Report · Anteil, der den meisten Nachrichten meistens vertraut; von 60 % (2015) auf 45 % (2025).'),
+  trendCard('free-speech-feeling', 'Meinungsfreiheit · gefühlt', '„Man kann seine Meinung frei äußern" · 🇩🇪 · Anteil', FREE_SPEECH_PANEL, red, (v) => `${localePct(v, 0)}`, 463, eraMarkers(1990, 2023, [
+    [2017, '§ NetzDG'],
+  ]), 'IfD Allensbach · Anteil der Deutschen, die meinen, man könne seine politische Meinung frei äußern; 2023 mit 40 % der niedrigste Wert seit Beginn der Reihe 1953.'),
+  trendCard('ice-ban', 'Verbrenner-Aus · Länder', 'Länder mit beschlossenem Verbrenner-Aus', ICE_BAN_PANEL, green, deInt, 467, eraMarkers(2016, 2025, [
+    [2021, 'COP26-Erklärung'],
+    [2023, '🇪🇺 2035-Gesetz'],
+  ]), 'ICCT / nationale Beschlüsse · Länder mit beschlossenem oder angekündigtem Verkaufsverbot für Verbrenner-Neuwagen, kumuliert; grobe Zählung, Zieljahre variieren.'),
+  trendCard('birth-collapse', 'Geburteneinbruch seit 2021', 'Geburten je Frau · 🇩🇪', DE_TFR_PANEL, magenta, (v) => localeNum(v, 2), 471, eraMarkers(1990, 2025, [
+    [1995, 'Tief nach der Wende'],
+    [2016, 'Zwischenhoch'],
+    [2022, '📉 Einbruch'],
+  ]), 'Destatis · zusammengefasste Geburtenziffer; nach der Erholung bis 2016/2021 der Einbruch auf 1,32 (2025) — 654.241 Geburten, Nachkriegstief. Der Knick ab 2022 zieht sich durch fast ganz Europa.'),
+  {
+    id: 'meat-target',
+    title: 'Fleischkonsum vs. Planetary Health Diet',
+    source:
+      'FAO / Our World in Data · Fleischversorgung pro Kopf 2022 (Angebot, nicht Verzehr), gerundet; EAT-Lancet „Planetary Health Diet" ≈ 16 kg pro Jahr (~43 g/Tag).',
+    draw: (f) =>
+      hBarChart(f, {
+        // Per-capita meat supply vs. the EAT-Lancet "Planetary Health Diet"
+        // target of ~16 kg/year that C40 cities cite as the "ambitious"
+        // consumption goal — an 87% cut for the US, 79% for Germany. India
+        // already sits below the target.
+        label: 'Fleisch · kg pro Kopf und Jahr',
+        value: 124,
+        fmt: (v) => `${localeNum(v, 0)} kg`,
+        rowFmt: (v) => `${localeNum(v, 0)} kg`,
+        delta: null,
+        color: orange,
+        unit: '',
+        rows: [
+          { name: 'USA 🇺🇸', v: 124 },
+          { name: 'Australien 🇦🇺', v: 116 },
+          { name: 'Argentinien 🇦🇷', v: 115 },
+          { name: 'Brasilien 🇧🇷', v: 98 },
+          { name: 'Deutschland 🇩🇪', v: 76 },
+          { name: 'China 🇨🇳', v: 63 },
+          { name: 'Welt 🌍', v: 44 },
+          { name: 'EAT-Lancet-Ziel', v: 16 },
+          { name: 'Indien 🇮🇳', v: 5 },
+        ],
+      }),
+  },
+  {
+    id: 'big-three',
+    title: 'BlackRock & Co. vs. Volkswirtschaften',
+    source:
+      'Unternehmensangaben · verwaltetes Vermögen (AUM) Jahresende 2025; IWF-BIP 2024/25 zum Vergleich, gerundet. AUM ist Kundenvermögen, kein Eigenbesitz — die Stimmrechte daraus üben die Verwalter aber selbst aus.',
+    draw: (f) =>
+      hBarChart(f, {
+        // The Big Three asset managers' AUM against national GDPs. The money
+        // belongs to clients, but proxy voting power concentrates in three
+        // Manhattan boardrooms — bigger than any European economy.
+        label: 'Verwaltetes Vermögen vs. BIP · Bio. $',
+        value: 14e12,
+        delta: null,
+        color: violet,
+        unit: '$',
+        rows: [
+          { name: 'BlackRock · AUM', v: 14e12 },
+          { name: 'Vanguard · AUM', v: 12e12 },
+          { name: 'State Street · AUM', v: 5.7e12 },
+          { name: 'BIP Deutschland 🇩🇪', v: 4.7e12 },
+          { name: 'BIP Japan 🇯🇵', v: 4.1e12 },
+          { name: 'BIP Großbritannien 🇬🇧', v: 3.6e12 },
+        ],
+      }),
+  },
+  // --- Collapse-watch extension of the MÄRKTE cluster: valuation (Buffett,
+  // CAPE, Mag 7), sovereign debt stress (interest burden, deficit), consumer
+  // credit cracking (cards, autos, offices) and de-dollarisation. No marker
+  // on a final anchor anywhere — a dashed line on the plot's right edge reads
+  // as a second y-axis (user feedback on margin-debt).
+  trendCard('buffett', 'Buffett-Indikator · Börse vs. BIP', 'US-Marktkapitalisierung · % des BIP', BUFFETT_PANEL, blue, (v) => localePct(v, 0), 509, eraMarkers(1975, 2025, [
+    [2000, '💻 Dotcom · 140 %'],
+    [2009, '🏦 Finanzkrise'],
+    [2021, '🖨️ Gelddruck-Hoch'],
+  ]), 'Wilshire 5000 / FRED · Gesamtwert aller US-Aktien in % des BIP („Buffett-Indikator"); Jahreswerte, gerundet. Buffetts eigene Marke für „mit dem Feuer spielen": 200 %.'),
+  trendCard('shiller-cape', 'Shiller-KGV · 145 Jahre Bewertung', 'S&P 500 · CAPE · seit 1881', CAPE_PANEL, violet, (v) => localeNum(v, 0), 521, eraMarkers(1881, 2025, [
+    [1929, '💥 1929 · 33'],
+    [1982, '🏜️ Tief · 7'],
+    [2000, '💻 Dotcom · 44'],
+  ]), 'Robert Shiller / Yale · zyklisch bereinigtes Kurs-Gewinn-Verhältnis (CAPE) des S&P 500; nur 1929 und 2000 lagen höher als heute.'),
+  trendCard('mag7-share', 'Magnificent 7 · Klumpenrisiko', 'Anteil der Top 7 am S&P 500', MAG7_PANEL, aqua, (v) => localePct(v, 0), 523, eraMarkers(2015, 2025, [
+    [2020, '😷 Corona-Rallye'],
+    [2023, '🤖 KI-Rallye'],
+  ]), 'S&P Dow Jones / Bloomberg · Indexgewicht der sieben größten Titel im S&P 500, Jahresendwerte, gerundet — die halbe Altersvorsorge des Westens hängt an sieben Aktien.'),
+  trendCard('us-interest-tax', 'US-Zinslast · Anteil der Einnahmen', 'US-Zinsausgaben · % der Bundeseinnahmen', US_INTEREST_TAX_PANEL, red, (v) => localePct(v, 0), 541, eraMarkers(1962, 2025, [
+    [1991, '📈 Volcker-Erbe'],
+    [2015, '0️⃣ Nullzins-Ära'],
+    [2022, '⚡ Zinswende'],
+  ]), 'CBO / OMB · Nettozinsausgaben des US-Bundes in % der Bundeseinnahmen, Fiskaljahre — jeder fünfte Steuerdollar geht inzwischen an die Gläubiger.'),
+  trendCard('us-deficit', 'US-Defizit · ohne Krieg, ohne Krise', 'US-Haushaltsdefizit · % des BIP', US_DEFICIT_PANEL, orange, (v) => localePct(v, 0), 547, eraMarkers(1970, 2025, [
+    [2000, '💰 Überschuss'],
+    [2009, '🏦 Finanzkrise'],
+    [2020, '😷 Corona · 15 %'],
+  ]), 'CBO · Haushaltssaldo des US-Bundes in % des BIP, Defizit nach oben; 6–7 % bei Vollbeschäftigung gab es historisch nur in Kriegen.'),
+  trendCard('us-card-debt', 'Kreditkartenschulden USA', 'Kreditkartensaldo · 🇺🇸 · Jahresende', US_CARD_DEBT_PANEL, magenta, (v) => `$${localeNum(v / 1e9, 0)} ${tr('Mrd')}`, 557, eraMarkers(1999, 2025, [
+    [2008, '🏦 Finanzkrise'],
+    [2021, '😷 Corona-Tilgung'],
+    [2023, '💳 über $1 Bio.'],
+  ]), 'New York Fed · Household Debt Report · Kreditkartensalden der US-Haushalte, Jahresendstände; die Ausfallraten liegen wieder auf Finanzkrisen-Niveau.'),
+  trendCard('auto-delinquency', 'Autokredite · Ausfälle Subprime', 'Subprime-Autokredite · 🇺🇸 · 60+ Tage überfällig', AUTO_DELINQ_PANEL, red, (v) => localePct(v, 1), 563, eraMarkers(1996, 2025, [
+    [2009, '🏦 Finanzkrise'],
+    [2022, '⚡ Zinswende'],
+  ]), 'Fitch Ratings · Anteil der Subprime-Autokredite, die 60+ Tage überfällig sind; seit 2023 über dem Niveau der Finanzkrise.'),
+  trendCard('office-vacancy', 'Büro-Leerstand USA', 'Büroflächen-Leerstand · 🇺🇸', OFFICE_VACANCY_PANEL, blue, (v) => localePct(v, 0), 569, eraMarkers(2000, 2025, [
+    [2003, '💻 Dotcom-Kater'],
+    [2010, '🏦 Finanzkrise'],
+    [2020, '🏠 Homeoffice'],
+  ]), 'Moody\'s CRE · Büro-Leerstand USA, landesweit, Jahresendwerte — die Zeitbombe in den Bilanzen der Regionalbanken.'),
+  trendCard('dollar-reserves', 'Dollar-Anteil der Weltreserven', 'Währungsreserven in Dollar · IWF', DOLLAR_RESERVES_PANEL, green, (v) => localePct(v, 0), 571, eraMarkers(1965, 2025, [
+    [1971, '⛓️‍💥 Gold-Ende 1971'],
+    [1999, '🇪🇺 Euro-Start'],
+    [2022, '🧊 Russland-Sanktionen'],
+  ]), 'IWF COFER · Dollar-Anteil an den ausgewiesenen Weltwährungsreserven; Werte vor 1995 historische Schätzungen — das Tief um 1990 ist real.'),
+  trendCard('zombie-firms', 'Zombie-Firmen · Erbe des Nullzinses', 'Zombie-Firmen · Anteil börsennotierter Unternehmen', ZOMBIE_PANEL, aqua, (v) => localePct(v, 0), 577, eraMarkers(1990, 2025, [
+    [2008, '🏦 Finanzkrise'],
+    [2020, '0️⃣ Nullzins-Doping'],
+  ]), 'BIS / Kearney-Schätzungen · Anteil börsennotierter Firmen, deren operativer Gewinn die Zinslast nicht deckt („Zombies"), 14 Volkswirtschaften, gerundet.'),
 ];

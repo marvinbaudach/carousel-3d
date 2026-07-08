@@ -31,12 +31,17 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { useTagFilter } from '../hooks/useTagFilter';
 import {
   ALL_DASHBOARDS,
+  DASHBOARDS_BY_ID,
   MIN_COUNT,
   RING_BY_TAG,
   RING_MAX,
   TAGS,
   type Dashboard,
 } from '../dashboards';
+import { SERIES } from '../dashboards/theme';
+import { getFavorites, toggleFavorite } from '../favorites';
+import { useFavorites } from '../hooks/useFavorites';
+import { t as tr } from '../i18n';
 import { glassSurface } from './glass';
 
 // Source footer for the open hero: a slim bar pinned to the bottom, reading as
@@ -64,6 +69,20 @@ const HeroInfoButton = styled.button`
   color: rgba(255, 255, 255, 0.8);
   font: italic 600 15px/1 Georgia, serif;
   cursor: help;
+  ${glassSurface}
+`;
+
+// Star toggle in the hero footer: adds/removes the open card from the
+// favorites stack. Gold when active — the same SERIES slot the FAVORITEN
+// chip carries.
+const HeroFavButton = styled.button<{ $active: boolean }>`
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 999px;
+  color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.8)')};
+  font: 600 15px/1 inherit;
+  cursor: pointer;
   ${glassSurface}
 `;
 
@@ -367,8 +386,25 @@ export function Carousel3D() {
     return () => window.clearTimeout(id);
   }, [tag, stageTag, layout]);
   // Capped, per-load rotated selection (see RING_BY_TAG) — the full theme
-  // pool would overcrowd the ring.
-  const dashboards = useMemo(() => RING_BY_TAG[stageTag] ?? [], [stageTag]);
+  // pool would overcrowd the ring. Favorites are assembled at stage time from
+  // the store instead (snapshot per theme switch — starring/unstarring
+  // mid-scene must not restructure the live ring).
+  const dashboards = useMemo(
+    () =>
+      stageTag === 'favoriten'
+        ? getFavorites()
+            .slice(0, RING_MAX)
+            .map((id) => DASHBOARDS_BY_ID[id])
+            .filter((d): d is Dashboard => d !== undefined)
+        : (RING_BY_TAG[stageTag] ?? []),
+    [stageTag],
+  );
+  // The FAVORITEN chip vanishes when the last star is removed; if that theme
+  // is active at that moment, glide back to the default one.
+  const favoriteIds = useFavorites();
+  useEffect(() => {
+    if (tag === 'favoriten' && favoriteIds.length === 0) setTag(DEFAULT_TAG);
+  }, [tag, favoriteIds, setTag]);
   // The nebula tint follows the *chosen* theme immediately, so the room's
   // mood already shifts while the old cards are still collapsing.
   const accent = (TAGS.find((t) => t.id === tag) ?? TAGS[0]).accent;
@@ -545,6 +581,7 @@ export function Carousel3D() {
   const selectedDashboard = selected
     ? ALL_DASHBOARDS.find((d) => d.id === selected.id)
     : undefined;
+  const heroFav = selectedDashboard ? favoriteIds.includes(selectedDashboard.id) : false;
   const outgoingDashboard = outgoing
     ? ALL_DASHBOARDS.find((d) => d.id === outgoing.id)
     : undefined;
@@ -571,8 +608,8 @@ export function Carousel3D() {
       gl={{ antialias: false }}
       onPointerMissed={requestClose}
     >
-      <color attach="background" args={['#05070c']} />
-      <fog attach="fog" args={['#05070c', fogNear, fogFar]} />
+      <color attach="background" args={['#080b14']} />
+      <fog attach="fog" args={['#080b14', fogNear, fogFar]} />
 
       <PerformanceMonitor
         // Step the resolution up/down with the measured frame rate.
@@ -705,6 +742,15 @@ export function Carousel3D() {
             <HeroInfoButton aria-label={`Quelle: ${selectedDashboard.source}`}>i</HeroInfoButton>
           </>
         )}
+        <HeroFavButton
+          $active={heroFav}
+          aria-pressed={heroFav}
+          aria-label={tr(heroFav ? 'Favorit entfernen' : 'Zu Favoriten')}
+          title={tr(heroFav ? 'Favorit entfernen' : 'Zu Favoriten')}
+          onClick={() => toggleFavorite(selectedDashboard.id)}
+        >
+          <span aria-hidden>{heroFav ? '★' : '☆'}</span>
+        </HeroFavButton>
         <HeroExportButton
           aria-label="Als PNG speichern"
           title="Als PNG speichern"

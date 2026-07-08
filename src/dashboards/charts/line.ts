@@ -15,7 +15,7 @@ import {
   type Frame,
 } from '../draw';
 import { FONT } from '../theme';
-import { plotRect, xAxisLabels } from './shared';
+import { plotRect, withAlpha, xAxisLabels } from './shared';
 
 /**
  * Vertical era markers (dashed line + label) shared by the area and line
@@ -135,7 +135,10 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   const { ctx, u, t } = f;
   drawSurface(f);
   const top = cfg.series.length > 1 ? drawCompareHeader(f, cfg.label) : drawHeader(f, cfg.label);
-  const r = plotRect(f, top + 26 * u);
+  // The legend gets its own row above the plot: the top tick label draws at
+  // r.y0 - 6u, so a legend near r.y0 would collide with it once translated
+  // names plus emoji make the row span most of the panel width.
+  const r = plotRect(f, top + 48 * u);
   const marks = cfg.markers ?? [];
   const d = markerInsetRange(r, marks, u);
 
@@ -175,7 +178,7 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   }
 
   drawGrid(f, r.y0, r.y1, cfg.ticks.length);
-  drawLegend(f, r.y0 - 10 * u, cfg.series);
+  drawLegend(f, r.y0 - 30 * u, cfg.series);
 
   const p = easeOut(t / 1.4);
   const datas = cfg.series.map(
@@ -225,6 +228,9 @@ export interface AreaCfg {
   /** Several era markers along the x-range; labels alternate rows so close
       ones do not overlap. */
   markers?: { at: number; label: string }[];
+  /** Uncertainty band (normalized 0..1, same length as `data`), drawn as a
+      translucent fill behind the line — e.g. a reconstruction's 90% range. */
+  band?: { lo: number[]; hi: number[] };
 }
 
 /** Single-series area chart with a gradient fill sweeping in. */
@@ -239,6 +245,31 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
 
   const data = cfg.data ?? makeSeries(cfg.seed, 18, 0.7);
   const p = easeOut(t / 1.4);
+
+  // Uncertainty band behind everything else, revealed with the draw-in.
+  if (cfg.band) {
+    const { lo, hi } = cfg.band;
+    const n = lo.length;
+    const yTop = r.y0 + 14 * u;
+    const yBottom = r.y1 - 6 * u;
+    const bx = (i: number) => d.x0 + ((d.x1 - d.x0) * i) / (n - 1);
+    const by = (v: number) => yBottom - (yBottom - yTop) * v;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(d.x0, r.y0, (d.x1 - d.x0) * p, r.y1 - r.y0);
+    ctx.clip();
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      if (i === 0) ctx.moveTo(bx(i), by(hi[i]));
+      else ctx.lineTo(bx(i), by(hi[i]));
+    }
+    for (let i = n - 1; i >= 0; i--) ctx.lineTo(bx(i), by(lo[i]));
+    ctx.closePath();
+    ctx.fillStyle = withAlpha(cfg.color, 0.16);
+    ctx.fill();
+    ctx.restore();
+  }
+
   const grad = ctx.createLinearGradient(0, r.y0, 0, r.y1);
   grad.addColorStop(0, `${cfg.color}59`);
   grad.addColorStop(1, `${cfg.color}00`);

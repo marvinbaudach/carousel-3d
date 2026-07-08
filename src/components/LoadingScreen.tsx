@@ -68,7 +68,7 @@ const Screen = styled.div<{ $leaving: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #05070c;
+  background: #080b14;
   opacity: ${(p) => (p.$leaving ? 0 : 1)};
   pointer-events: ${(p) => (p.$leaving ? 'none' : 'auto')};
   transition: opacity 0.8s ease;

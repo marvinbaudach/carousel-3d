@@ -211,13 +211,16 @@ const CONFLICT_ANCHORS: [number, number][] = [
   [1916, 3_000_000], // Verdun, Somme
   [1918, 3_500_000],
   [1920, 800_000], // Russian civil war
+  [1922, 200_000], // Greco-Turkish war, civil-war tails
   [1925, 100_000],
   [1930, 80_000],
+  [1932, 150_000], // Chaco war, Shanghai
   [1937, 600_000], // Sino-Japanese war, Spain
   [1939, 2_000_000],
   [1942, 10_000_000],
   [1944, 15_000_000], // WWII peak
   [1945, 12_000_000],
+  [1946, 600_000], // Chinese civil war resumes, Indochina, Greece
   [1947, 500_000], // partition of India, Chinese civil war
   [1950, 700_000], // Korea
   [1953, 350_000],
@@ -231,6 +234,7 @@ const CONFLICT_ANCHORS: [number, number][] = [
   [1994, 810_000], // Rwanda
   [1996, 90_000],
   [1999, 130_000],
+  [2000, 115_000], // Second Congo war, Eritrea–Ethiopia
   [2004, 60_000],
   [2009, 55_000],
   [2012, 90_000],
@@ -242,11 +246,34 @@ const CONFLICT_ANCHORS: [number, number][] = [
   [2024, 190_000],
 ];
 
+const conflictFmt = (v: number): string =>
+  v >= 1e6 ? `${localeNum(v / 1e6, 0)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`;
+
 export const CONFLICT_PANEL: TrendSeries = trend(
   CONFLICT_ANCHORS,
-  (v) => (v >= 1e6 ? `${localeNum(v / 1e6, 0)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`),
+  conflictFmt,
   ['1900', '1941', '1983', 'heute'],
   64,
+);
+
+// Zoom windows into the same anchors: on the 1900–2024 card the WWII peak
+// flattens every other era, so these re-scale 1918–1945 and the Cold-War
+// decades onto their own axes.
+const conflictWindow = (from: number, to: number): [number, number][] =>
+  CONFLICT_ANCHORS.filter(([year]) => year >= from && year <= to);
+
+export const WARS_1918_PANEL: TrendSeries = trend(
+  conflictWindow(1918, 1945),
+  conflictFmt,
+  ['1918', '1927', '1936', '1945'],
+  28,
+);
+
+export const WARS_1946_PANEL: TrendSeries = trend(
+  conflictWindow(1946, 2000),
+  conflictFmt,
+  ['1946', '1964', '1982', '2000'],
+  55,
 );
 
 const REFUGEE_ANCHORS: [number, number][] = [
@@ -483,6 +510,26 @@ export const PL_MIGRATION_COMPARE = compareSeries(
   { inLatest: 83.9 },
 );
 
+// Irregular border crossings into the EU on the three routes running from
+// Africa, thousands of detections per year (Frontex "Monthly detections of
+// illegal border crossings" dataset, monthly values summed per year; 2009 is
+// the earliest year Frontex collects, 2025 latest full year). Detections
+// count crossings, not persons — double counting possible; legal migration
+// is excluded, and not everyone on these routes is African (Central Med
+// carries a large Bangladeshi share in recent years). Three distinct waves:
+// the 2014–17 Libya years on the Central Med, the 2018 Spain spike on the
+// Western Med, and the Canaries route exploding from ~0 to ~47k by 2024.
+export const AFRICA_ROUTES_COMPARE = compareSeries(
+  [
+    { name: 'Zentrales Mittelmeer', pts: [[2009, 11.0], [2010, 4.5], [2011, 64.3], [2012, 15.2], [2013, 45.3], [2014, 170.7], [2015, 153.9], [2016, 181.4], [2017, 119.0], [2018, 23.5], [2019, 14.0], [2020, 35.7], [2021, 67.7], [2022, 105.6], [2023, 158.0], [2024, 66.9], [2025, 66.6]] },
+    { name: 'Westl. Mittelmeer', pts: [[2009, 6.6], [2010, 5.0], [2011, 8.4], [2012, 6.4], [2013, 6.8], [2014, 7.2], [2015, 7.0], [2016, 10.0], [2017, 23.1], [2018, 56.2], [2019, 24.0], [2020, 17.4], [2021, 18.5], [2022, 15.1], [2023, 16.9], [2024, 17.1], [2025, 19.2]] },
+    { name: 'Kanaren-Route', pts: [[2009, 2.2], [2010, 0.2], [2011, 0.3], [2012, 0.2], [2013, 0.3], [2014, 0.3], [2015, 0.9], [2016, 0.7], [2017, 0.4], [2018, 1.3], [2019, 2.7], [2020, 24.1], [2021, 22.4], [2022, 15.5], [2023, 39.7], [2024, 46.8], [2025, 17.9]] },
+  ],
+  (v) => `${Math.round(v)}k`,
+  /** Sum of the three routes in 2025 (thousands), for the headline. */
+  { latestTotal: 103.6 },
+);
+
 // German resident population, millions, present-territory boundaries (Destatis;
 // pre-1990 figures sum both German states, rounded). Near-flat for decades —
 // low birth rates mean the population only grows when net migration is strong
@@ -496,6 +543,40 @@ export const DE_POPULATION_PANEL: TrendSeries = trend(
   ],
   (v) => `${localeNum(v, 1)} ${tr('Mio')}`,
   ['1950', '1975', '2000', 'heute'],
+);
+
+// German resident population split by nationality, millions, year-end
+// (Destatis Bevölkerungsfortschreibung; pre-1990 both German states summed,
+// census revisions 2011/2022 smoothed, rounded). Germans = total minus
+// foreign nationals, so naturalized citizens and Aussiedler count as German.
+// The two lines carry the whole story: deaths have exceeded births every
+// year since 1972, so the German-citizen line peaks around 2005 at ~75m and
+// has lost ~5m since — the total keeps climbing to a record ~84m purely on
+// immigration (foreign population 3m → 13m over the same span).
+// From 2025 the points are projection, not measurement: the total follows the
+// 15th coordinated population projection (moderate variant, adjusted to the
+// Zensus-2022 rebase) and stays near ~84m; the German-citizen line continues
+// its 2015–2024 trend of roughly −230k/yr (the heavy natural deficit of the
+// old, German-dominated cohorts plus net German emigration, partly offset by
+// ~200k naturalizations a year) down to ~65m by 2050 — foreign nationals then
+// ~20m, about 23% of the population.
+const DE_NATIONALITY_SPAN: [number, number] = [1970, 2050];
+const DE_NATIONALITY_MASK_FROM = 2025;
+export const DE_NATIONALITY_COMPARE = compareSeries(
+  [
+    { name: 'Gesamtbevölkerung', pts: [[1970, 78.1], [1975, 78.7], [1980, 78.3], [1985, 77.7], [1990, 79.4], [1995, 81.7], [2000, 82.3], [2005, 82.4], [2010, 81.8], [2015, 82.2], [2019, 83.1], [2022, 84.4], [2024, 83.6], [2030, 84.3], [2040, 84.6], [2050, 84.3]] },
+    { name: 'Deutsche Staatsangehörige', pts: [[1970, 75.1], [1975, 74.6], [1980, 73.8], [1985, 73.3], [1990, 74.1], [1995, 74.5], [2000, 75.0], [2005, 75.1], [2010, 74.7], [2015, 73.5], [2019, 72.7], [2022, 72.1], [2024, 70.2], [2030, 68.9], [2040, 66.7], [2050, 64.6]] },
+  ],
+  (v) => `${localeNum(v, 0)}`,
+  {
+    /** Latest measured German-citizen count (2024, millions), for the headline. */
+    deLatest: 70.2,
+    /** Flags the 48 resampled points that fall in the projection era. */
+    mask: Array.from({ length: 48 }, (_, i) => {
+      const [y0, y1] = DE_NATIONALITY_SPAN;
+      return y0 + ((y1 - y0) * i) / 47 >= DE_NATIONALITY_MASK_FROM;
+    }),
+  },
 );
 
 // Share of non-German suspects in the police crime statistics (BKA PKS),
@@ -575,18 +656,26 @@ export const DE_TVBZ_AGE_COMPARE = (() => {
 })();
 
 // Germany's tax-and-contribution ratio: taxes plus compulsory social
-// security contributions as a share of GDP (OECD Revenue Statistics,
-// "tax-to-GDP", rounded). Climbed from ~32% in the 1960s to a record
-// ~39% in the early 2020s. Pre-1990 is West Germany.
+// security contributions as a share of GDP. From 1965 OECD Revenue
+// Statistics ("tax-to-GDP", rounded); before that rounded estimates from
+// the historical fiscal statistics (Statistisches Reichsamt / Bundesbank
+// literature): ~10% in the Kaiserreich, roughly doubled by the 1920
+// Erzberger reform that centralized income tax at the Reich level, ~30%
+// under NS rearmament. The two world wars themselves are interpolated —
+// war finance ran through debt and inflation, not regular taxation, so a
+// quota for those years is not meaningful. Pre-1990 is Reich territory,
+// then West Germany.
 export const DE_TAX_QUOTA_PANEL: TrendSeries = trend(
   [
+    [1900, 10], [1913, 12], [1919, 15], [1925, 22], [1930, 24],
+    [1933, 23], [1938, 30], [1950, 30], [1955, 31], [1960, 32],
     [1965, 31.6], [1970, 31.5], [1975, 34.3], [1980, 36.4], [1985, 36.1],
     [1990, 34.8], [1995, 36.2], [2000, 36.2], [2005, 33.9], [2010, 34.9],
     [2015, 36.8], [2018, 38.5], [2019, 38.6], [2020, 38.0], [2021, 39.3],
     [2022, 39.3], [2023, 37.4],
   ],
   (v) => `${localePct(v, 1)}`,
-  ['1965', '1985', '2005', 'heute'],
+  ['1900', '1941', '1982', 'heute'],
 );
 
 // German household electricity price, euro cents per kWh incl. taxes and
@@ -641,6 +730,26 @@ export const DE_STATE_QUOTA_PANEL: TrendSeries = trend(
   ],
   (v) => `${localePct(v, 1)}`,
   ['1880', '1930', '1975', 'heute'],
+);
+
+// Public-sector employment as a share of all employed persons. From 1991
+// Destatis "Personal des öffentlichen Dienstes" (incl. soldiers) over total
+// employment; before that rounded literature estimates for the Reich / West
+// Germany, INCLUDING the state railway and post — both were government
+// agencies until the mid-1990s, which is exactly why the share collapses
+// after the 1991 reunification peak (~17%): Bahn, Post and Telekom left the
+// statistic through privatization, not through shrinking headcount. War
+// years interpolated. Today's ~12% is moderate by OECD standards (France
+// ~21%, Scandinavia ~30%).
+export const DE_PUBLIC_EMPLOYMENT_PANEL: TrendSeries = trend(
+  [
+    [1900, 5.5], [1913, 6], [1925, 8], [1933, 9], [1938, 10],
+    [1950, 9], [1960, 11], [1970, 13.5], [1980, 16], [1989, 16.5],
+    [1991, 17.4], [1995, 14.1], [2000, 12.3], [2005, 11.3], [2010, 11.2],
+    [2015, 10.8], [2020, 10.9], [2024, 11.7],
+  ],
+  (v) => `${localePct(v, 1)}`,
+  ['1900', '1941', '1982', 'heute'],
 );
 
 // Germany's old-age dependency ratio: people 65+ per 100 of working age
@@ -1512,4 +1621,444 @@ export const SMARTPHONE_PANEL: TrendSeries = trend(
   ],
   (v) => `${localeNum(v / 1e9, 1)} ${tr('Mrd')}`,
   ['2007', '2013', '2019', 'heute'],
+);
+
+/** "10²⁵"-style power-of-ten label for the log-axis compute panel. */
+export function pow10Label(exp: number): string {
+  const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹';
+  const digits = [...String(Math.round(exp))].map((d) => SUP[Number(d)]).join('');
+  return `10${digits}`;
+}
+
+// Training compute of frontier AI models, log10(FLOP) — Epoch AI estimates
+// for the well-known milestones (AlexNet 4.7e17 → GPT-2 1.5e21 → GPT-3
+// 3.1e23 → GPT-4 2.1e25 → ~5e26 for the biggest 2025 runs). Kept in log
+// space so the ~4-5x/year exponential reads as the straight line it really
+// is; AlphaGo-style RL outliers are skipped — this is the LLM lineage.
+export const AI_COMPUTE_PANEL: TrendSeries = trend(
+  [
+    [2012, 17.7], [2018, 20.0], [2019, 21.2], [2020, 23.5],
+    [2022, 24.4], [2023, 25.3], [2024, 25.6], [2025, 26.7],
+  ],
+  pow10Label,
+  ['2012', '2017', '2021', 'heute'],
+);
+
+// Global data-centre electricity use, TWh/year (IEA "Energy and AI", 2025).
+// ~415 TWh in 2024 — around 1.5% of world electricity — with the IEA base
+// case near-doubling to ~945 TWh by 2030 as AI accelerators dominate new
+// capacity. Values from 2025 on are that projection, not measurements.
+export const DATACENTER_POWER_PANEL: TrendSeries = trend(
+  [
+    [2015, 200], [2018, 250], [2020, 290], [2022, 340],
+    [2024, 415], [2027, 650], [2030, 945],
+  ],
+  (v) => `${localeNum(v, 0)}`,
+  ['2015', '2020', '2025', '2030'],
+);
+
+// ChatGPT active users, rounded OpenAI milestones. 100M users two months
+// after launch made it the fastest-adopted consumer product to date; early
+// anchors are monthly actives, from 2024 on OpenAI reports weekly actives.
+export const CHATGPT_USERS_PANEL: TrendSeries = trend(
+  [
+    [2022, 5e6], [2023, 100e6], [2024, 300e6], [2025, 800e6],
+  ],
+  (v) => `${localeNum(v / 1e6, 0)} ${tr('Mio')}`,
+  ['2022', '2023', '2024', 'heute'],
+);
+
+// Share of Germans rejecting gender-neutral language forms (Genderstern,
+// Binnen-I, spoken glottal stop) — infratest dimap for WELT AM SONNTAG and
+// successor polls, rounded. The rejection GREW as the practice spread from
+// universities into broadcasters and public agencies: 56% against in 2020,
+// around three quarters by 2024 — majorities across all party electorates.
+export const GENDER_REJECT_PANEL: TrendSeries = trend(
+  [
+    [2020, 56], [2021, 65], [2023, 71], [2024, 74],
+  ],
+  (v) => `${localePct(v, 0)}`,
+  ['2020', '2021', '2023', 'heute'],
+);
+
+// Share of US 18–29-year-olds identifying as "liberal", women vs. men —
+// Gallup aggregates, rounded multi-year averages. The lines run parallel for
+// a decade, then split after ~2014: young women climb from ~28% to ~40%
+// while young men stay flat around 25%. This is the much-cited ideological
+// gender gap (FT/Burn-Murdoch 2024) — same generation, diverging politics.
+export const GENDER_IDEOLOGY_COMPARE = compareSeries(
+  [
+    { name: 'Frauen', pts: [[2001, 28], [2005, 28], [2009, 31], [2013, 32], [2016, 34], [2018, 38], [2021, 41], [2024, 40]] },
+    { name: 'Männer', pts: [[2001, 25], [2005, 25], [2009, 27], [2013, 26], [2016, 27], [2018, 26], [2021, 26], [2024, 25]] },
+  ],
+  (v) => `${localePct(v, 0)}`,
+  /** Latest women-minus-men gap in points, for the headline. */
+  { gapLatest: 15 },
+);
+
+// Countries where legal gender can be changed by self-declaration (self-ID,
+// no medical gatekeeping), cumulative. Argentina pioneered it in 2012;
+// Denmark was Europe's first in 2014; Spain and Finland followed 2023 and
+// Germany's Selbstbestimmungsgesetz took effect Nov 2024. Counting varies —
+// some laws cover only adults, some include minors — hence rounded.
+export const SELF_ID_PANEL: TrendSeries = trend(
+  [
+    [2012, 1], [2014, 2], [2015, 4], [2016, 5], [2017, 6],
+    [2018, 9], [2019, 11], [2022, 13], [2023, 16], [2024, 18], [2025, 20],
+  ],
+  (v) => `${Math.round(v)}`,
+  ['2012', '2016', '2021', 'heute'],
+);
+
+// Referrals of minors to England's only youth gender clinic (GIDS at the
+// Tavistock), per year — from under 100 in 2009/10 to over 5,000 in 2021/22
+// per the Cass Review, a 50x rise in 12 years concentrated among teenage
+// girls. The review found the evidence base for puberty blockers "remarkably
+// weak"; GIDS was ordered closed and shut in 2024.
+export const TRANS_YOUTH_PANEL: TrendSeries = trend(
+  [
+    [2010, 97], [2012, 210], [2015, 697], [2016, 1419],
+    [2018, 2519], [2020, 2728], [2022, 5000],
+  ],
+  (v) => `${localeNum(v, 0)}`,
+  ['2010', '2014', '2018', '2022'],
+);
+
+// Countries whose authorities deploy facial recognition. Hard anchors:
+// Carnegie AI Global Surveillance Index 2019 (64 of 176 states) and the
+// Surfshark/Comparitech surveys 2021 (~100 of 194 in use or approved);
+// the other years are interpolated/estimated around those studies.
+export const FACE_RECOGNITION_PANEL: TrendSeries = trend(
+  [
+    [2015, 25], [2017, 45], [2019, 64], [2021, 98], [2023, 115], [2026, 130],
+  ],
+  (v) => `${Math.round(v)}`,
+  ['2015', '2019', '2022', 'heute'],
+);
+
+// Anonymous over-the-counter precious-metal purchases in Germany
+// ("Tafelgeschäft"): the cash threshold above which the dealer must identify
+// the buyer under the anti-money-laundering act (GwG). Two legislative cuts —
+// €15,000 → €10,000 (GwG amendment, June 2017) → €2,000 (Jan 2020) — so the
+// series is a staircase; adjacent anchor years keep the steps sharp.
+export const GOLD_ANON_PANEL: TrendSeries = trend(
+  [
+    [2010, 15_000], [2016, 15_000], [2017, 10_000], [2019, 10_000],
+    [2020, 2_000], [2026, 2_000],
+  ],
+  (v) => `${localeNum(v, 0)} €`,
+  ['2010', '2015', '2020', 'heute'],
+);
+
+// ---------------------------------------------------------------------------
+// Wealth concentration — the two-century U-curve of the top 1% share of net
+// personal wealth. Belle Époque rentier societies where the top percentile
+// owned half to two-thirds of everything, the 1914–1980 compression (wars,
+// inflation, progressive taxation), and the re-concentration since the 1980s
+// — steepest in the US, which is back near its 1929 peak. Rounded anchors
+// from Piketty's long-run series / the World Inequality Database.
+export const WEALTH_TOP1_COMPARE = compareSeries(
+  [
+    { name: 'UK', pts: [[1810, 55], [1850, 59], [1880, 65], [1910, 69], [1930, 62], [1950, 47], [1970, 30], [1985, 18], [2000, 20], [2010, 20], [2022, 21]] },
+    { name: 'Frankreich', pts: [[1810, 45], [1850, 48], [1880, 53], [1910, 60], [1930, 47], [1950, 31], [1970, 22], [1985, 17], [2000, 22], [2010, 24], [2022, 27]] },
+    { name: 'USA', pts: [[1810, 25], [1850, 29], [1880, 35], [1910, 45], [1930, 48], [1950, 30], [1970, 28], [1985, 25], [2000, 33], [2010, 34], [2022, 35]] },
+  ],
+  (v) => localePct(v, 0),
+  /** Latest US share, for the headline. */
+  { usLatest: 35 },
+);
+
+// ---------------------------------------------------------------------------
+// Market panels — the MÄRKTE cluster. Yearly averages (spot prices, yields,
+// volatility) unless noted; the intraday extremes ride as era markers on the
+// cards instead of distorting the annual curve.
+
+/** Brent crude, USD/barrel, yearly average (pre-1976 Arabian Light posted). */
+export const OIL_PRICE_PANEL: TrendSeries = trend(
+  [
+    [1970, 1.8], [1973, 3.3], [1974, 11], [1979, 31], [1980, 36], [1986, 14],
+    [1990, 24], [1998, 13], [2000, 29], [2005, 55], [2008, 97], [2009, 62],
+    [2011, 111], [2014, 99], [2016, 44], [2018, 71], [2020, 42], [2022, 99],
+    [2023, 82], [2024, 80], [2025, 69],
+  ],
+  (v) => `$${localeNum(v, 0)}`,
+  ['1970', '1988', '2007', 'heute'],
+  40,
+);
+
+/** CBOE VIX, yearly average of daily closes. */
+export const VIX_PANEL: TrendSeries = trend(
+  [
+    [1990, 23.1], [1993, 12.7], [1995, 12.4], [1998, 25.6], [2000, 23.3],
+    [2002, 27.3], [2005, 12.8], [2007, 17.5], [2008, 32.7], [2009, 31.5],
+    [2012, 17.8], [2014, 14.2], [2017, 11.1], [2018, 16.6], [2019, 15.4],
+    [2020, 29.3], [2021, 19.7], [2022, 25.6], [2023, 16.9], [2024, 15.5],
+    [2025, 19.0],
+  ],
+  (v) => localeNum(v, 0),
+  ['1990', '2002', '2013', 'heute'],
+  40,
+);
+
+/** Rheinmetall share price, €, year-end close (rounded). */
+export const RHEINMETALL_PANEL: TrendSeries = trend(
+  [
+    [2014, 35], [2015, 62], [2016, 64], [2017, 106], [2018, 77], [2019, 102],
+    [2020, 87], [2021, 83], [2022, 186], [2023, 287], [2024, 615], [2025, 1_600],
+  ],
+  (v) => `${localeNum(v, 0)} €`,
+  ['2014', '2018', '2022', 'heute'],
+);
+
+/** Gold, USD/troy ounce, yearly average; the last anchor is the late-2025 level. */
+export const GOLD_PRICE_PANEL: TrendSeries = trend(
+  [
+    [1970, 36], [1975, 161], [1980, 613], [1985, 317], [1990, 383], [1999, 279],
+    [2005, 444], [2011, 1_572], [2015, 1_160], [2020, 1_770], [2022, 1_801],
+    [2023, 1_943], [2024, 2_389], [2025, 4_000],
+  ],
+  (v) => `$${localeNum(v, 0)}`,
+  ['1970', '1988', '2007', 'heute'],
+  40,
+);
+
+/** 10-year US Treasury constant-maturity yield, %, yearly average. */
+export const US_10Y_PANEL: TrendSeries = trend(
+  [
+    [1962, 3.9], [1970, 7.4], [1975, 8.0], [1981, 13.9], [1985, 10.6],
+    [1990, 8.6], [1995, 6.6], [2000, 6.0], [2007, 4.6], [2009, 3.3],
+    [2012, 1.8], [2016, 1.8], [2019, 2.1], [2020, 0.9], [2022, 3.0],
+    [2023, 4.0], [2024, 4.2], [2025, 4.4],
+  ],
+  (v) => localePct(v, 0),
+  ['1962', '1983', '2004', 'heute'],
+  40,
+);
+
+/** FINRA margin debt (debit balances in customers' margin accounts), USD, year-end.
+    Ticks stay in billions throughout — the axis tops out at $1,250 Mrd, which a
+    1-decimal Bio. format would misround to "1,3 Bio.". */
+export const MARGIN_DEBT_PANEL: TrendSeries = trend(
+  [
+    [1997, 113e9], [2000, 199e9], [2002, 134e9], [2007, 322e9], [2009, 231e9],
+    [2013, 445e9], [2015, 487e9], [2018, 554e9], [2020, 778e9], [2021, 910e9],
+    [2022, 603e9], [2023, 701e9], [2024, 899e9], [2025, 1.1e12],
+  ],
+  (v) => `$${localeNum(v / 1e9, 0)} ${tr('Mrd')}`,
+  ['1997', '2006', '2016', 'heute'],
+  40,
+);
+
+// ---------------------------------------------------------------------------
+// Agenda-2030 scorecard cluster: bundled panels behind the SDG/UN-adjacent
+// cards (WHO funding, central-bank gold, farms, PISA, trust, births…).
+
+/** Central-bank net gold purchases, tonnes per year (World Gold Council,
+    Gold Demand Trends). Net sellers through the 2000s, buyers since 2010,
+    then the 1,000+ t surge after Russia's reserves were frozen in 2022. */
+export const CB_GOLD_PANEL: TrendSeries = trend(
+  [
+    [2000, -464], [2003, -617], [2005, -663], [2007, -484], [2008, -235],
+    [2009, -34], [2010, 77], [2011, 481], [2013, 629], [2015, 580],
+    [2016, 395], [2018, 656], [2019, 605], [2020, 255], [2021, 450],
+    [2022, 1082], [2023, 1037], [2024, 1045], [2025, 863],
+  ],
+  (v) => `${localeNum(v, 0)} t`,
+  ['2000', '2008', '2017', 'heute'],
+  40,
+);
+
+/** Farms in Germany, thousands (BMEL/Destatis; West Germany before 1990,
+    census thresholds changed several times — treat as magnitudes). */
+export const DE_FARMS_PANEL: TrendSeries = trend(
+  [
+    [1950, 1647], [1960, 1385], [1970, 1083], [1980, 797], [1990, 630],
+    [1995, 588], [2000, 472], [2005, 390], [2010, 299], [2015, 281],
+    [2020, 263], [2024, 255],
+  ],
+  (v) => `${localeNum(v, 0)}k`,
+  ['1950', '1975', '2000', 'heute'],
+  40,
+);
+
+/** PISA Germany, mean scores (OECD). Math peaked 2012, then the 2022 crash
+    to an all-time low; reading follows the same arc. */
+export const PISA_COMPARE = compareSeries(
+  [
+    {
+      name: 'Mathematik',
+      pts: [[2003, 503], [2006, 504], [2009, 513], [2012, 514], [2015, 506], [2018, 500], [2022, 475]],
+    },
+    {
+      name: 'Lesen',
+      pts: [[2000, 484], [2003, 491], [2006, 495], [2009, 497], [2012, 508], [2015, 509], [2018, 498], [2022, 480]],
+    },
+  ],
+  (v) => localeNum(v, 0),
+  { mathLatest: 475 },
+);
+
+/** Share trusting "most news most of the time", Germany (Reuters Institute
+    Digital News Report). Long slide from 60 % with one Corona bump. */
+export const MEDIA_TRUST_PANEL: TrendSeries = trend(
+  [
+    [2015, 60], [2016, 52], [2017, 50], [2018, 50], [2019, 47], [2020, 45],
+    [2021, 53], [2022, 50], [2023, 43], [2024, 43], [2025, 45],
+  ],
+  (v) => `${localePct(v, 0)}`,
+  ['2015', '2018', '2022', 'heute'],
+);
+
+/** Allensbach long-run series: share of Germans saying you can voice your
+    political opinion freely. 2023 marked the lowest value since 1953. */
+export const FREE_SPEECH_PANEL: TrendSeries = trend(
+  [
+    [1990, 78], [1996, 71], [2003, 78], [2008, 72], [2014, 68],
+    [2017, 64], [2019, 59], [2021, 45], [2023, 40],
+  ],
+  (v) => `${localePct(v, 0)}`,
+  ['1990', '2001', '2012', 'heute'],
+);
+
+/** Countries with a decided or announced combustion-engine sales ban,
+    cumulative (ICCT trackers / national announcements, rough count). */
+export const ICE_BAN_PANEL: TrendSeries = trend(
+  [
+    [2016, 2], [2017, 5], [2019, 9], [2020, 14], [2021, 35],
+    [2023, 45], [2025, 48],
+  ],
+  (v) => `${Math.round(v)}`,
+  ['2016', '2019', '2022', 'heute'],
+);
+
+/** Total fertility rate, Germany (Destatis). Recovery to 1.59 by 2016, then
+    the post-2021 collapse to the postwar low of 1.32 (2025). */
+export const DE_TFR_PANEL: TrendSeries = trend(
+  [
+    [1990, 1.45], [1995, 1.25], [2000, 1.38], [2006, 1.33], [2010, 1.39],
+    [2016, 1.59], [2021, 1.58], [2022, 1.46], [2023, 1.38], [2024, 1.35],
+    [2025, 1.32],
+  ],
+  (v) => localeNum(v, 2),
+  ['1990', '2002', '2013', 'heute'],
+  40,
+);
+
+// ---------------------------------------------------------------------------
+// Collapse-watch panels — valuation, sovereign debt stress, consumer credit
+// and de-dollarisation. Yearly values, rounded anchors from the cited sources;
+// the intraday/monthly extremes ride as era markers on the cards.
+
+/** "Buffett indicator": US total market cap (Wilshire 5000) in % of GDP. */
+export const BUFFETT_PANEL: TrendSeries = trend(
+  [
+    [1975, 40], [1982, 35], [1990, 60], [1995, 85], [2000, 140], [2002, 95],
+    [2007, 105], [2009, 60], [2015, 120], [2018, 140], [2020, 180],
+    [2021, 200], [2022, 155], [2023, 170], [2024, 200], [2025, 220],
+  ],
+  (v) => localePct(v, 0),
+  ['1975', '1992', '2008', 'heute'],
+  40,
+);
+
+/** Shiller CAPE (cyclically adjusted P/E) of the S&P 500, yearly averages. */
+export const CAPE_PANEL: TrendSeries = trend(
+  [
+    [1881, 18], [1901, 25], [1921, 5], [1929, 33], [1932, 6], [1937, 22],
+    [1949, 10], [1966, 24], [1982, 7], [1990, 17], [2000, 44], [2003, 23],
+    [2007, 27], [2009, 13], [2015, 26], [2018, 33], [2020, 27], [2021, 38],
+    [2022, 28], [2024, 37], [2025, 40],
+  ],
+  (v) => localeNum(v, 0),
+  ['1881', '1929', '1977', 'heute'],
+  56,
+);
+
+/** Index weight of the seven largest stocks in the S&P 500, %. */
+export const MAG7_PANEL: TrendSeries = trend(
+  [
+    [2015, 12], [2017, 15], [2018, 16], [2020, 24], [2021, 27], [2022, 20],
+    [2023, 28], [2024, 33], [2025, 37],
+  ],
+  (v) => localePct(v, 0),
+  ['2015', '2018', '2022', 'heute'],
+);
+
+/** Net federal interest outlays in % of federal receipts (fiscal years). */
+export const US_INTEREST_TAX_PANEL: TrendSeries = trend(
+  [
+    [1962, 9], [1970, 9.5], [1980, 12.5], [1985, 18.5], [1991, 18.5],
+    [1997, 15.5], [2001, 10.3], [2007, 9.4], [2012, 9], [2015, 6.8],
+    [2020, 10], [2021, 8.7], [2023, 14.5], [2024, 18], [2025, 20],
+  ],
+  (v) => localePct(v, 0),
+  ['1962', '1983', '2004', 'heute'],
+  40,
+);
+
+/** US federal budget deficit in % of GDP (deficit positive, surplus negative). */
+export const US_DEFICIT_PANEL: TrendSeries = trend(
+  [
+    [1970, 0.3], [1975, 3.3], [1983, 5.9], [1992, 4.5], [1998, -0.8],
+    [2000, -2.3], [2004, 3.4], [2007, 1.1], [2009, 9.8], [2015, 2.4],
+    [2019, 4.6], [2020, 14.9], [2021, 12.3], [2022, 5.4], [2023, 6.2],
+    [2024, 6.4], [2025, 6.5],
+  ],
+  (v) => localePct(v, 0),
+  ['1970', '1988', '2007', 'heute'],
+  40,
+);
+
+/** US household credit-card balances, USD, year-end (NY Fed). */
+export const US_CARD_DEBT_PANEL: TrendSeries = trend(
+  [
+    [1999, 410e9], [2003, 690e9], [2008, 870e9], [2013, 660e9], [2016, 780e9],
+    [2019, 930e9], [2021, 860e9], [2023, 1_130e9], [2024, 1_210e9], [2025, 1_230e9],
+  ],
+  (v) => `$${localeNum(v / 1e9, 0)} ${tr('Mrd')}`,
+  ['1999', '2008', '2016', 'heute'],
+);
+
+/** Subprime auto loans 60+ days delinquent, % (Fitch index, yearly). */
+export const AUTO_DELINQ_PANEL: TrendSeries = trend(
+  [
+    [1996, 3.0], [2000, 4.0], [2006, 3.5], [2009, 5.0], [2013, 4.2],
+    [2016, 5.0], [2019, 5.8], [2021, 4.3], [2023, 6.1], [2024, 6.4], [2025, 6.6],
+  ],
+  (v) => localePct(v, 1),
+  ['1996', '2006', '2015', 'heute'],
+);
+
+/** US office vacancy rate, national, %, year-end. */
+export const OFFICE_VACANCY_PANEL: TrendSeries = trend(
+  [
+    [2000, 8], [2003, 16.5], [2007, 12.5], [2010, 17.5], [2015, 16],
+    [2019, 16.8], [2021, 18.4], [2023, 19.6], [2024, 20.1], [2025, 20.7],
+  ],
+  (v) => localePct(v, 0),
+  ['2000', '2008', '2017', 'heute'],
+);
+
+/** US dollar share of allocated global FX reserves, % (IMF COFER; early years
+    from historical estimates — the late-80s trough is real, not noise). */
+export const DOLLAR_RESERVES_PANEL: TrendSeries = trend(
+  [
+    [1965, 73], [1977, 79], [1985, 55], [1991, 46], [1995, 59], [2001, 72],
+    [2005, 67], [2010, 62], [2015, 66], [2020, 59], [2022, 58.5], [2024, 57.8],
+    [2025, 56],
+  ],
+  (v) => localePct(v, 0),
+  ['1965', '1985', '2005', 'heute'],
+  40,
+);
+
+/** Share of listed firms whose operating profit doesn't cover interest
+    payments ("zombies"), % — BIS 14-economy sample, rounded. */
+export const ZOMBIE_PANEL: TrendSeries = trend(
+  [
+    [1990, 2], [1995, 4], [2000, 6], [2005, 7.5], [2008, 10], [2012, 10.5],
+    [2017, 12], [2020, 16], [2022, 13.5], [2024, 14.5], [2025, 15],
+  ],
+  (v) => localePct(v, 0),
+  ['1990', '2002', '2013', 'heute'],
 );

@@ -7,7 +7,9 @@ export const SURFACE = '#12151c';
 export const SURFACE_DEEP = '#0d1016';
 
 export const INK = '#ffffff';
-export const INK_SECONDARY = '#c3c2b7';
+// Brightened from #c3c2b7 on user request — axis ticks and eyebrow titles
+// were hard to read; still warm-tinted so it stays below pure-white INK.
+export const INK_SECONDARY = '#dedcd3';
 export const MUTED = '#898781';
 export const GRID = '#242a35';
 export const BASELINE = '#3a4150';

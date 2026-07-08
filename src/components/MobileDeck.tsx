@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { ALL_DASHBOARDS, TAGS } from '../dashboards';
+import { ALL_DASHBOARDS, DASHBOARDS_BY_ID, NEWEST, TAGS } from '../dashboards';
+import type { Dashboard } from '../dashboards';
+import { getFavorites } from '../favorites';
+import { useFavorites } from '../hooks/useFavorites';
 import { refreshLiveData } from '../data/refresh';
-import { shareCard } from '../exportCard';
+import { canShareFiles, shareCard } from '../exportCard';
 import { useDeviceTilt } from '../hooks/useDeviceTilt';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTagFilter } from '../hooks/useTagFilter';
@@ -149,7 +152,7 @@ const RefreshPill = styled.div`
 // on small phones.
 const MenuButton = styled.button`
   position: fixed;
-  left: 16px;
+  right: 16px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
   z-index: 12;
   width: 42px;
@@ -165,7 +168,7 @@ const MenuButton = styled.button`
 // Small glass action menu unfolding above the context button.
 const ActionMenu = styled.div`
   position: fixed;
-  left: 16px;
+  right: 16px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 68px);
   z-index: 13;
   display: flex;
@@ -318,10 +321,25 @@ export function MobileDeck() {
   // view, the filter persists via URL param and localStorage.
   const [tag, setTag] = useTagFilter(TAGS[0].id);
 
-  const dashboards = useMemo(
-    () => ALL_DASHBOARDS.filter((d) => d.tags?.includes(tag)),
-    [tag],
-  );
+  // FAVORITEN is a snapshot taken when the chip is picked: un-starring while
+  // browsing must not yank cards out from under the swipe. NEU shows the whole
+  // pool newest-first; every other chip filters the clustered deck as usual.
+  const dashboards = useMemo(() => {
+    if (tag === 'favoriten') {
+      return getFavorites()
+        .map((id) => DASHBOARDS_BY_ID[id])
+        .filter((d): d is Dashboard => d !== undefined);
+    }
+    return tag === 'neu' ? NEWEST : ALL_DASHBOARDS.filter((d) => d.tags?.includes(tag));
+  }, [tag]);
+
+  // The FAVORITEN chip only exists once something is starred; if the active
+  // filter empties out (last favorite removed), fall back to the default theme.
+  const favoriteIds = useFavorites();
+  const visibleTags = TAGS.filter((t) => t.id !== 'favoriten' || favoriteIds.length > 0);
+  useEffect(() => {
+    if (tag === 'favoriten' && favoriteIds.length === 0) setTag(TAGS[0].id);
+  }, [tag, favoriteIds, setTag]);
 
   const reducedMotion = useReducedMotion();
   const tiltRef = useRef<HTMLDivElement>(null);
@@ -455,7 +473,6 @@ export function MobileDeck() {
           {currentLabel}
           <span aria-hidden>▾</span>
         </FilterButton>
-        <Dots count={dashboards.length} active={Math.min(active, dashboards.length - 1)} />
       </TopBar>
 
       <TiltFrame>
@@ -465,6 +482,14 @@ export function MobileDeck() {
       </TiltFrame>
 
       {refreshing && <RefreshPill>{trans('Daten werden aktualisiert …')}</RefreshPill>}
+
+      {/* The one-time swipe hint borrows the pager's spot: until the first
+          swipe it IS the pagination affordance, then the dots take over. */}
+      {swiped && (
+        <DotsDock>
+          <Dots count={dashboards.length} active={Math.min(active, dashboards.length - 1)} />
+        </DotsDock>
+      )}
 
       {!swiped && dashboards.length > 1 && <Hint $gone={false}>{trans('← wischen zum Blättern →')}</Hint>}
 
@@ -488,7 +513,7 @@ export function MobileDeck() {
                 void shareCard(current);
               }}
             >
-              {trans('Teilen')}
+              {trans(canShareFiles() ? 'Teilen' : 'Bild speichern')}
             </ActionItem>
           )}
           {source && (
@@ -535,7 +560,7 @@ export function MobileDeck() {
           <Backdrop onClick={() => setMenuOpen(false)} />
           <Sheet>
             <Handle />
-            {TAGS.map((t) => (
+            {visibleTags.map((t) => (
               <Option key={t.id} $active={tag === t.id} onClick={() => pick(t.id)}>
                 {trans(t.label)}
               </Option>

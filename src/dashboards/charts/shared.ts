@@ -70,11 +70,20 @@ export function xAxisLabels(f: Frame, labels: string[], x0: number, x1: number, 
 /** Muted source/attribution line pinned to the panel's bottom-left. */
 export function drawSource(f: Frame, source: string): void {
   if (f.compact) return; // mobile shows the source behind the info button
-  const { ctx, u, h } = f;
+  const { ctx, u, h, w } = f;
   ctx.fillStyle = MUTED;
   ctx.font = `400 ${13 * u}px ${FONT}`;
   ctx.textAlign = 'left';
-  ctx.fillText(tr(source), 36 * u, h - 22 * u);
+  // Long captions (the export can fall back to a card's full caveat text) are
+  // ellipsized to the panel width instead of running off the edge.
+  const max = w - 72 * u;
+  let text = tr(source);
+  if (ctx.measureText(text).width > max) {
+    while (text.length > 1 && ctx.measureText(`${text}…`).width > max) text = text.slice(0, -1);
+    text = `${text.trimEnd()}…`;
+  }
+  ctx.fillText(text, 36 * u, h - 22 * u);
+  f.sourceDrawn = true;
 }
 
 /**
@@ -106,6 +115,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
   Brazil: '🇧🇷', Mexico: '🇲🇽',
   Madagaskar: '🇲🇬', Malawi: '🇲🇼', 'Zentralafr. Republik': '🇨🇫', Burundi: '🇧🇮',
   Mosambik: '🇲🇿', 'DR Kongo': '🇨🇩', Sambia: '🇿🇲',
+  VAE: '🇦🇪', Mali: '🇲🇱', Niger: '🇳🇪', Algerien: '🇩🇿', Indonesien: '🇮🇩',
 };
 
 const HAS_FLAG = /\p{Regional_Indicator}/u;
