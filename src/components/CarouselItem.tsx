@@ -223,6 +223,17 @@ export function CarouselItem({
     // dead matte black.
     const glassFade = 0.15 + 0.85 * eased;
 
+    // Back panels: darker, desaturated and slightly zoomed out -> depth.
+    // Minimum opacity kept high enough that the back sides stay recognizable;
+    // the star term lifts the front-most card to full brightness so it reads
+    // as the stage's focal point against the deeper-dimmed rest. Computed
+    // before the entrance branch so a card flying toward a back slot arrives
+    // already dimmed and translucent, instead of landing fully opaque (a
+    // fogged black slab) and only fading to its depth look afterwards.
+    const targetOpacity = 0.38 + eased * 0.49 + star * 0.13;
+    const targetGray = (1 - eased) * 0.7;
+    const targetZoom = 1 + (1 - eased) * 0.15;
+
     // Glass LOD: clearcoat only where its glare reads (front of the ring).
     if (glass) updateGlassLod(glass, eased);
     const glassMat = glass?.material as MeshPhysicalMaterial | undefined;
@@ -268,9 +279,9 @@ export function CarouselItem({
       group.rotation.y = target.rotY;
       const s = (0.5 + 0.5 * e) * focus;
       group.scale.set(s, s, 1);
-      mat.opacity = e;
-      mat.grayscale = 0;
-      mat.zoom = 1;
+      mat.opacity = e * targetOpacity;
+      mat.grayscale = targetGray;
+      mat.zoom = targetZoom;
       // Skip the draw calls entirely while the stagger delay holds the panel
       // fully transparent at the center.
       img.visible = e > 0.001;
@@ -337,13 +348,6 @@ export function CarouselItem({
     group.position.y += (target.y + floatY - ny * sink - group.position.y) * k;
     group.position.z += (target.z + floatZ - nz * sink - group.position.z) * k;
 
-    // Back panels: darker, desaturated and slightly zoomed out -> depth.
-    // Minimum opacity kept high enough that the back sides stay recognizable;
-    // the star term lifts the front-most card to full brightness so it reads
-    // as the stage's focal point against the deeper-dimmed rest.
-    const targetOpacity = 0.38 + eased * 0.49 + star * 0.13;
-    const targetGray = (1 - eased) * 0.7;
-    const targetZoom = 1 + (1 - eased) * 0.15;
     // Pressed glass catches a touch more light, selling the contact.
     const targetGlass = (GLASS_OPACITY + pressed * 0.08) * glassFade;
     if (hidden) {
