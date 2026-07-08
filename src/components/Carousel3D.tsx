@@ -15,6 +15,7 @@ import type { MeshBasicMaterial } from 'three';
 import { CameraRig } from './CameraRig';
 import { CarouselItem } from './CarouselItem';
 import { PerfProbe } from './PerfHud';
+import { Afterglow } from './Afterglow';
 import { Aurora } from './Aurora';
 import { Dust } from './Dust';
 import { HeroCard, type HeroStart } from './HeroCard';
@@ -216,6 +217,14 @@ function Ring({
     [layout, dashboards.length, radius],
   );
 
+  // Supernova burst: a small random jitter per panel instead of the old
+  // orderly per-index spiral — all panels erupt from the center almost at
+  // once, like debris, while the ring's assemble swirl adds the vortex.
+  const entranceJitter = useMemo(
+    () => dashboards.map(() => Math.random() * 0.22),
+    [dashboards],
+  );
+
   // While a hero is open, keep the ring centred on it: an arrow-key switch
   // changes selectedId, and the ring eases the incoming panel's slot to the
   // front (visible turning behind the hero, and centred again on close).
@@ -252,7 +261,7 @@ function Ring({
             hidden={dashboard.id === selectedId || dashboard.id === outgoingId}
             onSelect={onSelect}
             wasDrag={wasDrag}
-            entranceDelay={i * 0.06}
+            entranceDelay={entranceJitter[i]}
             interactive={interactive}
             poses={poses}
           />
@@ -513,6 +522,7 @@ export function Carousel3D() {
       />
       <Aurora />
       <Dust radius={radius} count={isMobile ? 120 : 320} />
+      <Afterglow radius={radius} />
 
       <Ring
         onSelect={open}
