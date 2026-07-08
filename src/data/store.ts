@@ -60,6 +60,12 @@ export interface LiveData {
   };
   /** Country outlines for the map panels, keyed by ISO3 country code. */
   worldMap?: { id: string; rings: number[][][] }[];
+  /** Current 2-m temperature per country (Open-Meteo, one anchor point each). */
+  worldTemp?: {
+    byIso: Record<string, number>;
+    /** Hottest countries right now, for the ranked list. */
+    rows: { name: string; v: number }[];
+  };
   /** Intentional homicides per 100k (World Bank, latest year per country). */
   homicide?: {
     byIso: Record<string, number>;

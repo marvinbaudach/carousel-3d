@@ -11,6 +11,7 @@ import { cached, fetchJson } from './cache';
 import { niceScale, norm, trend } from './series';
 import { CH_CENSUS, WORLD_HISTORY, debtTrend } from './bundled';
 import { emitLiveUpdate, live } from './store';
+import { TEMP_ANCHORS, hottestRows, type TempAnchor } from './climate';
 import { WORLD } from './world';
 
 const MIN = 60_000;
@@ -58,6 +59,46 @@ async function loadWeather(): Promise<void> {
   };
 }
 
+
+// ---------------------------------------------------------------------------
+// Open-Meteo — current 2-m temperature for one anchor point per country
+// (bbox centre of its largest outline ring, see data/climate.ts). Open-Meteo
+// accepts comma-separated coordinate lists; chunked so no URL gets silly.
+
+interface MeteoCurrent {
+  current: { temperature_2m: number };
+}
+
+async function loadWorldTemp(): Promise<void> {
+  const byIso = await cached('world-temp', 30 * MIN, async () => {
+    const CHUNK = 60;
+    const chunks: TempAnchor[][] = [];
+    for (let i = 0; i < TEMP_ANCHORS.length; i += CHUNK) {
+      chunks.push(TEMP_ANCHORS.slice(i, i + CHUNK));
+    }
+    const results = await Promise.all(
+      chunks.map((part) =>
+        fetchJson<MeteoCurrent | MeteoCurrent[]>(
+          'https://api.open-meteo.com/v1/forecast' +
+            `?latitude=${part.map((a) => a.lat.toFixed(2)).join(',')}` +
+            `&longitude=${part.map((a) => a.lon.toFixed(2)).join(',')}` +
+            '&current=temperature_2m',
+        ),
+      ),
+    );
+    const out: Record<string, number> = {};
+    results.forEach((res, ci) => {
+      // A single-location query returns an object, multi-location an array.
+      const list = Array.isArray(res) ? res : [res];
+      list.forEach((loc, j) => {
+        out[chunks[ci][j].iso] = loc.current.temperature_2m;
+      });
+    });
+    return out;
+  });
+
+  live.worldTemp = { byIso, rows: hottestRows(byIso) };
+}
 
 // ---------------------------------------------------------------------------
 // Wikimedia — yesterday's most-viewed English Wikipedia articles.
@@ -345,6 +386,7 @@ export interface LiveFeed {
  */
 export const LIVE_FEEDS: LiveFeed[] = [
   { code: 'ZRH', source: 'OPEN-METEO', city: 'ZÜRICH', item: '7-Tage-Prognose', load: loadWeather },
+  { code: 'ZRH', source: 'OPEN-METEO', city: 'ZÜRICH', item: 'Welt-Temperaturen', load: loadWorldTemp },
   { code: 'SFO', source: 'WIKIMEDIA', city: 'SAN FRANCISCO', item: 'Top-Artikel', load: loadWiki },
   { code: 'SFO', source: 'WIKIMEDIA', city: 'SAN FRANCISCO', item: 'Schweizer Trends', load: loadSwissTrends },
   { code: 'WAS', source: 'US TREASURY', city: 'WASHINGTON', item: 'Staatsschulden', load: loadDebt },
