@@ -12,14 +12,19 @@ let refreshing = false;
 export async function refreshLiveData(): Promise<void> {
   if (refreshing) return;
   refreshing = true;
-  clearDataCache();
-  await Promise.allSettled(
-    LIVE_FEEDS.map((feed) =>
-      feed.load().then(
-        () => emitLiveUpdate('data'),
-        (err) => console.warn(`[live-data] refresh ${feed.source} ${feed.item} failed`, err),
+  try {
+    clearDataCache();
+    await Promise.allSettled(
+      LIVE_FEEDS.map((feed) =>
+        feed.load().then(
+          () => emitLiveUpdate('data'),
+          (err) => console.warn(`[live-data] refresh ${feed.source} ${feed.item} failed`, err),
+        ),
       ),
-    ),
-  );
-  refreshing = false;
+    );
+  } finally {
+    // Never leave the guard latched — a throw would otherwise disable
+    // pull-to-refresh for the rest of the session.
+    refreshing = false;
+  }
 }

@@ -37,8 +37,13 @@ export async function fetchJson<T>(url: string): Promise<T> {
 /** Drop every cached derived dataset — a user-initiated refresh must hit the
     network, not the TTL cache. */
 export function clearDataCache(): void {
-  for (let i = localStorage.length - 1; i >= 0; i--) {
-    const k = localStorage.key(i);
-    if (k?.startsWith(PREFIX)) localStorage.removeItem(k);
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (k?.startsWith(PREFIX)) localStorage.removeItem(k);
+    }
+  } catch {
+    // Storage blocked (lockdown/private mode) — nothing was cached then, so
+    // the refresh proceeds against the network anyway; same style as cached().
   }
 }

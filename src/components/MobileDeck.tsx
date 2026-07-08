@@ -231,8 +231,12 @@ export function MobileDeck() {
   const refresh = async () => {
     if (refreshing) return;
     setRefreshing(true);
-    await refreshLiveData();
-    setRefreshing(false);
+    try {
+      await refreshLiveData();
+    } finally {
+      // Always drop the pill — a throw must not leave it stuck on screen.
+      setRefreshing(false);
+    }
   };
 
   // Guard against same-index re-fires: SwipeDeck's snap effect re-runs on

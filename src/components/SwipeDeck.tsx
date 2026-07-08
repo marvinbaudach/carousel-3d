@@ -61,7 +61,17 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh }: SwipeDeckProps) {
   const curRef = useRef<HTMLDivElement>(null);
   const prevRef = useRef<HTMLDivElement>(null);
   const nextRef = useRef<HTMLDivElement>(null);
-  const drag = useRef({ active: false, startX: 0, dx: 0, startY: 0, dy: 0, w: 1, t0: 0, detent: false });
+  const drag = useRef({
+    active: false,
+    startX: 0,
+    dx: 0,
+    startY: 0,
+    dy: 0,
+    w: 1,
+    t0: 0,
+    detent: false,
+    axis: null as null | 'x' | 'y',
+  });
   const animating = useRef(false);
   const reducedMotion = useReducedMotion();
 
@@ -162,6 +172,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh }: SwipeDeckProps) {
       w: e.currentTarget.clientWidth || 1,
       t0: performance.now(),
       detent: false,
+      axis: null,
     };
     e.currentTarget.setPointerCapture(e.pointerId);
     setCur(CENTER, 'none');
@@ -172,10 +183,16 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh }: SwipeDeckProps) {
     if (!d.active) return;
     d.dx = e.clientX - d.startX;
     d.dy = e.clientY - d.startY;
+    // Axis lock: classified once past a 12px dead zone so the card never
+    // flips modes mid-gesture (a diagonal drag would otherwise jitter between
+    // the pull and throw transforms every frame).
+    if (d.axis === null && Math.hypot(d.dx, d.dy) > 12) {
+      d.axis = d.dy > 0 && d.dy > Math.abs(d.dx) * 1.5 ? 'y' : 'x';
+    }
     // Mostly-vertical downward drag = pull-to-refresh: the card follows the
     // finger down with resistance instead of arming the horizontal throw.
-    if (d.dy > 0 && d.dy > Math.abs(d.dx) * 1.5) {
-      setCur(`${CENTER} translateY(${Math.min(70, d.dy * 0.3)}px)`, 'none');
+    if (d.axis === 'y') {
+      setCur(`${CENTER} translateY(${Math.min(70, Math.max(0, d.dy) * 0.3)}px)`, 'none');
       return;
     }
     // Detent: a soft tick the instant the drag passes the commit distance, so
@@ -207,11 +224,20 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh }: SwipeDeckProps) {
     const d = drag.current;
     if (!d.active) return;
     d.active = false;
-    // Committed pull: trigger the refresh and spring the card back.
-    if (d.dy > 110 && d.dy > Math.abs(d.dx) * 1.5) {
+    // Committed pull: trigger the refresh and spring everything back to rest
+    // (neighbours too, in case an earlier horizontal phase raised one).
+    if (d.axis === 'y' && d.dy > 110) {
       navigator.vibrate?.(8);
       onRefresh?.();
       setCur(CENTER, SPRING);
+      for (const r of [nextRef.current, prevRef.current]) {
+        if (r) {
+          r.style.transition = SPRING;
+          r.style.transform = BEHIND;
+        }
+      }
+      if (nextRef.current) nextRef.current.style.opacity = '1';
+      if (prevRef.current) prevRef.current.style.opacity = '0';
       return;
     }
     // A small nudge is enough — either a short distance OR a quick flick.
