@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Color } from 'three';
 import type { ShaderMaterial } from 'three';
 
 // A fullscreen shader backdrop: slow, domain-warped value noise in the dark
@@ -7,6 +8,10 @@ import type { ShaderMaterial } from 'three';
 // One draw call, no per-particle or per-frame CPU work; the quad ignores the
 // camera (raw clip-space position) and renders first with depth test off, so
 // it always sits behind the ring.
+//
+// The nebula carries the active theme's accent: uTint eases toward the
+// current filter's color, so a theme switch reads as the whole room changing
+// mood, not just the cards swapping.
 
 const VERT = /* glsl */ `
   varying vec2 vUv;
@@ -20,6 +25,7 @@ const FRAG = /* glsl */ `
   precision highp float;
   uniform float uTime;
   uniform float uAspect;
+  uniform vec3 uTint;
   varying vec2 vUv;
 
   float hash(vec2 p) {
@@ -79,9 +85,11 @@ const FRAG = /* glsl */ `
     float n2 = fbm(uv * 3.5 - q * 1.2 - vec2(t * 0.6, t * 0.4));
 
     vec3 base = vec3(0.016, 0.023, 0.043);
-    vec3 blue = vec3(0.05, 0.13, 0.32);
+    // The main and tertiary layers lean toward the theme tint; the violet
+    // layer stays fixed so the nebula keeps depth instead of going monochrome.
+    vec3 blue = mix(vec3(0.05, 0.13, 0.32), uTint, 0.6);
     vec3 violet = vec3(0.16, 0.09, 0.30);
-    vec3 teal = vec3(0.04, 0.18, 0.22);
+    vec3 teal = mix(vec3(0.04, 0.18, 0.22), uTint, 0.45);
 
     vec3 col = base;
     col += blue * smoothstep(0.35, 0.95, n) * 0.55;
@@ -102,18 +110,36 @@ const FRAG = /* glsl */ `
   }
 `;
 
-export function Aurora() {
+interface AuroraProps {
+  /** Accent color of the active theme (a TAGS entry's `accent`). */
+  accent: string;
+}
+
+// The accents are bright chart colors; scaled down to nebula luminance so the
+// tinted layers sit in the same band as the original blue (max ~0.32).
+const TINT_SCALE = 0.38;
+
+export function Aurora({ accent }: AuroraProps) {
   const mat = useRef<ShaderMaterial>(null);
   const uniforms = useMemo(
-    () => ({ uTime: { value: 0 }, uAspect: { value: 1 } }),
+    () => ({
+      uTime: { value: 0 },
+      uAspect: { value: 1 },
+      // Seeded with the original nebula blue; the first frames ease it over
+      // to the active theme, which doubles as a subtle boot color-in.
+      uTint: { value: new Color(0.05, 0.13, 0.32) },
+    }),
     [],
   );
+  const tintTarget = useMemo(() => new Color(accent).multiplyScalar(TINT_SCALE), [accent]);
 
   useFrame((state, delta) => {
     const m = mat.current;
     if (!m) return;
     m.uniforms.uTime.value += delta;
     m.uniforms.uAspect.value = state.viewport.aspect;
+    // Frame-rate independent ease toward the active theme's tint.
+    m.uniforms.uTint.value.lerp(tintTarget, 1 - Math.exp(-delta * 1.4));
   });
 
   return (

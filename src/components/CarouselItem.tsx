@@ -119,6 +119,12 @@ export function CarouselItem({
   const press = useRef(0);
   // Cursor position on the panel, -1..1 from the center on both axes.
   const pointer = useRef({ x: 0, y: 0 });
+  // Theme-switch exit: pose/scale/opacity snapshotted the moment the collapse
+  // starts, so the plunge departs from wherever the panel happened to be
+  // (mid-entrance, hovered, floating) without a pop.
+  const exitStart = useRef<number | null>(null);
+  const exitFrom = useRef(new Vector3());
+  const exitSnapshot = useRef({ scale: 1, opacity: 1, glass: 0 });
 
   // Refresh the settled render when live data lands. A 'tick' only moves the
   // continuously-animated panels (the debt clock); a 'data' event only needs
@@ -202,11 +208,50 @@ export function CarouselItem({
     group.getWorldPosition(worldPos);
     const facing = (worldPos.z / radius + 1) / 2;
     const eased = Math.pow(MathUtils.clamp(facing, 0, 1), 1.5);
-    const focus = 1 + eased * 0.08;
+    // Star emphasis on top of the plain depth cue: a narrow window around the
+    // front-most slot(s), so the card facing the camera visibly steps forward
+    // — larger and at full brightness — while its neighbours get only a
+    // partial boost. The window is a gradient (not a winner-takes-all pick)
+    // because the ring rotates continuously; a hard cutoff would flicker.
+    const star = MathUtils.smoothstep(eased, 0.92, 1);
+    const focus = 1 + eased * 0.08 + star * 0.09;
+    // The glass sheen tracks the card's own brightness instead of running an
+    // independent fade window: a dim side/back card only ever carries a dim
+    // sheen, so the plate can never read as a bright milky slab over a nearly
+    // black panel (which is exactly what a full-opacity plate on a dimmed
+    // card looked like). The small floor keeps the back sides from going
+    // dead matte black.
+    const glassFade = 0.15 + 0.85 * eased;
 
     // Glass LOD: clearcoat only where its glare reads (front of the ring).
     if (glass) updateGlassLod(glass, eased);
     const glassMat = glass?.material as MeshPhysicalMaterial | undefined;
+
+    // Theme switch: collapse back into the center, staggered on the same
+    // per-panel jitter as the entrance, while the parent waits before
+    // swapping in the next theme's set.
+    if (exiting) {
+      if (exitStart.current === null) {
+        exitStart.current = now + entranceDelay * 0.5;
+        exitFrom.current.copy(group.position);
+        exitSnapshot.current = {
+          scale: group.scale.x,
+          opacity: mat.opacity,
+          glass: glassMat?.opacity ?? 0,
+        };
+      }
+      const q = MathUtils.clamp((now - exitStart.current) / EXIT_DURATION, 0, 1);
+      const e = q * q * q; // easeInCubic: a beat of hang, then the plunge
+      group.position.copy(exitFrom.current).multiplyScalar(1 - e);
+      const s = exitSnapshot.current.scale * (1 - 0.45 * e);
+      group.scale.set(s, s, 1);
+      mat.opacity = exitSnapshot.current.opacity * (1 - e);
+      img.visible = mat.opacity > 0.002;
+      if (glassMat) glassMat.opacity = exitSnapshot.current.glass * (1 - e);
+      if (glass && glassMat) glass.visible = img.visible && glassMat.opacity > 0.005;
+      return;
+    }
+    exitStart.current = null;
 
     // One-time entrance: panels fly out from the center to their slot,
     // staggered and scaling up to their focus size as they arrive.
@@ -229,7 +274,9 @@ export function CarouselItem({
       // Skip the draw calls entirely while the stagger delay holds the panel
       // fully transparent at the center.
       img.visible = e > 0.001;
-      if (glassMat) glassMat.opacity = GLASS_OPACITY * e;
+      // Facing-scaled from the first frame: a card erupting toward a back
+      // slot must not arrive with a full bright plate and dim down after.
+      if (glassMat) glassMat.opacity = GLASS_OPACITY * e * glassFade;
       if (glassRef.current) glassRef.current.visible = e > 0.001;
       return;
     }
@@ -291,16 +338,14 @@ export function CarouselItem({
     group.position.z += (target.z + floatZ - nz * sink - group.position.z) * k;
 
     // Back panels: darker, desaturated and slightly zoomed out -> depth.
-    // Minimum opacity kept higher so the back sides stay recognizable.
-    const targetOpacity = 0.4 + eased * 0.6;
+    // Minimum opacity kept high enough that the back sides stay recognizable;
+    // the star term lifts the front-most card to full brightness so it reads
+    // as the stage's focal point against the deeper-dimmed rest.
+    const targetOpacity = 0.38 + eased * 0.49 + star * 0.13;
     const targetGray = (1 - eased) * 0.7;
     const targetZoom = 1 + (1 - eased) * 0.15;
-    // Pressed glass catches a touch more light, selling the contact. The whole
-    // sheen fades out toward the back of the ring: on a dimmed, fogged panel
-    // the 0.16-opacity clearcoat glint is invisible anyway, and fading (rather
-    // than a hard cutoff) means culling it below never pops while spinning.
-    const targetGlass =
-      (GLASS_OPACITY + pressed * 0.08) * MathUtils.smoothstep(eased, 0.05, 0.25);
+    // Pressed glass catches a touch more light, selling the contact.
+    const targetGlass = (GLASS_OPACITY + pressed * 0.08) * glassFade;
     if (hidden) {
       // Hide at once: the hero copy launches from exactly this panel's pose, so
       // it covers the slot on the click frame. A gradual fade would instead be
@@ -327,7 +372,9 @@ export function CarouselItem({
       mat.zoom = MathUtils.lerp(mat.zoom, targetZoom, 0.15);
       if (glassMat) glassMat.opacity = MathUtils.lerp(glassMat.opacity, targetGlass, 0.15);
     }
-    // The faded-out back-of-ring glass skips its (clearcoat-heavy) draw call.
+    // Back-of-ring plates keep a faint sheen now (glassFade floor), but they
+    // sit on the cheap material there (see updateGlassLod), so the draw stays
+    // inexpensive; only fully faded plates (hero hidden, entrance) skip it.
     if (glass && glassMat) glass.visible = glassMat.opacity > 0.005;
 
     // Front panels slightly larger -> "focus" feel (scales the whole group);

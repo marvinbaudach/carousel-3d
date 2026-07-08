@@ -157,6 +157,11 @@ const DEFAULT_TAG: string = TAGS[0].id;
 // How many ring panels are admitted per frame while the set mounts in.
 const MOUNT_BATCH = 3;
 
+// Theme switch choreography: the old set collapses into the center for this
+// long before the next set mounts and erupts out. Covers the panels' exit
+// stagger (up to ~0.11s jitter) plus their 0.4s plunge.
+const EXIT_MS = 520;
+
 interface RingProps {
   onSelect: (id: string, start: HeroStart) => void;
   selectedId: string | null;
@@ -167,6 +172,8 @@ interface RingProps {
   hand: RefObject<HandState>;
   layout: LayoutMode;
   dashboards: Dashboard[];
+  /** True while the theme switches away — the set plays its collapse-out. */
+  exiting: boolean;
   radius: number;
   poses: RefObject<Map<string, HeroStart>>;
   /** False while the user paused the auto-spin (Space). */
@@ -181,16 +188,23 @@ function Ring({
   hand,
   layout,
   dashboards,
+  exiting,
   radius,
   poses,
   spinning,
 }: RingProps) {
-  const interactive = selectedId === null;
+  // Collapsing panels must not absorb clicks — the card would unmount from
+  // under its own hero mid-flight.
+  const interactive = selectedId === null && !exiting;
   // Every panel's first mount rasterises a 512px canvas texture; admitting
   // the whole pool in one commit stalls the main thread for hundreds of ms —
   // exactly while the loader's converge/iris animation plays. Admit a few
   // panels per frame instead; the entrance stagger hides the spread.
   const [mountBudget, setMountBudget] = useState(MOUNT_BATCH);
+  // A theme switch swaps the whole set at once; re-arm the budget so the new
+  // panels' texture rasterisation spreads over frames again, exactly like on
+  // boot — otherwise 20 first-mount canvas draws land in a single commit.
+  useEffect(() => setMountBudget(MOUNT_BATCH), [dashboards]);
   useEffect(() => {
     if (mountBudget >= dashboards.length) return;
     const since = performance.now();
@@ -264,6 +278,7 @@ function Ring({
             onSelect={onSelect}
             wasDrag={wasDrag}
             entranceDelay={entranceJitter[i]}
+            exiting={exiting}
             interactive={interactive}
             poses={poses}
           />
@@ -298,9 +313,23 @@ export function Carousel3D() {
   // the view, and mirrored to localStorage; a fresh visitor lands on
   // DEFAULT_TAG.
   const [tag, setTag] = useTagFilter(DEFAULT_TAG);
+  // Two-phase theme switch: `tag` is the chosen chip, `stageTag` is what the
+  // ring still shows. While they differ the current set plays its collapse
+  // (see CarouselItem's `exiting`), then the stage catches up and the next
+  // set erupts. Another chip click mid-collapse just retargets the timeout.
+  const [stageTag, setStageTag] = useState(tag);
+  const exiting = tag !== stageTag;
+  useEffect(() => {
+    if (tag === stageTag) return;
+    const id = window.setTimeout(() => setStageTag(tag), EXIT_MS);
+    return () => window.clearTimeout(id);
+  }, [tag, stageTag]);
   // Capped, per-load rotated selection (see RING_BY_TAG) — the full theme
   // pool would overcrowd the ring.
-  const dashboards = useMemo(() => RING_BY_TAG[tag] ?? [], [tag]);
+  const dashboards = useMemo(() => RING_BY_TAG[stageTag] ?? [], [stageTag]);
+  // The nebula tint follows the *chosen* theme immediately, so the room's
+  // mood already shifts while the old cards are still collapsing.
+  const accent = (TAGS.find((t) => t.id === tag) ?? TAGS[0]).accent;
   const radius = radiusFor(Math.max(dashboards.length, MIN_COUNT));
   const fogNear = radius + 2;
   const fogFar = radius * 2 + 8;
@@ -521,7 +550,7 @@ export function Carousel3D() {
         parallax={false}
         zoom={zoom}
       />
-      <Aurora />
+      <Aurora accent={accent} />
       <Dust radius={radius} count={isMobile ? 120 : 320} />
       <Afterglow radius={radius} />
 
@@ -533,6 +562,7 @@ export function Carousel3D() {
         hand={handTracking.handRef}
         layout={layout}
         dashboards={dashboards}
+        exiting={exiting}
         radius={radius}
         poses={posesRef}
         spinning={spinning}

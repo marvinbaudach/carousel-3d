@@ -4,19 +4,25 @@
 
 import type { Dashboard } from './types';
 import { POOL } from './cards';
+import { SERIES } from './theme';
 
 export { type Dashboard, SETTLED_T } from './types';
 export { type DashboardTexture, createDashboardTexture } from './texture';
 
-/** Filter chips shown in the bottom bar, in display order. */
-export const TAGS: { id: string; label: string }[] = [
-  { id: 'geld', label: 'GELD' },
-  { id: 'krieg', label: 'KRIEG' },
-  { id: 'deutschland', label: 'DEUTSCHLAND' },
-  { id: 'soziales', label: 'SOZIALES' },
-  { id: 'freiheit', label: 'FREIHEIT' },
-  { id: 'gesundheit', label: 'GESUNDHEIT' },
-  { id: 'welt', label: 'WELT' },
+/**
+ * Filter chips shown in the bottom bar, in display order. Each theme carries
+ * an accent from the categorical palette (never hand-picked hex — see
+ * theme.ts): the 3D scene tints its ambience toward it, so switching themes
+ * reads as a scene change, not just a card swap.
+ */
+export const TAGS: { id: string; label: string; accent: string }[] = [
+  { id: 'geld', label: 'GELD', accent: SERIES[2] }, // gold
+  { id: 'krieg', label: 'KRIEG', accent: SERIES[5] }, // red
+  { id: 'deutschland', label: 'DEUTSCHLAND', accent: SERIES[7] }, // orange
+  { id: 'soziales', label: 'SOZIALES', accent: SERIES[6] }, // magenta
+  { id: 'freiheit', label: 'FREIHEIT', accent: SERIES[4] }, // violet
+  { id: 'gesundheit', label: 'GESUNDHEIT', accent: SERIES[1] }, // aqua
+  { id: 'welt', label: 'WELT', accent: SERIES[0] }, // blue
 ];
 
 function shuffled<T>(list: T[]): T[] {
