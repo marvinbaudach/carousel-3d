@@ -5,6 +5,7 @@ import { DoubleSide, MathUtils, Quaternion, Vector3 } from 'three';
 import type { Group, Mesh, MeshPhysicalMaterial } from 'three';
 import type { HeroStart } from './HeroCard';
 import { GlassPlate, GLASS_OPACITY, GLASS_THICKNESS } from './GlassPlate';
+import { updateGlassLod } from './glassLod';
 import type { Slot } from '../layouts';
 import { SETTLED_T, type Dashboard } from '../dashboards';
 import { onLiveUpdate } from '../data/store';
@@ -149,7 +150,7 @@ export function CarouselItem({
     if (!group || !img) return;
 
     const mat = img.material as unknown as ImageMaterial;
-    const glassMat = glassRef.current?.material as MeshPhysicalMaterial | undefined;
+    const glass = glassRef.current;
 
     // While the hero copy is on screen the panel is invisible, but it keeps
     // flying toward its slot below, so formation or count changes made with
@@ -188,6 +189,10 @@ export function CarouselItem({
     const facing = (worldPos.z / radius + 1) / 2;
     const eased = Math.pow(MathUtils.clamp(facing, 0, 1), 1.5);
     const focus = 1 + eased * 0.08;
+
+    // Glass LOD: clearcoat only where its glare reads (front of the ring).
+    if (glass) updateGlassLod(glass, eased);
+    const glassMat = glass?.material as MeshPhysicalMaterial | undefined;
 
     // One-time entrance: panels fly out from the center to their slot,
     // staggered and scaling up to their focus size as they arrive.
@@ -233,9 +238,9 @@ export function CarouselItem({
       target.rotY + pointer.current.x * TILT_Y * pressed,
       0.12,
     );
-    const glass = glassRef.current;
     if (glass) {
-      glass.position.z = GLASS_GAP + GLASS_THICKNESS / 2 - pressed * PRESS_SINK;
+      // Flat plate: sits at the box's former front-face depth (see GlassPlate).
+      glass.position.z = GLASS_GAP + GLASS_THICKNESS - pressed * PRESS_SINK;
     }
 
     // Push the panel back by exactly the distance the far edge would have
@@ -376,7 +381,7 @@ export function CarouselItem({
         }
       />
 
-      <GlassPlate width={width} height={height} meshRef={glassRef} />
+      <GlassPlate width={width} height={height} meshRef={glassRef} flat />
     </group>
   );
 }

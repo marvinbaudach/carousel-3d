@@ -1,4 +1,5 @@
-import type { Ref } from 'react';
+import { useEffect, useMemo, type Ref } from 'react';
+import { MeshPhysicalMaterial, MeshStandardMaterial } from 'three';
 import type { Mesh } from 'three';
 import { useIsMobile } from '../hooks/useIsMobile';
 
@@ -13,6 +14,14 @@ interface GlassPlateProps {
   height: number;
   /** Exposed so owners can fade or rescale the plate imperatively. */
   meshRef?: Ref<Mesh>;
+  /**
+   * Render a single plane at the front-face position instead of the box slab.
+   * The ring plates use this — their edges are only ever seen at grazing
+   * angles on dimmed side panels — while the hero keeps the box so its edge
+   * thickness stays visible up close. The plane sits exactly where the box's
+   * front face was, so the reflective surface doesn't shift on hero handoff.
+   */
+  flat?: boolean;
 }
 
 /**
@@ -23,44 +32,64 @@ interface GlassPlateProps {
  *
  * On desktop the plate carries a clearcoat lobe: a second specular layer that
  * mirrors the night environment and, being fresnel-weighted, glares along the
- * edges and on the panels curving away on the ring — the real glass look.
+ * edges and on the panels curving away on the ring — the real glass look. Ring
+ * plates additionally LOD it away toward the sides (see updateGlassLod).
  * Mobile keeps a plain standard material (no clearcoat pass) so the shader
  * stays cheap across every on-stage plate; the reflection there is just the
  * boosted env map on the low roughness.
  */
-export function GlassPlate({ width, height, meshRef }: GlassPlateProps) {
+export function GlassPlate({ width, height, meshRef, flat }: GlassPlateProps) {
   const isMobile = useIsMobile();
+
+  const mats = useMemo(() => {
+    const cheap = new MeshStandardMaterial({
+      color: '#ffffff',
+      transparent: true,
+      opacity: GLASS_OPACITY,
+      roughness: isMobile ? 0.05 : 0.04,
+      metalness: 0,
+      envMapIntensity: isMobile ? 3.2 : 3.6,
+      depthWrite: false,
+    });
+    const rich = isMobile
+      ? null
+      : new MeshPhysicalMaterial({
+          color: '#ffffff',
+          transparent: true,
+          opacity: GLASS_OPACITY,
+          roughness: 0.04,
+          metalness: 0,
+          envMapIntensity: 3.6,
+          ior: 1.5,
+          clearcoat: 1,
+          clearcoatRoughness: 0.08,
+          specularIntensity: 1,
+          depthWrite: false,
+        });
+    return { cheap, rich };
+  }, [isMobile]);
+
+  useEffect(
+    () => () => {
+      mats.cheap.dispose();
+      mats.rich?.dispose();
+    },
+    [mats],
+  );
+
   return (
     <mesh
       ref={meshRef}
-      position={[0, 0, GLASS_THICKNESS / 2 + 0.01]}
+      material={mats.rich ?? mats.cheap}
+      // Only desktop ring plates get the swap pair; hero and mobile stay put.
+      userData={flat && mats.rich ? { glassLod: mats } : {}}
+      position={[0, 0, (flat ? GLASS_THICKNESS : GLASS_THICKNESS / 2) + 0.01]}
       raycast={() => null}
     >
-      <boxGeometry args={[width, height, GLASS_THICKNESS]} />
-      {isMobile ? (
-        <meshStandardMaterial
-          color="#ffffff"
-          transparent
-          opacity={GLASS_OPACITY}
-          roughness={0.05}
-          metalness={0}
-          envMapIntensity={3.2}
-          depthWrite={false}
-        />
+      {flat ? (
+        <planeGeometry args={[width, height]} />
       ) : (
-        <meshPhysicalMaterial
-          color="#ffffff"
-          transparent
-          opacity={GLASS_OPACITY}
-          roughness={0.04}
-          metalness={0}
-          envMapIntensity={3.6}
-          ior={1.5}
-          clearcoat={1}
-          clearcoatRoughness={0.08}
-          specularIntensity={1}
-          depthWrite={false}
-        />
+        <boxGeometry args={[width, height, GLASS_THICKNESS]} />
       )}
     </mesh>
   );
