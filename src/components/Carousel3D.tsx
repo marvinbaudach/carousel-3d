@@ -39,37 +39,56 @@ import { glassSurface } from './glass';
 // open, when the rest of the chrome is hidden.
 // Small round glass "i" in the hero's footer: the source used to sit here as
 // an always-on pill, but it crowded the card — now it hides behind this and
-// unfolds the note above on click (same pattern as the mobile deck).
-const HeroInfoButton = styled.button`
+// the note unfolds above on hover, like a toolbar tooltip.
+const HeroSourceDock = styled.div`
   position: fixed;
   left: 50%;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
   transform: translateX(-50%);
   z-index: 20;
+  display: flex;
+  justify-content: center;
+`;
+
+const HeroInfoButton = styled.button`
   width: 34px;
   height: 34px;
   border: none;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.8);
   font: italic 600 15px/1 Georgia, serif;
-  cursor: pointer;
+  cursor: help;
   ${glassSurface}
 `;
 
+// Tooltip above the button; a small padding bridge (bottom, no visual) keeps
+// the note reachable so it does not flicker out when the pointer crosses the
+// gap from the button up onto it.
 const HeroSourceNote = styled.div`
-  position: fixed;
+  position: absolute;
+  bottom: calc(100% + 12px);
   left: 50%;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
-  transform: translateX(-50%);
-  z-index: 20;
+  transform: translateX(-50%) translateY(4px);
+  width: max-content;
   max-width: min(92vw, 440px);
   padding: 11px 16px;
   border-radius: 14px;
   color: rgba(255, 255, 255, 0.85);
   font: 400 12px/1.5 inherit;
   text-align: center;
-  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    visibility 0.18s;
   ${glassSurface}
+
+  ${HeroSourceDock}:hover & {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+  }
 `;
 
 // Peak opacity of the scrim that dims the whole scene behind an open hero, so
@@ -310,12 +329,6 @@ export function Carousel3D() {
   // over a beat later as the card lands.
   const dressed = !heroOpen || closing;
   const aberration = useMemo(() => new Vector2(0.0003, 0.0003), []);
-  // Source note starts folded; collapse it whenever the hero closes or the
-  // open card switches, so a stale note never carries over to another card.
-  const [sourceOpen, setSourceOpen] = useState(false);
-  useEffect(() => {
-    setSourceOpen(false);
-  }, [selected?.id]);
 
   const open = (id: string, start: HeroStart) => {
     if (selected) return; // one hero at a time
@@ -601,19 +614,10 @@ export function Carousel3D() {
     <HotkeyPanel hidden={heroOpen} layout={layout} onChange={setLayout} />
 
     {heroOpen && !closing && selectedDashboard?.source && (
-      <>
-        {sourceOpen && (
-          <HeroSourceNote onClick={() => setSourceOpen(false)}>
-            Quelle: {selectedDashboard.source}
-          </HeroSourceNote>
-        )}
-        <HeroInfoButton
-          aria-label="Quelle anzeigen"
-          onClick={() => setSourceOpen((o) => !o)}
-        >
-          i
-        </HeroInfoButton>
-      </>
+      <HeroSourceDock>
+        <HeroSourceNote role="tooltip">Quelle: {selectedDashboard.source}</HeroSourceNote>
+        <HeroInfoButton aria-label={`Quelle: ${selectedDashboard.source}`}>i</HeroInfoButton>
+      </HeroSourceDock>
     )}
 
     {/* Hand tracking is desktop-only: detection + post-processing together
