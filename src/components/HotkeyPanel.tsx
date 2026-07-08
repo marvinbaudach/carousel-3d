@@ -12,18 +12,18 @@ interface HotkeyPanelProps {
   hidden: boolean;
 }
 
-// Bottom-right corner: PerfHud owns the top-right, the
+// Top-left corner: PerfHud owns the top-right, the
 // theme chips sit bottom-center.
 const Wrap = styled.div<{ $hidden: boolean }>`
   position: fixed;
-  right: 16px;
-  bottom: 18px;
+  left: 16px;
+  top: 18px;
   z-index: 10;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: flex-start;
   gap: 8px;
-  transform: translateY(${(p) => (p.$hidden ? '14px' : '0')});
+  transform: translateY(${(p) => (p.$hidden ? '-14px' : '0')});
   opacity: ${(p) => (p.$hidden ? 0 : 1)};
   pointer-events: ${(p) => (p.$hidden ? 'none' : 'auto')};
   transition:
@@ -31,19 +31,19 @@ const Wrap = styled.div<{ $hidden: boolean }>`
     transform 0.35s ease;
 `;
 
-// The card floats above the toggle (absolutely, so its footprint never
-// inflates the Wrap's hit area over the bottom-center filter chips) and
-// animates in from just below it; collapsed it takes no space and no clicks.
+// The card floats below the toggle (absolutely, so its footprint never
+// inflates the Wrap's hit area over the scene) and animates in from just
+// above it; collapsed it takes no space and no clicks.
 const Panel = styled.div<{ $open: boolean }>`
   position: absolute;
-  bottom: calc(100% + 8px);
-  right: 0;
+  top: calc(100% + 8px);
+  left: 0;
   width: 232px;
   padding: 14px 16px;
   border-radius: 16px;
   ${glassSurface}
-  transform-origin: bottom right;
-  transform: translateY(${(p) => (p.$open ? '0' : '8px')})
+  transform-origin: top left;
+  transform: translateY(${(p) => (p.$open ? '0' : '-8px')})
     scale(${(p) => (p.$open ? 1 : 0.96)});
   opacity: ${(p) => (p.$open ? 1 : 0)};
   visibility: ${(p) => (p.$open ? 'visible' : 'hidden')};
