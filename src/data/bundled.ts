@@ -1150,15 +1150,26 @@ export const DE_TOTAL_CAP_PANEL: TrendSeries = trend(
 // southern plants ramped to hold the grid — a real measure of rising strain.
 // Note: this is intervention effort, NOT customer blackouts; actual outage
 // minutes (SAIDI) stayed among the world's lowest.
+const DE_GRID_INTERVENTION_ANCHORS: [number, number][] = [
+  [1990, 0.01], [2000, 0.02], [2005, 0.05], [2009, 0.2], [2010, 0.3], [2012, 2.6],
+  [2014, 5.2], [2015, 16.0], [2017, 20.4], [2019, 13.7], [2021, 12.2],
+  [2023, 14.8], [2024, 22.8],
+];
+
 export const DE_GRID_INTERVENTIONS_PANEL: TrendSeries = trend(
-  [
-    [2000, 0.02], [2005, 0.05], [2009, 0.2], [2010, 0.3], [2012, 2.6],
-    [2014, 5.2], [2015, 16.0], [2017, 20.4], [2019, 13.7], [2021, 12.2],
-    [2023, 14.8],
-  ],
+  DE_GRID_INTERVENTION_ANCHORS,
   (v) => `${localeNum(v, 1)} TWh`,
-  ['2000', '2008', '2016', '2023'],
+  ['1990', '2001', '2013', '2024'],
 );
+
+// The same interventions as an overlay for the energy-mix card: 48 samples
+// over the identical 1990–2024 span as DE_ENERGY_MIX so the lines align, and
+// normalized onto its own 0..25 TWh scale — the card's ticks are GW, this
+// line only carries the shape of the surge.
+export const DE_GRID_OVERLAY = {
+  data: norm(resample(yearly(DE_GRID_INTERVENTION_ANCHORS), 48), 0, 25),
+  latest: 22.8,
+};
 
 // US installed generating capacity by source, GW (EIA). Coal peaks ~2011
 // then retires; nuclear stays roughly flat; wind+solar climb from almost

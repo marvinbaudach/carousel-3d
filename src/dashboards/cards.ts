@@ -29,6 +29,7 @@ import {
   WARS_1946_PANEL,
   DEBT_TREND_FALLBACK,
   DE_FAMILY,
+  DE_GRID_OVERLAY,
   DE_PENSION_LEVEL_PANEL,
   DE_RENT_BURDEN_PANEL,
   DE_WAGE_COMPARE,
@@ -2200,12 +2201,15 @@ export const POOL: Dashboard[] = [
     id: 'de-energy-mix',
     title: 'Deutscher Strommix · Kohle, Kernkraft, Erneuerbare',
     source:
-      'BNetzA / Fraunhofer ISE · installierte Netto-Leistung in GW; Nennleistung, nicht gesicherte Leistung.',
+      'BNetzA / Fraunhofer ISE · installierte Netto-Leistung in GW; Netzeingriffe: Redispatch-Volumen in TWh/Jahr (BNetzA), eigene Skala.',
     draw: (f) =>
       lineChart(f, {
         // BNetzA/Fraunhofer installed capacity: nuclear to zero (2023), coal
         // drawn down, wind+solar surge past both. Nameplate GW — the
-        // intermittent sources' firm output is a fraction of it.
+        // intermittent sources' firm output is a fraction of it. The red
+        // overlay is the price of intermittency: yearly redispatch volume,
+        // near zero for decades, then surging with the wind+solar build-out
+        // (own TWh scale — only the shape is comparable, not the axis).
         label: 'Installierte Leistung · 🇩🇪 · GW',
         value: DE_ENERGY_MIX.renewLatest,
         unit: '',
@@ -2216,6 +2220,7 @@ export const POOL: Dashboard[] = [
           { name: 'Kohle', color: orange, data: DE_ENERGY_MIX.rows[0].data },
           { name: 'Kernkraft', color: violet, data: DE_ENERGY_MIX.rows[1].data },
           { name: 'Wind + Solar', color: green, data: DE_ENERGY_MIX.rows[2].data },
+          { name: 'Netzeingriffe', color: red, data: DE_GRID_OVERLAY.data },
         ],
         ticks: DE_ENERGY_MIX.ticks,
         xLabels: ['1990', '2001', '2013', '2024'],
