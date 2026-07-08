@@ -58,13 +58,14 @@ function Dots({ count, active }: { count: number; active: number }) {
   const visible = Math.min(count, MAX_DOTS);
   const start = Math.max(0, Math.min(active - Math.floor(MAX_DOTS / 2), count - visible));
   return (
-    <DotsRow>
+    // The dots are purely visual; the row announces the position textually.
+    <DotsRow role="status" aria-label={`${active + 1} / ${count}`}>
       {Array.from({ length: visible }, (_, j) => {
         const i = start + j;
         const edge =
           count > MAX_DOTS &&
           ((j === 0 && start > 0) || (j === visible - 1 && start + visible < count));
-        return <Dot key={i} $active={i === active} $small={edge} />;
+        return <Dot key={i} aria-hidden $active={i === active} $small={edge} />;
       })}
     </DotsRow>
   );
