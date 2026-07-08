@@ -2,7 +2,7 @@
 // it picks up live data on the next frame and otherwise falls back to a seeded
 // or bundled series. Tagging, ordering and the public registry live in index.ts.
 
-import { t as tr } from '../i18n';
+import { localeNum, localePct, t as tr } from '../i18n';
 import {
   areaChart,
   choroplethMap,
@@ -189,7 +189,7 @@ export const POOL: Dashboard[] = [
       choroplethMap(f, {
         label: 'Mordrate',
         value: hm?.world ?? 5.6,
-        fmt: (v) => `${v.toFixed(1)} /100k`,
+        fmt: (v) => `${localeNum(v, 1)} /100k`,
         valueByIso: hm?.byIso,
         world: live.worldMap,
         rows: hm?.rows ?? [
@@ -199,7 +199,7 @@ export const POOL: Dashboard[] = [
           { name: 'Brasilien', v: 19.3 },
           { name: 'Mexiko', v: 18.5 },
         ],
-        rowFmt: (v) => v.toFixed(1),
+        rowFmt: (v) => localeNum(v, 1),
         source: 'World Bank · Tötungsdelikte pro 100k',
       });
     },
@@ -215,7 +215,7 @@ export const POOL: Dashboard[] = [
       areaChart(f, {
         label: 'Schweizer Bevölkerung · seit 1500',
         value: p.latest,
-        fmt: (v) => `${(v / 1e6).toFixed(2)} ${tr('Mio')}`,
+        fmt: (v) => `${localeNum(v / 1e6, 2)} ${tr('Mio')}`,
         delta: p.yoyPct,
         seed: 19,
         color: magenta,
@@ -243,7 +243,7 @@ export const POOL: Dashboard[] = [
       areaChart(f, {
         label: 'Weltbevölkerung · seit 1770',
         value: p.latest,
-        fmt: (v) => `${(v / 1e9).toFixed(2)} ${tr('Mrd')}`,
+        fmt: (v) => `${localeNum(v / 1e9, 2)} ${tr('Mrd')}`,
         // No delta chip: a YoY figure under a 250-year curve reads as if it
         // were the growth over the whole span.
         delta: null,
@@ -267,7 +267,7 @@ export const POOL: Dashboard[] = [
       areaChart(f, {
         label: 'Ölverbrauch · Mio. Barrel/Tag',
         value: OIL_CONSUMPTION_PANEL.latest,
-        fmt: (v) => `${v.toFixed(0)} mb/d`,
+        fmt: (v) => `${localeNum(v, 0)} mb/d`,
         // No delta: a single YoY figure under a 120-year curve reads as if it
         // were the growth over the whole span.
         delta: null,
@@ -372,7 +372,7 @@ export const POOL: Dashboard[] = [
       areaChart(f, {
         label: 'US-Zinslast · jährlich',
         value: US_INTEREST_PANEL.latest,
-        fmt: (v) => `$${(v / 1e12).toFixed(2)} ${tr('Bio.')}`,
+        fmt: (v) => `$${localeNum(v / 1e12, 2)} ${tr('Bio.')}`,
         delta: US_INTEREST_PANEL.yoyPct,
         seed: 71,
         color: yellow,
@@ -475,7 +475,7 @@ export const POOL: Dashboard[] = [
         // UN World Population Prospects 2024 (millions).
         label: 'Bevölkerungsanteile',
         value: 8.16e9,
-        fmt: (v) => `${(v / 1e9).toFixed(2)} ${tr('Mrd')}`,
+        fmt: (v) => `${localeNum(v / 1e9, 2)} ${tr('Mrd')}`,
         rows: [
           { name: 'Indien', v: 1451, short: '🇮🇳' },
           { name: 'China', v: 1419, short: '🇨🇳' },
@@ -491,7 +491,7 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('life-exp', 'Globale Lebenserwartung', 'Lebenserwartung · seit 1770', LIFE_PANEL, green, (v) => `${v.toFixed(1)}y`, 89, eraMarkers(1770, 2024, [
+  trendCard('life-exp', 'Globale Lebenserwartung', 'Lebenserwartung · seit 1770', LIFE_PANEL, green, (v) => `${localeNum(v, 1)}y`, 89, eraMarkers(1770, 2024, [
     // The mid-century surge on the 1770–2024 axis.
     [1945, '💊 Antibiotika'],
   ]), 'Riley (2005) / Our World in Data vor 1950, danach UN World Population Prospects.'),
@@ -506,7 +506,7 @@ export const POOL: Dashboard[] = [
         label: 'Geldmenge M2 · 2000 = 1×',
         value: M2_COMPARE.usLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)}×`,
+        fmt: (v) => `${localeNum(v, 1)}×`,
         delta: null,
         seed: 97,
         series: [
@@ -518,7 +518,7 @@ export const POOL: Dashboard[] = [
         xLabels: ['1990', '2001', '2013', 'heute'],
       }),
   },
-  trendCard('m2-history', 'US-Geldmenge seit 1900', 'US-Geldmenge M2 · seit 1900', M2_PANEL, yellow, (v) => `$${(v / 1e12).toFixed(1)} ${tr('Bio.')}`, 97, eraMarkers(1900, 2024, [
+  trendCard('m2-history', 'US-Geldmenge seit 1900', 'US-Geldmenge M2 · seit 1900', M2_PANEL, yellow, (v) => `$${localeNum(v / 1e12, 1)} ${tr('Bio.')}`, 97, eraMarkers(1900, 2024, [
     // The turns behind the money-supply explosion on the 1900–2024 axis:
     // the end of gold convertibility and the two big money-printing waves.
     [1971, '⛓️‍💥 Gold-Ende 1971'],
@@ -537,7 +537,7 @@ export const POOL: Dashboard[] = [
         label: 'Arbeitslos · 🇺🇸 Absolventen vs. Gesamt',
         value: AI_JOBS_COMPARE.gradLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         seed: 157,
         series: [
@@ -564,8 +564,8 @@ export const POOL: Dashboard[] = [
         // dual apprenticeship systems, anchor the low end.
         label: 'Jugendarbeitslosigkeit · 15–24 J. · 2024',
         value: 14.9,
-        fmt: (v) => `Ø ${v.toFixed(1)}%`,
-        rowFmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `Ø ${localePct(v, 1)}`,
+        rowFmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         color: orange,
         unit: '',
@@ -595,8 +595,8 @@ export const POOL: Dashboard[] = [
         // France lead; Germany, Japan and Switzerland sit at the low end.
         label: 'Arbeitslosenquote · harmonisiert · 2024',
         value: 5.9,
-        fmt: (v) => `Ø ${v.toFixed(1)}%`,
-        rowFmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `Ø ${localePct(v, 1)}`,
+        rowFmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         color: red,
         unit: '',
@@ -627,8 +627,8 @@ export const POOL: Dashboard[] = [
         // sit in the middle, the Nordics lowest.
         label: 'Armutsquote · < 50 % Medianeinkommen',
         value: 11.4,
-        fmt: (v) => `Ø ${v.toFixed(1)}%`,
-        rowFmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `Ø ${localePct(v, 1)}`,
+        rowFmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         color: violet,
         unit: '',
@@ -698,7 +698,7 @@ export const POOL: Dashboard[] = [
         label: 'Arbeitslosigkeit · 🇩🇪 · Mio',
         value: DE_UNDEREMPLOYMENT_COMPARE.underLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)} ${tr('Mio')}`,
+        fmt: (v) => `${localeNum(v, 1)} ${tr('Mio')}`,
         delta: null,
         seed: 269,
         series: [
@@ -723,7 +723,7 @@ export const POOL: Dashboard[] = [
         label: 'Industrie · 🇩🇪 · 2015 = 100',
         value: INDUSTRY_COMPARE.deuLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(0)}`,
+        fmt: (v) => `${localeNum(v, 0)}`,
         delta: null,
         seed: 139,
         series: [
@@ -753,7 +753,7 @@ export const POOL: Dashboard[] = [
         label: 'Anteil an Weltexporten · %',
         value: DE_EXPORT_COMPARE.deuLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(0)}%`,
+        fmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         seed: 277,
         series: [
@@ -770,7 +770,7 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
-  trendCard('de-migration', 'Migrationsanteil Deutschland', 'Migrationshintergrund · 🇩🇪', DE_MIGRATION_PANEL, aqua, (v) => `${v.toFixed(1)}%`, 149, eraMarkers(1950, 2024, [
+  trendCard('de-migration', 'Migrationsanteil Deutschland', 'Migrationshintergrund · 🇩🇪', DE_MIGRATION_PANEL, aqua, (v) => `${localePct(v, 1)}`, 149, eraMarkers(1950, 2024, [
     // The four big waves on the 1950–2024 axis: guest-worker recruitment, the
     // post-1990 Aussiedler/Balkan influx, the 2015 asylum wave, and Ukraine.
     [1960, '🛠️ Gastarbeiter'],
@@ -789,7 +789,7 @@ export const POOL: Dashboard[] = [
         label: 'Wanderung über die Grenze · 🇩🇪 · pro Jahr',
         value: DE_MIGRATION_FLOWS.inLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)} ${tr('Mio')}`,
+        fmt: (v) => `${localeNum(v, 1)} ${tr('Mio')}`,
         delta: null,
         seed: 317,
         series: [
@@ -805,7 +805,7 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
-  trendCard('de-population', 'Bevölkerung Deutschland · seit 1950', 'Bevölkerung · 🇩🇪 · Jahresende', DE_POPULATION_PANEL, blue, (v) => `${v.toFixed(1)} ${tr('Mio.')}`, 319, eraMarkers(1950, 2024, [
+  trendCard('de-population', 'Bevölkerung Deutschland · seit 1950', 'Bevölkerung · 🇩🇪 · Jahresende', DE_POPULATION_PANEL, blue, (v) => `${localeNum(v, 1)} ${tr('Mio.')}`, 319, eraMarkers(1950, 2024, [
     // The population only moves on migration: near-flat for decades, a record
     // ~84m after the 2015 and 2022 waves, since births stay below deaths.
     [1990, '🇩🇪 Wiedervereinigung 1990'],
@@ -824,7 +824,7 @@ export const POOL: Dashboard[] = [
         label: 'Nichtdeutsche · 🇩🇪 · Tatverdächtige vs. Bevölkerungsanteil',
         value: DE_FOREIGN_COMPARE.tvLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         seed: 151,
         series: [
@@ -960,7 +960,7 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP', DE_TAX_QUOTA_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 259, eraMarkers(1965, 2023, [
+  trendCard('de-tax-quota', 'Steuer- & Abgabenquote Deutschland', 'Steuer- & Abgabenquote · 🇩🇪 · % des BIP', DE_TAX_QUOTA_PANEL, yellow, (v) => `${localePct(v, 1)}`, 259, eraMarkers(1965, 2023, [
     // Taxes plus social contributions as a share of GDP — the state's take hit
     // a historical high of ~39% in the early 2020s.
     // Rise through the 1970s: expansion of the welfare state and social
@@ -972,7 +972,7 @@ export const POOL: Dashboard[] = [
     [2005, '✂️ Steuerreform 2005'],
     [2021, '📈 Rekord ~39%'],
   ]), 'OECD Revenue Statistics · Steuern plus Sozialabgaben in % des BIP, gerundet; vor 1990 Westdeutschland.'),
-  trendCard('de-power-prices', 'Strompreis Deutschland', 'Strompreis · 🇩🇪 · Haushalte · ct/kWh', DE_POWER_PRICE_PANEL, blue, (v) => `${v.toFixed(0)} ct`, 271, eraMarkers(1991, 2025, [
+  trendCard('de-power-prices', 'Strompreis Deutschland', 'Strompreis · 🇩🇪 · Haushalte · ct/kWh', DE_POWER_PRICE_PANEL, blue, (v) => `${localeNum(v, 0)} ct`, 271, eraMarkers(1991, 2025, [
     // The household price roughly tripled since 2000. The EEG renewables law
     // (2000) kicked off the green transition; the nuclear phase-out decision
     // (2011) and the 2022 energy crisis pushed it to among the world's highest.
@@ -980,8 +980,8 @@ export const POOL: Dashboard[] = [
     [2011, '☢️ Atomausstieg'],
     [2022, '⚡ Energiekrise'],
   ]), 'BDEW / Destatis / Eurostat · Haushaltsstrompreis inkl. Steuern und Umlagen, ct/kWh, gerundet.'),
-  trendCard('berlin-warrants', 'Offene Haftbefehle · Berlin', 'Offene Haftbefehle · Berlin', BERLIN_WARRANTS_PANEL, red, (v) => `${(v / 1000).toFixed(0)}k`, 283, undefined, 'Senatsverwaltung für Justiz Berlin (parlamentarische Anfragen) und Presseberichte. Definitionen variieren — Größenordnung, frühe Werte grob geschätzt.'),
-  trendCard('de-state-quota', 'Staatsquote Deutschland', 'Staatsquote · 🇩🇪 · Staatsausgaben % des BIP', DE_STATE_QUOTA_PANEL, orange, (v) => `${v.toFixed(1)}%`, 227, eraMarkers(1880, 2024, [
+  trendCard('berlin-warrants', 'Offene Haftbefehle · Berlin', 'Offene Haftbefehle · Berlin', BERLIN_WARRANTS_PANEL, red, (v) => `${localeNum(v / 1000, 0)}k`, 283, undefined, 'Senatsverwaltung für Justiz Berlin (parlamentarische Anfragen) und Presseberichte. Definitionen variieren — Größenordnung, frühe Werte grob geschätzt.'),
+  trendCard('de-state-quota', 'Staatsquote Deutschland', 'Staatsquote · 🇩🇪 · Staatsausgaben % des BIP', DE_STATE_QUOTA_PANEL, orange, (v) => `${localePct(v, 1)}`, 227, eraMarkers(1880, 2024, [
     // Government spending as a share of GDP on the 1880–2024 axis: the secular
     // rise from ~10% in the Kaiserreich, the 1929 Depression, the 1975 oil
     // shock, the 1995 reunification peak, and Corona's ~51% record in 2020.
@@ -1002,7 +1002,7 @@ export const POOL: Dashboard[] = [
         // so it reads as the current burden, with the projected climb behind it.
         label: 'Altenquotient · 🇩🇪 · 65+ je 100 im Alter 20–64 · Prognose bis 2060',
         value: 40,
-        fmt: (v) => `${v.toFixed(0)}`,
+        fmt: (v) => `${localeNum(v, 0)}`,
         delta: null,
         seed: 281,
         color: red,
@@ -1030,8 +1030,8 @@ export const POOL: Dashboard[] = [
         // anchor the low end — the scale of the demographic divide.
         label: 'Alterung · 65+ je 100 Erwerbstätige',
         value: 30,
-        fmt: (v) => `Ø ${v.toFixed(0)}`,
-        rowFmt: (v) => `${v.toFixed(0)}`,
+        fmt: (v) => `Ø ${localeNum(v, 0)}`,
+        rowFmt: (v) => `${localeNum(v, 0)}`,
         delta: null,
         color: violet,
         unit: '',
@@ -1089,7 +1089,7 @@ export const POOL: Dashboard[] = [
         label: 'Pressefreiheit · RSF-Score · 0–100',
         value: PRESS_FREEDOM_COMPARE.deLatest,
         unit: '',
-        fmt: (v) => v.toFixed(1),
+        fmt: (v) => localeNum(v, 1),
         delta: null,
         seed: 173,
         // Flags alone as legend labels — the full names overran the panel — and
@@ -1106,7 +1106,7 @@ export const POOL: Dashboard[] = [
         xLabels: ['2022', '2023', '2024', 'heute'],
       }),
   },
-  trendCard('book-bans', 'Buchverbote an US-Schulen', 'Buchverbote · 🇺🇸 · Fälle/Schuljahr', BOOK_BANS_PANEL, orange, (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${v}`), 179, eraMarkers(2021, 2024, [
+  trendCard('book-bans', 'Buchverbote an US-Schulen', 'Buchverbote · 🇺🇸 · Fälle/Schuljahr', BOOK_BANS_PANEL, orange, (v) => (v >= 1000 ? `${localeNum(v / 1000, 1)}k` : `${v}`), 179, eraMarkers(2021, 2024, [
     [2023, '📚 Höhepunkt 23/24'],
   ]), 'PEN America · Index of School Book Bans, dokumentierte Fälle je Schuljahr.'),
   trendCard('jailed-journalists', 'Inhaftierte Journalisten', 'Inhaftierte Journalisten · 🌍', JAILED_JOURNALISTS_PANEL, red, deInt, 181, eraMarkers(1992, 2024, [
@@ -1150,7 +1150,7 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
-  trendCard('internet', 'Menschen online weltweit', 'Internetnutzer', INTERNET_PANEL, blue, (v) => `${(v / 1e9).toFixed(1)} ${tr('Mrd')}`, 103, [
+  trendCard('internet', 'Menschen online weltweit', 'Internetnutzer', INTERNET_PANEL, blue, (v) => `${localeNum(v / 1e9, 1)} ${tr('Mrd')}`, 103, [
     // Significant inflection points on the 1990–2024 span. at = (year-1990)/34.
     { at: 0.03, label: '🌐 WWW frei' },
     { at: 0.5, label: '📱 Smartphone' },
@@ -1160,7 +1160,7 @@ export const POOL: Dashboard[] = [
     [2017, '📉 Tiefpunkt'],
     [2020, '🦠 Pandemie'],
   ]), 'FAO · The State of Food Security and Nutrition (2024). Methodik mehrfach revidiert — Größenordnungen.'),
-  trendCard('extreme-poverty', 'Extreme Armut weltweit', 'Extreme Armut · < $2,15/Tag · SDG 1', EXTREME_POVERTY_PANEL, yellow, (v) => `${v.toFixed(1)}%`, 73, eraMarkers(1990, 2024, [
+  trendCard('extreme-poverty', 'Extreme Armut weltweit', 'Extreme Armut · < $2,15/Tag · SDG 1', EXTREME_POVERTY_PANEL, yellow, (v) => `${localePct(v, 1)}`, 73, eraMarkers(1990, 2024, [
     [2020, '🦠 Pandemie · 1. Anstieg seit Jahrzehnten'],
   ]), 'Weltbank PIP · Anteil der Weltbevölkerung unter 2,15 $/Tag (KKP 2017).'),
   trendCard('nuke-tests', 'Atomtests pro Jahr', 'Atomtests · seit 1945', NUKE_TESTS_PANEL, red, deInt, 107, eraMarkers(1945, 2024, [
@@ -1178,7 +1178,7 @@ export const POOL: Dashboard[] = [
         label: 'Geburten pro Frau',
         value: CONTINENT_FERTILITY.world,
         unit: '',
-        fmt: (v) => v.toFixed(1),
+        fmt: (v) => localeNum(v, 1),
         delta: null,
         seed: 113,
         series: [
@@ -1192,7 +1192,7 @@ export const POOL: Dashboard[] = [
         xLabels: ['1900', '1941', '1983', 'heute'],
       }),
   },
-  trendCard('dollar', 'Kaufkraft des Dollars seit 1913', '1913er-Dollar · Restwert', DOLLAR_PANEL, yellow, (v) => `${(v * 100).toFixed(0)}¢`, 127, eraMarkers(1913, 2024, [
+  trendCard('dollar', 'Kaufkraft des Dollars seit 1913', '1913er-Dollar · Restwert', DOLLAR_PANEL, yellow, (v) => `${localeNum(v * 100, 0)}¢`, 127, eraMarkers(1913, 2024, [
     // Fed founding at the very start, and the 1971 end of the gold peg after
     // which the decline steepens, on the 1913–2024 axis.
     [1913, '🏦 Fed 1913'],
@@ -1210,7 +1210,7 @@ export const POOL: Dashboard[] = [
         label: 'Lohnindex · 🇩🇪 · 2015 = 100',
         value: DE_WAGE_COMPARE.realLatest,
         unit: '',
-        fmt: (v) => v.toFixed(0),
+        fmt: (v) => localeNum(v, 0),
         delta: null,
         seed: 239,
         series: [
@@ -1233,8 +1233,8 @@ export const POOL: Dashboard[] = [
         // bottom of Europe — a continent of renters at its wealthy core.
         label: 'Wohneigentum · Anteil der Haushalte',
         value: 69,
-        fmt: (v) => `Ø ${v.toFixed(0)}%`,
-        rowFmt: (v) => `${v.toFixed(0)}%`,
+        fmt: (v) => `Ø ${localePct(v, 0)}`,
+        rowFmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         color: blue,
         unit: '',
@@ -1266,7 +1266,7 @@ export const POOL: Dashboard[] = [
         label: 'Bilanzsumme · Fed vs. EZB · Bio.',
         value: CB_BALANCE_COMPARE.fedLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)} ${tr('Bio.')}`,
+        fmt: (v) => `${localeNum(v, 1)} ${tr('Bio.')}`,
         delta: null,
         seed: 243,
         series: [
@@ -1294,7 +1294,7 @@ export const POOL: Dashboard[] = [
         label: 'Vermögen · Milliardäre vs. Reallohn · 2010 = 1×',
         value: WEALTH_DIVERGE_COMPARE.richLatest,
         unit: '',
-        fmt: (v) => `${v.toFixed(1)}×`,
+        fmt: (v) => `${localeNum(v, 1)}×`,
         delta: null,
         seed: 247,
         series: [
@@ -1334,12 +1334,12 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
-  trendCard('pension-level', 'Rentenniveau · Deutschland', 'Rentenniveau · 🇩🇪 · % des Durchschnittslohns', DE_PENSION_LEVEL_PANEL, magenta, (v) => `${v.toFixed(0)}%`, 253, eraMarkers(1990, 2040, [
+  trendCard('pension-level', 'Rentenniveau · Deutschland', 'Rentenniveau · 🇩🇪 · % des Durchschnittslohns', DE_PENSION_LEVEL_PANEL, magenta, (v) => `${localePct(v, 0)}`, 253, eraMarkers(1990, 2040, [
     // The legislated 48% floor holds only through 2039; projections then slide.
     [2025, '⚖️ Haltelinie 48%'],
     [2039, '📉 danach ~45%'],
   ]), 'Rentenversicherungsbericht · Sicherungsniveau vor Steuern; die Werte nach ~2024 sind amtliche Projektion.'),
-  trendCard('rent-burden', 'Mietbelastung · Großstädte Deutschland', 'Mietbelastung · Neuvermietung · 🇩🇪 Top-7-Städte · % des Einkommens', DE_RENT_BURDEN_PANEL, red, (v) => `${v.toFixed(0)}%`, 257, undefined, 'empirica / IW-Schätzungen · Median-Angebotsmiete zu Median-Nettoeinkommen, Top-7-Städte, gerundet.'),
+  trendCard('rent-burden', 'Mietbelastung · Großstädte Deutschland', 'Mietbelastung · Neuvermietung · 🇩🇪 Top-7-Städte · % des Einkommens', DE_RENT_BURDEN_PANEL, red, (v) => `${localePct(v, 0)}`, 257, undefined, 'empirica / IW-Schätzungen · Median-Angebotsmiete zu Median-Nettoeinkommen, Top-7-Städte, gerundet.'),
   {
     id: 'armies',
     title: 'Größte Armeen · aktive Soldaten',
@@ -1404,8 +1404,8 @@ export const POOL: Dashboard[] = [
         // siege economies top it; the big absolute spenders sit far lower.
         label: 'Militärausgaben · % des BIP',
         value: 34,
-        fmt: (v) => `${v.toFixed(1)}%`,
-        rowFmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `${localePct(v, 1)}`,
+        rowFmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         color: red,
         unit: '',
@@ -1456,8 +1456,8 @@ export const POOL: Dashboard[] = [
         // Germany and Japan anchor the low end for contrast.
         label: 'Inhaftierte · Anteil der Bevölkerung',
         value: 11.5e6,
-        fmt: (v) => `${(v / 1e6).toFixed(1)} ${tr('Mio')}`,
-        rowFmt: (v) => `${(v / 1000).toFixed(2)} %`,
+        fmt: (v) => `${localeNum(v / 1e6, 1)} ${tr('Mio')}`,
+        rowFmt: (v) => `${localePct(v / 1000, 2)}`,
         delta: null,
         color: violet,
         unit: '',
@@ -1486,8 +1486,8 @@ export const POOL: Dashboard[] = [
         // anchor the low end for contrast.
         label: 'Adipositas · Anteil der Erwachsenen',
         value: 8.9e8,
-        fmt: (v) => `${(v / 1e6).toFixed(0)} ${tr('Mio')}`,
-        rowFmt: (v) => `${v.toFixed(0)} %`,
+        fmt: (v) => `${localeNum(v / 1e6, 0)} ${tr('Mio')}`,
+        rowFmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         color: orange,
         unit: '',
@@ -1516,8 +1516,8 @@ export const POOL: Dashboard[] = [
         // the US and India as reference points in between.
         label: 'Lebenserwartung · Jahre',
         value: 73.3,
-        fmt: (v) => `Ø ${v.toFixed(1)} J.`,
-        rowFmt: (v) => `${v.toFixed(1)} J.`,
+        fmt: (v) => `Ø ${localeNum(v, 1)} J.`,
+        rowFmt: (v) => `${localeNum(v, 1)} J.`,
         delta: null,
         color: green,
         unit: '',
@@ -1548,8 +1548,8 @@ export const POOL: Dashboard[] = [
         // OECD; Switzerland sits near the bottom.
         label: 'Abgabenkeil · Single',
         value: 34.9,
-        fmt: (v) => `Ø ${v.toFixed(1)}%`,
-        rowFmt: (v) => `${v.toFixed(1)}%`,
+        fmt: (v) => `Ø ${localePct(v, 1)}`,
+        rowFmt: (v) => `${localePct(v, 1)}`,
         delta: null,
         color: yellow,
         unit: '',
@@ -1579,8 +1579,8 @@ export const POOL: Dashboard[] = [
         // is among the most expensive markets worldwide.
         label: 'Strompreis · Haushalte · ct/kWh',
         value: 40,
-        fmt: (v) => `${v.toFixed(0)} ct`,
-        rowFmt: (v) => `${v.toFixed(0)} ct`,
+        fmt: (v) => `${localeNum(v, 0)} ct`,
+        rowFmt: (v) => `${localeNum(v, 0)} ct`,
         delta: null,
         color: blue,
         unit: '',
@@ -1610,7 +1610,7 @@ export const POOL: Dashboard[] = [
         // The top-5 list below calls out the worst performers.
         label: 'Korruption · kräftiger rot = korrupter',
         value: 57,
-        fmt: (v) => `Ø ${v.toFixed(0)}/100`,
+        fmt: (v) => `Ø ${localeNum(v, 0)}/100`,
         valueByIso: CPI_INVERTED,
         world: live.worldMap,
         rows: [
@@ -1621,7 +1621,7 @@ export const POOL: Dashboard[] = [
           { name: 'Libyen', v: 87 },
           { name: 'Schweiz', v: 19 },
         ],
-        rowFmt: (v) => `${v.toFixed(0)} /100`,
+        rowFmt: (v) => `${localeNum(v, 0)} /100`,
       }),
   },
   {
@@ -1637,8 +1637,8 @@ export const POOL: Dashboard[] = [
         // counts are highest in the most populous countries.
         label: 'Moderne Sklaverei · Menschen',
         value: 50e6,
-        fmt: (v) => `${(v / 1e6).toFixed(0)} ${tr('Mio')}`,
-        rowFmt: (v) => `${(v / 1e6).toFixed(1)} ${tr('Mio')}`,
+        fmt: (v) => `${localeNum(v / 1e6, 0)} ${tr('Mio')}`,
+        rowFmt: (v) => `${localeNum(v / 1e6, 1)} ${tr('Mio')}`,
         delta: null,
         color: red,
         unit: '',
@@ -1696,7 +1696,7 @@ export const POOL: Dashboard[] = [
         // left out so the timeline stays a war chart, not a regime-change list.
         label: 'US-Kriege · Tote seit 1945',
         value: 7.156e6,
-        fmt: (v) => `${(v / 1e6).toFixed(1)} ${tr('Mio')}`,
+        fmt: (v) => `${localeNum(v / 1e6, 1)} ${tr('Mio')}`,
         color: red,
         yearStart: 1946,
         yearEnd: 2026,
@@ -1756,7 +1756,7 @@ export const POOL: Dashboard[] = [
         label: 'Depressive Episode im Jahr · 🇺🇸 · 12–17 J.',
         value: TEEN_MDE.latest,
         unit: '',
-        fmt: (v) => `${v.toFixed(0)}%`,
+        fmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         seed: 187,
         series: [{ name: 'Betroffene', color: magenta, data: TEEN_MDE.data }],
@@ -1765,7 +1765,7 @@ export const POOL: Dashboard[] = [
         shade: { mask: TEEN_MDE.mask, label: '📱 Soziale Medien' },
       }),
   },
-  trendCard('female-lfp', 'Frauenerwerbsquote · Deutschland', 'Frauenerwerbsquote · 🇩🇪 · seit 1882', DE_FEMALE_LFP_PANEL, aqua, (v) => `${v.toFixed(0)}%`, 211, eraMarkers(1882, 2023, [
+  trendCard('female-lfp', 'Frauenerwerbsquote · Deutschland', 'Frauenerwerbsquote · 🇩🇪 · seit 1882', DE_FEMALE_LFP_PANEL, aqua, (v) => `${localePct(v, 0)}`, 211, eraMarkers(1882, 2023, [
     // One belegbarer milestone: from 1958 married women no longer needed the
     // husband's consent to take a job (Gleichberechtigungsgesetz).
     [1958, '⚖️ Gleichberechtigung 1958'],
@@ -1779,7 +1779,7 @@ export const POOL: Dashboard[] = [
       areaChart(f, {
         label: 'Unterhaltungsmedien · 🇺🇸 · 13–18 J. · Std./Tag',
         value: TEEN_SCREEN_PANEL.latest,
-        fmt: (v) => `${v.toFixed(1)} h`,
+        fmt: (v) => `${localeNum(v, 1)} h`,
         delta: null,
         seed: 193,
         color: violet,
@@ -1794,7 +1794,7 @@ export const POOL: Dashboard[] = [
         ]),
       }),
   },
-  trendCard('teen-antidepressants', 'Antidepressiva bei US-Jugendlichen', 'Antidepressiva-Rezepte · 🇺🇸 · 12–17 J. · Anteil', TEEN_RX_PANEL, aqua, (v) => `${v.toFixed(1)}%`, 199, eraMarkers(1970, 2022, [
+  trendCard('teen-antidepressants', 'Antidepressiva bei US-Jugendlichen', 'Antidepressiva-Rezepte · 🇺🇸 · 12–17 J. · Anteil', TEEN_RX_PANEL, aqua, (v) => `${localePct(v, 1)}`, 199, eraMarkers(1970, 2022, [
     // The climb opens with the SSRI era and steepens in the smartphone years,
     // on the 1970–2022 axis. The 2012 line is the correlation, not proof.
     [1988, '💊 Prozac 1988'],
@@ -1837,7 +1837,7 @@ export const POOL: Dashboard[] = [
         label: 'Adipositas · 🇺🇸 Erwachsene',
         value: US_OBESITY_FASTFOOD.latest,
         unit: '',
-        fmt: (v) => `${v.toFixed(0)}%`,
+        fmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         seed: 173,
         series: [{ name: 'Adipositas-Quote', color: orange, data: US_OBESITY_FASTFOOD.data }],
@@ -1858,8 +1858,8 @@ export const POOL: Dashboard[] = [
         // non-Chinese outliers. Counts are estimates and vary by source.
         label: 'CCTV-Kameras je Stadt',
         value: 4.6e6,
-        fmt: (v) => `${(v / 1e6).toFixed(1)} ${tr('Mio')}`,
-        rowFmt: (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(2)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`),
+        fmt: (v) => `${localeNum(v / 1e6, 1)} ${tr('Mio')}`,
+        rowFmt: (v) => (v >= 1e6 ? `${localeNum(v / 1e6, 2)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`),
         delta: null,
         color: aqua,
         unit: '',
@@ -1879,7 +1879,7 @@ export const POOL: Dashboard[] = [
         ],
       }),
   },
-  trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras', CAMERAS_PANEL, aqua, (v) => `${(v / 1e9).toFixed(2)} ${tr('Mrd')}`, 183, eraMarkers(2000, 2025, [
+  trendCard('cameras-world', 'Überwachungskameras weltweit', 'Installierte CCTV-Kameras', CAMERAS_PANEL, aqua, (v) => `${localeNum(v / 1e9, 2)} ${tr('Mrd')}`, 183, eraMarkers(2000, 2025, [
     [2008, '🏅 Peking · Ausbaustart China'],
     [2021, '🎥 1 Mrd weltweit'],
   ]), 'IHS Markit / Marktschätzungen · installierte Überwachungskameras weltweit; vor 2010 grob rückgeschätzt.'),
@@ -1926,7 +1926,7 @@ export const POOL: Dashboard[] = [
         color: red,
         unit: '',
         fmt: (v) => `${Math.round(v / 1000)}k`,
-        rowFmt: (v) => `${(v / 1000).toFixed(1)}k`,
+        rowFmt: (v) => `${localeNum(v / 1000, 1)}k`,
         rows: [
           { name: 'Russland', v: 32_000 },
           { name: 'Südkorea', v: 10_500 },
@@ -1948,8 +1948,8 @@ export const POOL: Dashboard[] = [
         // dwarfs everyone — well over half the world's total.
         label: '5G-Basisstationen · Schätzwerte',
         value: 5.1e6,
-        fmt: (v) => `${(v / 1e6).toFixed(1)} ${tr('Mio')}`,
-        rowFmt: (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(2)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`),
+        fmt: (v) => `${localeNum(v / 1e6, 1)} ${tr('Mio')}`,
+        rowFmt: (v) => (v >= 1e6 ? `${localeNum(v / 1e6, 2)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`),
         delta: null,
         color: violet,
         unit: '',
@@ -2038,7 +2038,7 @@ export const POOL: Dashboard[] = [
         label: 'Heiraten & Scheidungen · 🇩🇪 · je 1000 Einw.',
         value: DE_FAMILY.marLatest,
         unit: '',
-        fmt: (v) => v.toFixed(1),
+        fmt: (v) => localeNum(v, 1),
         delta: null,
         seed: 191,
         series: [
@@ -2049,7 +2049,7 @@ export const POOL: Dashboard[] = [
         xLabels: ['1900', '1940', '1980', 'heute'],
       }),
   },
-  trendCard('single-households', 'Einpersonenhaushalte · Deutschland', 'Einpersonenhaushalte · 🇩🇪 · Anteil · seit 1900', DE_SINGLE_HH_PANEL, violet, (v) => `${v.toFixed(0)}%`, 193, eraMarkers(1900, 2022, [
+  trendCard('single-households', 'Einpersonenhaushalte · Deutschland', 'Einpersonenhaushalte · 🇩🇪 · Anteil · seit 1900', DE_SINGLE_HH_PANEL, violet, (v) => `${localePct(v, 0)}`, 193, eraMarkers(1900, 2022, [
     // Neutral legal/demographic milestones that bracket the steep 1961–1980
     // rise. Deliberately not a single "feminism" cause — the trend is driven
     // by the pill, no-fault divorce, urbanisation and an ageing (widowed)
@@ -2113,8 +2113,8 @@ export const POOL: Dashboard[] = [
         // Türkiye anchors the low end.
         label: 'Alkohol · Liter Reinalkohol pro Kopf',
         value: 15.2,
-        fmt: (v) => `${v.toFixed(1)} L`,
-        rowFmt: (v) => `${v.toFixed(1)} L`,
+        fmt: (v) => `${localeNum(v, 1)} L`,
+        rowFmt: (v) => `${localeNum(v, 1)} L`,
         delta: null,
         color: magenta,
         unit: '',
@@ -2143,7 +2143,7 @@ export const POOL: Dashboard[] = [
         // pandemic — economic and social stress driving heavier drinking.
         label: 'Alkoholtote · 🇺🇸 · pro Jahr',
         value: US_ALCOHOL_DEATHS_PANEL.latest,
-        fmt: (v) => `${(v / 1000).toFixed(0)}k`,
+        fmt: (v) => `${localeNum(v / 1000, 0)}k`,
         delta: US_ALCOHOL_DEATHS_PANEL.yoyPct,
         seed: 197,
         color: red,
@@ -2299,7 +2299,7 @@ export const POOL: Dashboard[] = [
         label: 'Barzahlungen · Anteil der Käufe',
         value: CASHLESS_COMPARE.sweLatest,
         unit: '%',
-        fmt: (v) => `${v.toFixed(0)}%`,
+        fmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         seed: 241,
         series: [
@@ -2433,7 +2433,7 @@ export const POOL: Dashboard[] = [
         label: 'Wohneigentum junger Haushalte',
         value: YOUNG_HOME_COMPARE.engLatest,
         unit: '%',
-        fmt: (v) => `${v.toFixed(0)}%`,
+        fmt: (v) => `${localePct(v, 0)}`,
         delta: null,
         seed: 271,
         series: [
@@ -2459,12 +2459,12 @@ export const POOL: Dashboard[] = [
     [2017, '🧬 Erste CAR-T'],
     [2023, '✂️ Erste CRISPR-Therapie'],
   ]), 'FDA CBER · zugelassene Gen- und Zelltherapien, kumuliert.'),
-  trendCard('autocracy-share', 'Menschheit unter Autokratie', 'Weltbevölkerung in Autokratien', AUTOCRACY_SHARE_PANEL, red, (v) => `${v.toFixed(0)}%`, 307, eraMarkers(2013, 2024, [
+  trendCard('autocracy-share', 'Menschheit unter Autokratie', 'Weltbevölkerung in Autokratien', AUTOCRACY_SHARE_PANEL, red, (v) => `${localePct(v, 0)}`, 307, eraMarkers(2013, 2024, [
     [2016, '🇹🇷 Türkei: Ausnahmezustand'],
     [2020, '🇮🇳 Indien: Wahlautokratie'],
     [2021, '🇲🇲 Myanmar: Militärputsch'],
   ]), 'V-Dem Democracy Reports · Anteil der Weltbevölkerung in Wahl- und geschlossenen Autokratien.'),
-  trendCard('smartphone-leash', 'Smartphones · die freiwillige Fußfessel', 'Smartphone-Nutzer · 🌍 · Ø 4h37m/Tag', SMARTPHONE_PANEL, aqua, (v) => `${(v / 1e9).toFixed(1)} ${tr('Mrd')}`, 293, eraMarkers(2007, 2025, [
+  trendCard('smartphone-leash', 'Smartphones · die freiwillige Fußfessel', 'Smartphone-Nutzer · 🌍 · Ø 4h37m/Tag', SMARTPHONE_PANEL, aqua, (v) => `${localeNum(v / 1e9, 1)} ${tr('Mrd')}`, 293, eraMarkers(2007, 2025, [
     [2007, '📱 iPhone'],
     [2008, '🤖 Android'],
     [2016, '🌍 Jeder Dritte'],
