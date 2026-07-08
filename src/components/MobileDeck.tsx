@@ -12,6 +12,9 @@ const Deck = styled.div`
   inset: 0;
   display: flex;
   flex-direction: column;
+  /* Keep the z-index:-1 background layer inside Deck's stacking context in
+     all engines (plain position:fixed doesn't create one in Firefox). */
+  isolation: isolate;
 `;
 
 const TopBar = styled.div`
