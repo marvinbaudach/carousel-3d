@@ -13,7 +13,8 @@ const BETA_REST = 45;
 export function useDeviceTilt(
   enabled: boolean,
   card: RefObject<HTMLDivElement | null>,
-  bg: RefObject<HTMLDivElement | null>,
+  /** Any element works — the background may be a div (blobs) or a canvas. */
+  bg: RefObject<HTMLElement | null>,
 ): void {
   useEffect(() => {
     if (!enabled) return;

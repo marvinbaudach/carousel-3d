@@ -6,6 +6,7 @@ import { useDeviceTilt } from '../hooks/useDeviceTilt';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useTagFilter } from '../hooks/useTagFilter';
 import { t as trans } from '../i18n';
+import { MobileAurora, hasWebGL } from './MobileAurora';
 import { MobileBackground } from './MobileBackground';
 import { SwipeDeck } from './SwipeDeck';
 import { glassSurface } from './glass';
@@ -270,7 +271,16 @@ export function MobileDeck() {
 
   const reducedMotion = useReducedMotion();
   const tiltRef = useRef<HTMLDivElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
+  // The background is either the shader canvas or the CSS blob layer — the
+  // tilt parallax only needs *an* element, so the ref is width-typed and fed
+  // through a callback (callback refs are contravariant, object refs aren't).
+  const bgRef = useRef<HTMLElement | null>(null);
+  const setBgRef = useCallback((el: HTMLElement | null) => {
+    bgRef.current = el;
+  }, []);
+  // WebGL probe once per mount: shader aurora where possible, CSS blobs as
+  // the fallback — and under reduced motion the (static) blobs always win.
+  const [aurora] = useState(hasWebGL);
   // Non-iOS grants implicitly.
   const [motion, setMotion] = useState<'granted' | 'ask' | 'denied'>(() => {
     if (!motionPermissionNeeded()) return 'granted';
@@ -351,7 +361,11 @@ export function MobileDeck() {
 
   return (
     <Deck>
-      <MobileBackground ref={bgRef} accent={activeTag.accent} />
+      {aurora && !reducedMotion ? (
+        <MobileAurora ref={setBgRef} accent={activeTag.accent} />
+      ) : (
+        <MobileBackground ref={setBgRef} accent={activeTag.accent} />
+      )}
       <TopBar>
         <FilterButton onClick={() => setMenuOpen(true)}>
           {currentLabel}

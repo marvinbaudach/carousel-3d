@@ -15,16 +15,26 @@ const AccentProperty = createGlobalStyle`
   }
 `;
 
+// Four-waypoint orbits (not A→B→A pendulums) so the glow visibly wanders
+// instead of just breathing; travel spans roughly a viewport half.
 const driftA = keyframes`
-  0% { transform: translate(-14%, -10%) scale(2); }
-  50% { transform: translate(8%, 4%) scale(2.36); }
-  100% { transform: translate(-14%, -10%) scale(2); }
+  0% { transform: translate(-20%, -14%) scale(2); }
+  33% { transform: translate(26%, 10%) scale(2.4); }
+  66% { transform: translate(4%, 34%) scale(2.15); }
+  100% { transform: translate(-20%, -14%) scale(2); }
 `;
 
 const driftB = keyframes`
-  0% { transform: translate(10%, 12%) scale(2.2); }
-  50% { transform: translate(-6%, -4%) scale(1.9); }
-  100% { transform: translate(10%, 12%) scale(2.2); }
+  0% { transform: translate(18%, 20%) scale(2.2); }
+  33% { transform: translate(-24%, 2%) scale(1.85); }
+  66% { transform: translate(-4%, -26%) scale(2.3); }
+  100% { transform: translate(18%, 20%) scale(2.2); }
+`;
+
+const driftC = keyframes`
+  0% { transform: translate(-30%, 24%) scale(1.9); }
+  50% { transform: translate(30%, -20%) scale(2.35); }
+  100% { transform: translate(-30%, 24%) scale(1.9); }
 `;
 
 const Layer = styled.div<{ $accent: string }>`
@@ -55,17 +65,30 @@ const Blob = styled.div`
   }
 `;
 
+// Negative delays start each blob mid-orbit so the trio never moves in sync.
 const BlobA = styled(Blob)`
   top: -15vmax;
   left: -12vmax;
-  animation: ${driftA} 28s ease-in-out infinite;
+  opacity: 0.17;
+  animation: ${driftA} 16s ease-in-out -4s infinite;
 `;
 
 const BlobB = styled(Blob)`
   right: -15vmax;
   bottom: -18vmax;
-  opacity: 0.1;
-  animation: ${driftB} 36s ease-in-out infinite;
+  opacity: 0.12;
+  animation: ${driftB} 22s ease-in-out -9s infinite;
+`;
+
+// A third, dimmer blob crossing the middle: the two corner glows alone read
+// as static ambience — the traveler is what makes the room feel alive.
+const BlobC = styled(Blob)`
+  top: 30%;
+  left: 28%;
+  width: 34vmax;
+  height: 34vmax;
+  opacity: 0.09;
+  animation: ${driftC} 19s ease-in-out -13s infinite;
 `;
 
 interface MobileBackgroundProps {
@@ -82,6 +105,7 @@ export function MobileBackground({ accent, ref }: MobileBackgroundProps) {
       <AccentProperty />
       <BlobA />
       <BlobB />
+      <BlobC />
     </Layer>
   );
 }
