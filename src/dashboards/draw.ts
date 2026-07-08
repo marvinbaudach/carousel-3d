@@ -225,8 +225,10 @@ export function drawGridLabels(
 ): void {
   const { ctx, u } = f;
   const pad = 36 * u;
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${14 * u}px ${FONT}`;
+  // INK_SECONDARY, not MUTED: axis ticks are primary chart reading and the
+  // muted gray falls below comfortable contrast on the dark surface.
+  ctx.fillStyle = INK_SECONDARY;
+  ctx.font = `400 ${15 * u}px ${FONT}`;
   ctx.textAlign = 'left';
   labels.forEach((label, i) => {
     const y = bottom - ((bottom - top) * i) / (labels.length - 1);

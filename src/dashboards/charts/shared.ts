@@ -54,10 +54,12 @@ export function plotRect(f: Frame, top: number) {
 }
 
 /** Evenly spaced x-axis labels along the baseline. */
+// Axis text uses INK_SECONDARY, not MUTED: on the dark surface the muted gray
+// sits below comfortable reading contrast, and axes are primary chart reading.
 export function xAxisLabels(f: Frame, labels: string[], x0: number, x1: number, y: number): void {
   const { ctx, u } = f;
-  ctx.fillStyle = MUTED;
-  ctx.font = `400 ${14 * u}px ${FONT}`;
+  ctx.fillStyle = INK_SECONDARY;
+  ctx.font = `400 ${15 * u}px ${FONT}`;
   ctx.textAlign = 'center';
   labels.forEach((l, i) => {
     ctx.fillText(tr(l), x0 + ((x1 - x0) * i) / (labels.length - 1), y + 24 * u);
