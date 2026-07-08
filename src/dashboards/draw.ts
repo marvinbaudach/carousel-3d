@@ -56,11 +56,11 @@ export function stagger(t: number, i: number, gap = 0.05, dur = 0.6): number {
 export function fmtCompact(v: number, unit = ''): string {
   const s =
     v >= 1e12
-      ? `${(v / 1e12).toFixed(2)}T`
+      ? `${(v / 1e12).toFixed(2)} ${tr('Bio.')}`
       : v >= 1e9
-        ? `${(v / 1e9).toFixed(1)}B`
+        ? `${(v / 1e9).toFixed(1)} ${tr('Mrd')}`
         : v >= 1_000_000
-          ? `${(v / 1_000_000).toFixed(1)}M`
+          ? `${(v / 1_000_000).toFixed(1)} ${tr('Mio')}`
           : v >= 10_000
             ? `${(v / 1000).toFixed(0)}k`
             : v >= 1000
@@ -77,6 +77,9 @@ export interface Frame {
   t: number;
   /** 1 unit = 1 design pixel of the 512-wide reference layout. */
   u: number;
+  /** Mobile deck: skip tertiary chrome (the source footer) — on the phone
+      the source already lives behind the info button. */
+  compact?: boolean;
 }
 
 /** Panel background: soft vertical gradient plus a faint top light. */

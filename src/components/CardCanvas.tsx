@@ -2,9 +2,11 @@ import { useEffect, useRef } from 'react';
 import { SETTLED_T, type Dashboard } from '../dashboards';
 
 // The draw functions are written against a 512-wide reference layout (u =
-// w / 512) and paint straight onto a 2D context — the same calls the ring's
-// textures make, just into a plain canvas here. No Three.js on this path.
-const REF_W = 512;
+// w / 512). Mobile cards render ~370 CSS px wide, which shrinks that design
+// below comfortable reading size — so the deck uses a smaller reference
+// width, boosting u (and with it every font, stroke and legend) ~22% across
+// all cards at once. Tune this constant by eye in device emulation.
+const MOBILE_REF_W = 420;
 // Real-time seconds to play the fly-in for before locking the settled frame.
 // Draw progress runs on `t`; the slowest element (the line, easeOut(t/1.4))
 // finishes at t=1.4, so a ~2s window covers every panel's intro. After that we
@@ -34,7 +36,7 @@ export function CardCanvas({ dashboard, animate }: CardCanvasProps) {
       const h = Math.max(1, Math.round(rect.height * dpr));
       if (canvas.width !== w) canvas.width = w;
       if (canvas.height !== h) canvas.height = h;
-      dashboard.draw({ ctx, w, h, t, u: w / REF_W });
+      dashboard.draw({ ctx, w, h, t, u: w / MOBILE_REF_W, compact: true });
     };
 
     let raf = 0;
