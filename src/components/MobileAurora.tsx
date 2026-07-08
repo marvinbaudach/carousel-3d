@@ -106,6 +106,9 @@ const GlCanvas = styled.canvas`
   height: 100%;
   z-index: -1; /* same background slot as the CSS blob layer */
   pointer-events: none;
+  /* Stage color behind the GL buffer: if a driver fails to composite the
+     canvas at all, the element still reads as the dark page, never white. */
+  background: #05070c;
 `;
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -118,18 +121,25 @@ function compile(gl: WebGLRenderingContext, type: number, src: string): WebGLSha
   if (!sh) return null;
   gl.shaderSource(sh, src);
   gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    console.warn('[aurora] shader compile failed', gl.getShaderInfoLog(sh));
+    return null;
+  }
   return sh;
 }
 
 interface MobileAuroraProps {
   /** Active theme accent (TAGS[].accent). */
   accent: string;
+  /** Called when GL setup fails or the context is lost — the caller should
+      swap to the CSS blob background instead of leaving a dead canvas. */
+  onFail?: () => void;
   /** The gyro parallax shifts this element against the cards (Task 7). */
   ref?: Ref<HTMLCanvasElement>;
 }
 
 /** Shader aurora behind the mobile deck — the living background. */
-export function MobileAurora({ accent, ref }: MobileAuroraProps) {
+export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // The tint target lives in a ref so an accent change never restarts the GL
   // setup effect — the render loop eases toward it, like the desktop aurora.
@@ -140,16 +150,31 @@ export function MobileAurora({ accent, ref }: MobileAuroraProps) {
   useEffect(() => {
     const canvas = canvasRef.current;
     const gl = canvas?.getContext('webgl', { alpha: false, antialias: false });
-    if (!canvas || !gl) return; // caller probed hasWebGL(); belt and braces
+    if (!canvas || !gl) {
+      onFail?.(); // caller probed hasWebGL(), but drivers can still refuse
+      return;
+    }
+
+    // Paint the stage color before anything else, so the buffer is never
+    // uninitialized memory (white garbage on some drivers).
+    gl.clearColor(0.02, 0.027, 0.047, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
 
     const vs = compile(gl, gl.VERTEX_SHADER, VERT);
     const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
     const prog = gl.createProgram();
-    if (!vs || !fs || !prog) return;
+    if (!vs || !fs || !prog) {
+      onFail?.();
+      return;
+    }
     gl.attachShader(prog, vs);
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      console.warn('[aurora] program link failed', gl.getProgramInfoLog(prog));
+      onFail?.();
+      return;
+    }
     gl.useProgram(prog);
 
     const buf = gl.createBuffer();
@@ -207,12 +232,24 @@ export function MobileAurora({ accent, ref }: MobileAuroraProps) {
     };
     document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('resize', size);
+    // A lost context (GPU reset, driver hiccup) leaves a dead canvas — hand
+    // over to the CSS blob background instead of showing a frozen frame.
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(raf);
+      onFail?.();
+    };
+    canvas.addEventListener('webglcontextlost', onLost);
     return () => {
       cancelAnimationFrame(raf);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('resize', size);
+      canvas.removeEventListener('webglcontextlost', onLost);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
     };
+    // onFail is a stable callback (caller memoizes); the GL setup must not
+    // re-run on prop identity churn.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Both refs point at the same canvas: ours drives GL, the caller's the tilt.

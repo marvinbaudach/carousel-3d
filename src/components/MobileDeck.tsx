@@ -280,7 +280,11 @@ export function MobileDeck() {
   }, []);
   // WebGL probe once per mount: shader aurora where possible, CSS blobs as
   // the fallback — and under reduced motion the (static) blobs always win.
-  const [aurora] = useState(hasWebGL);
+  // The aurora can also bail at runtime (compile/link failure, lost context,
+  // driver refusing the real context despite the probe) — then it hands the
+  // slot back to the blobs instead of leaving a dead canvas.
+  const [aurora, setAurora] = useState(hasWebGL);
+  const disableAurora = useCallback(() => setAurora(false), []);
   // Non-iOS grants implicitly.
   const [motion, setMotion] = useState<'granted' | 'ask' | 'denied'>(() => {
     if (!motionPermissionNeeded()) return 'granted';
@@ -362,7 +366,7 @@ export function MobileDeck() {
   return (
     <Deck>
       {aurora && !reducedMotion ? (
-        <MobileAurora ref={setBgRef} accent={activeTag.accent} />
+        <MobileAurora ref={setBgRef} accent={activeTag.accent} onFail={disableAurora} />
       ) : (
         <MobileBackground ref={setBgRef} accent={activeTag.accent} />
       )}
