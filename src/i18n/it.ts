@@ -4,6 +4,8 @@ export const IT: Record<string, string> = {
   'Als PNG speichern': 'Salva come PNG',
   'BiB/Destatis · Wanderungsstatistik; ab 2016 Methodenbruch, Werte nur bedingt vergleichbar.': 'BiB/Destatis · statistiche migratorie; interruzione metodologica dal 2016, valori solo parzialmente comparabili.',
   'Einstellungen': 'Impostazioni',
+  'MEHR': 'ALTRO',
+  'Weitere Themen': 'Altri temi',
   'SPRACHE': 'LINGUA',
   'FAVORITEN': 'PREFERITI',
   'Favorit entfernen': 'Rimuovi dai preferiti',

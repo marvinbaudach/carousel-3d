@@ -14,16 +14,21 @@ export { type DashboardTexture, createDashboardTexture } from './texture';
  * an accent from the categorical palette (never hand-picked hex — see
  * theme.ts): the 3D scene tints its ambience toward it, so switching themes
  * reads as a scene change, not just a card swap.
+ *
+ * `primary` themes render as always-visible chips in the desktop bar; the
+ * rest live in its "MEHR" popover so the bar stays a fixed width no matter
+ * how many themes the pool grows. Mobile's ThemeSheet ignores the flag and
+ * lists everything.
  */
-export const TAGS: { id: string; label: string; accent: string }[] = [
-  { id: 'geld', label: 'GELD', accent: SERIES[2] }, // gold
+export const TAGS: { id: string; label: string; accent: string; primary?: boolean }[] = [
+  { id: 'geld', label: 'GELD', accent: SERIES[2], primary: true }, // gold
   // All 8 categorical slots are taken (see TECH below) — MÄRKTE shares green
   // with the NEU meta chip; the palette is fixed (CVD-validated).
-  { id: 'maerkte', label: 'MÄRKTE', accent: SERIES[3] }, // green
-  { id: 'krieg', label: 'KRIEG', accent: SERIES[5] }, // red
-  { id: 'deutschland', label: 'DEUTSCHLAND', accent: SERIES[7] }, // orange
-  { id: 'soziales', label: 'SOZIALES', accent: SERIES[6] }, // magenta
-  { id: 'freiheit', label: 'FREIHEIT', accent: SERIES[4] }, // violet
+  { id: 'maerkte', label: 'MÄRKTE', accent: SERIES[3], primary: true }, // green
+  { id: 'krieg', label: 'KRIEG', accent: SERIES[5], primary: true }, // red
+  { id: 'deutschland', label: 'DEUTSCHLAND', accent: SERIES[7], primary: true }, // orange
+  { id: 'soziales', label: 'SOZIALES', accent: SERIES[6], primary: true }, // magenta
+  { id: 'freiheit', label: 'FREIHEIT', accent: SERIES[4], primary: true }, // violet
   { id: 'gesundheit', label: 'GESUNDHEIT', accent: SERIES[1] }, // aqua
   // All 8 categorical slots are taken, so TECH shares violet with FREIHEIT —
   // the palette is fixed (CVD-validated), never extended by hand.
