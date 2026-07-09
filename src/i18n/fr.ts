@@ -8,6 +8,12 @@ export const FR: Record<string, string> = {
   'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.':
     'Compilé à partir de trackers sectoriels (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · capacité IT des plus grands hubs en MW, estimation arrondie ; « en construction » = en construction ou fermement planifié. Pas d\'API en direct — état 2026.',
   'Branchen-Tracker · IT-Kapazität der Hubs · 2026': 'Trackers sectoriels · capacité IT des hubs · 2026',
+  // datacenter-power card
+  'Rechenzentren nach Land': 'Centres de données par pays',
+  'Rechenzentrums-Leistung nach Land': 'Capacité des centres de données par pays',
+  'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, JLL/CBRE) · installierte IT-Leistung der Rechenzentren je Land in MW, gerundete Schätzung; die USA stellen rund die Hälfte der Welt. Kein Live-API — Stand 2025.':
+    'Compilé à partir de trackers sectoriels (Synergy Research, Data Center Map, JLL/CBRE) · capacité IT installée des centres de données par pays en MW, estimation arrondie ; les États-Unis représentent à eux seuls environ la moitié du total mondial. Pas d\'API en direct — état 2025.',
+  'Branchen-Tracker · IT-Leistung je Land · 2025': 'Trackers sectoriels · capacité IT par pays · 2025',
   // de-budget-split card
   'Bundeshaushalt · genannte Posten vs. Investition': 'Budget fédéral · postes cités vs. investissement',
   'Anteil am Bundeshaushalt 2025 · 488 Mrd €': 'Part du budget fédéral 2025 · 488 Mrd €',

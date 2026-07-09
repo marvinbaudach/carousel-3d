@@ -78,6 +78,64 @@ export const DATA_CENTER_HUBS: {
   { name: 'Santiago', lon: -70.6, lat: -33.4, mw: 130, build: 300 },
 ];
 
+/**
+ * Operational data-center IT capacity per country, in megawatts — a curated
+ * order-of-magnitude estimate (Synergy Research, Data Center Map, JLL/CBRE,
+ * national market reports, ~2025). The US alone is roughly half the world
+ * total; secondary markets in the low hundreds of MW. No keyless live API — a
+ * yearly-at-best revision. Feeds the country choropleth.
+ */
+export const DATA_CENTER_POWER_MW: Record<string, number> = {
+  USA: 24000,
+  CHN: 11000,
+  DEU: 3200,
+  GBR: 2600,
+  JPN: 2400,
+  NLD: 1600,
+  AUS: 1500,
+  IRL: 1300,
+  SGP: 1400,
+  FRA: 1400,
+  IND: 1300,
+  CAN: 1200,
+  RUS: 900,
+  BRA: 900,
+  KOR: 900,
+  MYS: 850,
+  HKG: 700,
+  ITA: 700,
+  ESP: 700,
+  SWE: 650,
+  UAE: 620,
+  IDN: 600,
+  TWN: 520,
+  SAU: 520,
+  MEX: 500,
+  ZAF: 480,
+  DNK: 480,
+  FIN: 470,
+  POL: 450,
+  CHE: 500,
+  BEL: 420,
+  NOR: 400,
+  TUR: 360,
+  CHL: 350,
+  THA: 320,
+  AUT: 300,
+  ISR: 300,
+  NGA: 200,
+  NZL: 190,
+};
+
+/** Top data-center countries for the choropleth's ranked list (MW). */
+export const DATA_CENTER_POWER_TOP: { name: string; v: number }[] = [
+  { name: 'USA', v: 24000 },
+  { name: 'China', v: 11000 },
+  { name: 'Deutschland', v: 3200 },
+  { name: 'Großbritannien', v: 2600 },
+  { name: 'Japan', v: 2400 },
+];
+
 // Transparency International CPI 2024 scores (100 = clean), stored
 // inverted and shifted so the cleanest country (Denmark, 90) sits at the
 // neutral end of the red ramp and the most corrupt render darkest.

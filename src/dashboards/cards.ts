@@ -368,6 +368,24 @@ export const POOL: Dashboard[] = [
       }),
   },
   {
+    id: 'datacenter-power',
+    title: 'Rechenzentrums-Leistung nach Land',
+    source:
+      'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, JLL/CBRE) · installierte IT-Leistung der Rechenzentren je Land in MW, gerundete Schätzung; die USA stellen rund die Hälfte der Welt. Kein Live-API — Stand 2025.',
+    draw: (f) =>
+      choroplethMap(f, {
+        label: 'Rechenzentren nach Land',
+        value: DATA_CENTER_POWER_TOP[0].v,
+        fmt: (v) => `${localeNum(v / 1000, 1)} GW`,
+        valueByIso: DATA_CENTER_POWER_MW,
+        world: live.worldMap,
+        rows: DATA_CENTER_POWER_TOP,
+        rowFmt: (v) => `${localeNum(v / 1000, 1)} GW`,
+        ramp: blue,
+        source: 'Branchen-Tracker · IT-Leistung je Land · 2025',
+      }),
+  },
+  {
     id: 'homicide-map',
     title: 'Mordrate weltweit',
     source:

@@ -8,6 +8,12 @@ export const IT: Record<string, string> = {
   'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.':
     'Curato da tracker di settore (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · capacità IT dei maggiori hub in MW, stima arrotondata; «in costruzione» = in costruzione o fermamente pianificato. Nessuna API live — dati 2026.',
   'Branchen-Tracker · IT-Kapazität der Hubs · 2026': 'Tracker di settore · capacità IT degli hub · 2026',
+  // datacenter-power card
+  'Rechenzentren nach Land': 'Data center per paese',
+  'Rechenzentrums-Leistung nach Land': 'Capacità dei data center per paese',
+  'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, JLL/CBRE) · installierte IT-Leistung der Rechenzentren je Land in MW, gerundete Schätzung; die USA stellen rund die Hälfte der Welt. Kein Live-API — Stand 2025.':
+    'Curato da tracker di settore (Synergy Research, Data Center Map, JLL/CBRE) · capacità IT installata dei data center per paese in MW, stima arrotondata; i soli USA rappresentano circa metà del totale mondiale. Nessuna API live — dati 2025.',
+  'Branchen-Tracker · IT-Leistung je Land · 2025': 'Tracker di settore · capacità IT per paese · 2025',
   // de-budget-split card
   'Bundeshaushalt · genannte Posten vs. Investition': 'Bilancio federale · voci citate vs. investimenti',
   'Anteil am Bundeshaushalt 2025 · 488 Mrd €': 'Quota del bilancio federale 2025 · 488 Mld €',
