@@ -99,13 +99,8 @@ export function drawSurface({ ctx, w, h }: Frame): void {
 
 /** Tracked eyebrow label, wrapped onto a second line when it would overflow
     the panel. Returns the extra y-shift (0 or one line) for content below. */
-function drawEyebrow({ ctx, u, w, compact }: Frame, label: string): number {
+function drawEyebrow({ ctx, u, w }: Frame, label: string): number {
   const pad = 36 * u;
-  // Mobile deck: the DOM star button rides the card's top-right corner
-  // (40px + 12px inset ≈ 52 CSS px). pad + this reserve keeps the eyebrow's
-  // wrap width clear of that footprint at phone widths, so no title runs
-  // underneath the button.
-  const rightReserve = compact ? 40 * u : 0;
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
   // INK_SECONDARY, not MUTED: the eyebrow is the card's only heading and the
@@ -116,7 +111,7 @@ function drawEyebrow({ ctx, u, w, compact }: Frame, label: string): number {
   // All panel labels arrive in German; translation happens at this single
   // choke point so the card definitions stay untouched.
   const upper = tr(label).toUpperCase();
-  const maxW = w - 2 * pad - rightReserve;
+  const maxW = w - 2 * pad;
   if (trackedWidth(ctx, upper, tracking) > maxW) {
     const [l1, l2] = wrapTwo(ctx, upper, tracking, maxW);
     drawTracked(ctx, l1, pad, pad + 14 * u, tracking);

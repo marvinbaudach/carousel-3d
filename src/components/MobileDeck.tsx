@@ -11,6 +11,7 @@ import { useThemeFilter } from '../hooks/useThemeFilter';
 import { t as trans } from '../i18n';
 import { DeckActionMenu } from './DeckActionMenu';
 import { Dots, DotsDock } from './DeckPager';
+import { FavPill } from './FavPill';
 import { MobileAurora, hasWebGL } from './MobileAurora';
 import { MobileBackground } from './MobileBackground';
 import { SwipeDeck } from './SwipeDeck';
@@ -238,6 +239,8 @@ export function MobileDeck() {
       )}
 
       {!swiped && dashboards.length > 1 && <Hint $gone={false}>{trans('← wischen zum Blättern →')}</Hint>}
+
+      <FavPill current={current} />
 
       <DeckActionMenu
         open={actionsOpen}

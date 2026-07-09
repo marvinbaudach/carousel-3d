@@ -1,15 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { CardCanvas } from './CardCanvas';
-import { FavStar } from './FavStar';
 import { useReducedMotion } from '../hooks/useReducedMotion';
-import { useFavorites } from '../hooks/useFavorites';
-import { toggleFavorite } from '../favorites';
 import { hapticTick } from '../haptics';
-import { t as trans } from '../i18n';
 import type { Dashboard } from '../dashboards';
-import { SERIES } from '../dashboards/theme';
-import { glassSurface } from './glass';
 
 // Tinder-style throw: the top card follows the finger with a little rotation,
 // and past a threshold it flies off while the neighbour underneath takes its
@@ -62,31 +56,6 @@ const Card = styled.div`
     0 24px 60px rgba(0, 0, 0, 0.55);
 `;
 
-// Star toggle riding each card's top-right corner — every card in the 3-card
-// window carries its own, so the star is already in place while a neighbour
-// rises during a throw (it used to pop in only after the index advanced).
-// Lives in the DOM, not the canvas texture, so toggling never forces a card
-// redraw. pointerdown is stopped so a tap here can never arm the swipe drag.
-const FavButton = styled.button<{ $active: boolean }>`
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 5;
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-radius: 999px;
-  color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.7)')};
-  font: 600 18px/1 inherit;
-  cursor: pointer;
-  transition: transform 120ms ease;
-  ${glassSurface}
-
-  &:active {
-    transform: scale(0.88);
-  }
-`;
-
 const CENTER = 'translate(-50%, -50%)';
 // Underneath cards sit slightly shrunk so the deck reads as a stack; the one
 // the swipe heads toward scales up to full as the top card flies off.
@@ -124,7 +93,6 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
   });
   const animating = useRef(false);
   const reducedMotion = useReducedMotion();
-  const favoriteIds = useFavorites();
 
   // After every index change, snap the three roles back to their resting look
   // (imperative styles from the drag/throw would otherwise stick).
@@ -346,24 +314,6 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
   const next = wrap ? dashboards[(index + 1) % n] : index < n - 1 ? dashboards[index + 1] : null;
   if (!cur) return <Stack />;
 
-  const favButtonFor = (d: Dashboard) => {
-    const active = favoriteIds.includes(d.id);
-    return (
-      <FavButton
-        $active={active}
-        aria-pressed={active}
-        aria-label={trans(active ? 'Favorit entfernen' : 'Zu Favoriten')}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={() => {
-          hapticTick();
-          toggleFavorite(d.id);
-        }}
-      >
-        <FavStar id={d.id} active={active} />
-      </FavButton>
-    );
-  };
-
   return (
     <Stack>
       {/* Neighbours hold the intro's empty start frame (restT 0), not the
@@ -373,13 +323,11 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
       {prev && (
         <Card key={prev.id} ref={prevRef} style={{ zIndex: 2, opacity: 0, transform: BEHIND }}>
           <CardCanvas dashboard={prev} animate={false} restT={reducedMotion ? undefined : 0} />
-          {favButtonFor(prev)}
         </Card>
       )}
       {next && (
         <Card key={next.id} ref={nextRef} style={{ zIndex: 1, transform: BEHIND }}>
           <CardCanvas dashboard={next} animate={false} restT={reducedMotion ? undefined : 0} />
-          {favButtonFor(next)}
         </Card>
       )}
       <Card
@@ -396,7 +344,6 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
             same slot rather than mounting fresh. So `animate` flipping
             false -> true here is what replays CardCanvas's fly-in on landing. */}
         <CardCanvas dashboard={cur} animate={!reducedMotion} onColor={onColor} />
-        {favButtonFor(cur)}
       </Card>
     </Stack>
   );

@@ -30,6 +30,9 @@ export const TAGS: { id: string; label: string; accent: string; primary?: boolea
   { id: 'soziales', label: 'SOZIALES', accent: SERIES[6], primary: true }, // magenta
   { id: 'freiheit', label: 'FREIHEIT', accent: SERIES[4], primary: true }, // violet
   { id: 'gesundheit', label: 'GESUNDHEIT', accent: SERIES[1] }, // aqua
+  // Pandemic dossier: everything COVID — measures, vaccinations, excess
+  // mortality. Shares aqua with GESUNDHEIT (the palette is fixed).
+  { id: 'corona', label: 'CORONA', accent: SERIES[1] }, // aqua
   // All 8 categorical slots are taken, so TECH shares violet with FREIHEIT —
   // the palette is fixed (CVD-validated), never extended by hand.
   { id: 'tech', label: 'TECH', accent: SERIES[4] }, // violet
@@ -94,6 +97,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'ai-jobs': ['soziales', 'geld', 'tech'],
   'ai-compute': ['tech'],
   'ai-training-cost': ['tech', 'geld'],
+  'ai-training-models': ['tech', 'geld'],
   'ai-investment': ['tech', 'geld'],
   'ai-datacenter-power': ['tech', 'welt'],
   'ai-users': ['tech', 'soziales'],
@@ -188,9 +192,9 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'un-resolutions': ['welt', 'krieg'],
   'de-family': ['deutschland', 'soziales'],
   'single-households': ['deutschland', 'soziales'],
-  'covid-stringency': ['gesundheit', 'welt', 'soziales'],
-  'covid-lockdowns': ['gesundheit', 'welt', 'soziales'],
-  'covid-vax-percapita': ['gesundheit', 'welt'],
+  'covid-stringency': ['corona', 'welt', 'soziales'],
+  'covid-lockdowns': ['corona', 'welt', 'soziales'],
+  'covid-vax-percapita': ['corona', 'welt'],
   'real-wages': ['geld', 'deutschland', 'soziales'],
   homeownership: ['geld', 'welt', 'soziales'],
   'cb-balance': ['geld', 'welt'],
@@ -203,7 +207,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-exports': ['deutschland', 'geld', 'welt'],
   cbdc: ['geld', 'welt', 'freiheit'],
   'freedom-decline': ['welt', 'freiheit'],
-  'covid-rights': ['welt', 'freiheit', 'gesundheit'],
+  'covid-rights': ['corona', 'welt', 'freiheit'],
   'de-speech-cases': ['deutschland', 'freiheit'],
   'uk-speech-arrests': ['welt', 'freiheit'],
   'young-homeownership': ['geld', 'soziales', 'freiheit'],
@@ -225,9 +229,12 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'trans-youth': ['gesundheit', 'soziales'],
   'sdg-progress': ['welt', 'freiheit'],
   'who-funding': ['gesundheit', 'welt', 'geld'],
-  'excess-mortality': ['gesundheit', 'welt'],
-  'excess-mortality-map': ['gesundheit', 'welt'],
-  'covid-vax-map': ['gesundheit', 'welt'],
+  'excess-mortality': ['corona', 'welt'],
+  'covid-vax-excess': ['corona', 'deutschland'],
+  'covid-vax-births': ['corona', 'deutschland', 'soziales'],
+  'covid-myocarditis': ['corona'],
+  'excess-mortality-map': ['corona', 'welt'],
+  'covid-vax-map': ['corona', 'welt'],
   'cb-gold': ['geld', 'maerkte', 'welt'],
   'gold-reserves': ['geld', 'maerkte', 'welt'],
   'farm-decline': ['deutschland', 'soziales', 'geld'],
@@ -277,6 +284,7 @@ const ADDED_BY_ID: Record<string, string> = {
   'ai-jobs': '2026-07-07T07:48:18+02:00',
   'ai-compute': '2026-07-08T23:59:00+02:00',
   'ai-training-cost': '2026-07-09T09:45:00+02:00',
+  'ai-training-models': '2026-07-09T13:30:00+02:00',
   'ai-investment': '2026-07-08T23:59:00+02:00',
   'ai-datacenter-power': '2026-07-08T23:59:00+02:00',
   'ai-users': '2026-07-08T23:59:00+02:00',
@@ -403,6 +411,9 @@ const ADDED_BY_ID: Record<string, string> = {
   'sdg-progress': '2026-07-09T03:00:00+02:00',
   'who-funding': '2026-07-09T03:00:00+02:00',
   'excess-mortality': '2026-07-09T03:00:00+02:00',
+  'covid-vax-excess': '2026-07-09T14:00:00+02:00',
+  'covid-vax-births': '2026-07-09T14:30:00+02:00',
+  'covid-myocarditis': '2026-07-09T15:00:00+02:00',
   'excess-mortality-map': '2026-07-09T09:45:00+02:00',
   'covid-vax-map': '2026-07-09T09:45:00+02:00',
   'cb-gold': '2026-07-09T03:00:00+02:00',

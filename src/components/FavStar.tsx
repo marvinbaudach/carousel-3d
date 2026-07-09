@@ -1,9 +1,9 @@
-// The star glyph inside the favorite toggles (hero footer + swipe deck),
-// with the app-like feedback baked in: starring pops the star with a springy
-// overshoot and fires an expanding gold ring; un-starring gives a quick dip.
-// The animation only plays on an actual toggle — moving to another card that
-// happens to be starred re-renders silently (the deck keeps one button
-// instance alive across cards, so `id` guards against that).
+// The star glyph inside the favorite toggles (hero footer + the mobile deck's
+// action pill), with the app-like feedback baked in: starring pops the star
+// with a springy overshoot and fires an expanding gold ring; un-starring gives
+// a quick dip. The animation only plays on an actual toggle — swiping to
+// another card that happens to be starred re-renders silently (the pill is one
+// button instance shared across every card, so `id` guards against that).
 
 import { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';

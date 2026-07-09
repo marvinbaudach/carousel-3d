@@ -49,7 +49,7 @@ export interface WealthSplitCfg {
  * into half the wealth bar is the whole story at a glance.
  */
 export function wealthSplit(f: Frame, cfg: WealthSplitCfg): void {
-  const { ctx, u, t, w } = f;
+  const { ctx, u, t, w, h } = f;
   drawSurface(f);
   const top = drawHeader(f, cfg.label);
   const pad = 36 * u;
@@ -58,7 +58,18 @@ export function wealthSplit(f: Frame, cfg: WealthSplitCfg): void {
   const W = x1 - x0;
   const bh = 26 * u;
   const yPop = top + 46 * u;
-  const yWealth = yPop + 170 * u;
+  // The card must hold flow band, wealth bar, axis caption, legend and (on
+  // non-compact frames) the source footer. The flow band is the elastic
+  // part: full 170u on the tall ring panels, compressed on the short mobile
+  // cards — with a floor so the widening-band story stays readable.
+  const bottomRoom = f.compact ? 14 * u : 40 * u;
+  const legendGap = 62 * u;
+  const legendH = legendGap + 30 * u * (cfg.groups.length - 1) + 8 * u;
+  const flowH = Math.max(
+    90 * u,
+    Math.min(170 * u, h - bottomRoom - legendH - yPop - 2 * bh),
+  );
+  const yWealth = yPop + flowH;
   const gap = 1.5 * u;
 
   ctx.font = `600 ${13 * u}px ${FONT}`;
@@ -106,9 +117,13 @@ export function wealthSplit(f: Frame, cfg: WealthSplitCfg): void {
     wx += ww;
   });
 
-  // Legend: group name left, its wealth share right.
-  const ly0 = yWealth + bh + 62 * u;
-  const rowH = 30 * u;
+  // Legend: group name left, its wealth share right. Rows tighten further
+  // if the floor-height flow band still leaves them short.
+  const ly0 = yWealth + bh + legendGap;
+  const rowH = Math.max(
+    22 * u,
+    Math.min(30 * u, (h - bottomRoom - ly0 - 8 * u) / Math.max(1, cfg.groups.length - 1)),
+  );
   cfg.groups.forEach((g, i) => {
     const gp = stagger(t, i + 4, 0.08);
     const y = ly0 + rowH * i;
@@ -312,7 +327,7 @@ export function debtClock(f: Frame, cfg: DebtClockCfg): void {
   ctx.beginPath();
   ctx.arc(end.x, end.y, 4.5 * u, 0, Math.PI * 2);
   ctx.fill();
-  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(cfg.series, r.y0 + 14 * u, r.y1 - 6 * u));
+  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(cfg.series, r.y0 + 14 * u, r.y1 - 6 * u), p);
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
   xAxisLabels(f, ['1900', '1940', '1980', 'heute'], d.x0, d.x1, r.y1);
 }

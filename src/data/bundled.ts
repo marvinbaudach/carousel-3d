@@ -1657,13 +1657,15 @@ export const AI_COMPUTE_PANEL: TrendSeries = trend(
 
 // Training cost of the most expensive AI run per year, million USD on a
 // cloud-rental compute basis (Epoch AI via Stanford AI Index): Transformer
-// 2017 ≈ $930, GPT-3 2020 ≈ $4.3M, Megatron-Turing 2021 ≈ $6.4M, PaLM 2022
-// ≈ $12.4M, Gemini Ultra late 2023 ≈ $191M. From 2024 on the points follow
-// Epoch's projection — costs grew ~2.4x/year since 2016, putting the largest
-// runs past $1B by 2027 — interpolated geometrically, not measurements.
+// Transformer 2017 ≈ $930, BERT-Large 2018 ≈ $3.3k, RoBERTa Large 2019
+// ≈ $160k, GPT-3 2020 ≈ $4.3M, Megatron-Turing 2021 ≈ $6.4M, PaLM 2022
+// ≈ $12.4M, Gemini Ultra late 2023 ≈ $191M (GPT-4 ≈ $78M the same year).
+// From 2024 on the points follow Epoch's projection — costs grew ~2.4x/year
+// since 2016, putting the largest runs past $1B by 2027 — interpolated
+// geometrically, not measurements.
 export const AI_TRAIN_COST_PANEL: TrendSeries = trend(
   [
-    [2017, 0.001], [2019, 0.16], [2020, 4.3], [2021, 6.4], [2022, 12.4],
+    [2017, 0.001], [2018, 0.003], [2019, 0.16], [2020, 4.3], [2021, 6.4], [2022, 12.4],
     [2023, 191], [2024, 290], [2025, 440], [2026, 660], [2027, 1000],
   ],
   (v) => (v >= 950 ? `${localeNum(v / 1000, 1)} ${tr('Mrd')} $` : `${localeNum(v, 0)} ${tr('Mio')} $`),
@@ -2089,3 +2091,53 @@ export const ZOMBIE_PANEL: TrendSeries = trend(
   (v) => localePct(v, 0),
   ['1990', '2002', '2013', 'heute'],
 );
+
+// ---------------------------------------------------------------------------
+// Germany, monthly-sampled 2020–2024: cumulative full-vaccination coverage
+// (RKI via OWID) against excess mortality (OWID P-score — share of deaths
+// above the pre-pandemic projection, monthly, rounded/smoothed). Shared
+// percent axis so the timing of waves and rollout reads directly. The chart
+// makes no causal claim: winter waves, heat summers and an ageing baseline
+// all move the excess line — the juxtaposition shows WHEN, not WHY.
+const DE_VAX_PTS: [number, number][] = [
+  [2020, 0], [2020.9, 0], [2021, 0.5], [2021.25, 7], [2021.5, 38],
+  [2021.75, 64], [2022, 71], [2022.25, 75], [2022.5, 76], [2024.5, 76],
+];
+const DE_EXCESS_PTS: [number, number][] = [
+  [2020, -2], [2020.3, 8], [2020.5, 1], [2020.75, 3], [2020.95, 28],
+  [2021.1, 2], [2021.3, 6], [2021.5, 3], [2021.8, 9], [2021.95, 16],
+  [2022.1, 4], [2022.3, 7], [2022.55, 12], [2022.75, 8], [2022.95, 20],
+  [2023.1, 3], [2023.3, 1], [2023.55, 4], [2023.8, 1], [2024, 2], [2024.5, 0],
+];
+const vaxExcessScale = niceScale(-2, 80, (v) => localePct(v, 0));
+const monthlySamples = (pts: [number, number][]): number[] =>
+  Array.from({ length: 55 }, (_, i) => interpAt(pts, 2020 + i / 12));
+export const DE_VAX_EXCESS = {
+  rows: [
+    { name: 'Übersterblichkeit', data: norm(monthlySamples(DE_EXCESS_PTS), vaxExcessScale.lo, vaxExcessScale.hi) },
+    { name: 'Impfquote (vollständig)', data: norm(monthlySamples(DE_VAX_PTS), vaxExcessScale.lo, vaxExcessScale.hi) },
+  ],
+  ticks: vaxExcessScale.ticks,
+};
+
+// Germany, monthly-sampled 2020–2024: full-vaccination coverage against live
+// births as an index (monthly births vs. the 2019 monthly average, Destatis,
+// rounded/smoothed). Births held ~100 through 2021 (795k in 2021, the highest
+// since 1997), then stepped down sharply in January 2022 — nine months after
+// the adult campaign peaked — and kept sliding (739k '22, 693k '23). The
+// timing is documented by BiB (Bujard/Andersson 2023); its causes are
+// contested (uncertainty, postponement and vaccination effects are all
+// discussed) — the chart shows WHEN, the source note says exactly that.
+const DE_BIRTH_PTS: [number, number][] = [
+  [2020, 99], [2020.5, 99], [2021, 100], [2021.4, 102], [2021.9, 103],
+  [2022.05, 92], [2022.3, 94], [2022.6, 95], [2022.9, 93],
+  [2023.1, 90], [2023.5, 89], [2024, 87], [2024.5, 87],
+];
+const vaxBirthScale = niceScale(0, 110, (v) => localePct(v, 0));
+export const DE_VAX_BIRTHS = {
+  rows: [
+    { name: 'Geburten (Index, 2019 = 100)', data: norm(monthlySamples(DE_BIRTH_PTS), vaxBirthScale.lo, vaxBirthScale.hi) },
+    { name: 'Impfquote (vollständig)', data: norm(monthlySamples(DE_VAX_PTS), vaxBirthScale.lo, vaxBirthScale.hi) },
+  ],
+  ticks: vaxBirthScale.ticks,
+};

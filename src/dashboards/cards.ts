@@ -153,6 +153,8 @@ import {
   FREE_SPEECH_PANEL,
   ICE_BAN_PANEL,
   DE_TFR_PANEL,
+  DE_VAX_EXCESS,
+  DE_VAX_BIRTHS,
 } from '../data/bundled';
 import {
   blue,
@@ -3083,6 +3085,36 @@ export const POOL: Dashboard[] = [
   // Projection leg on the 2017–2027 axis: dashed + arrow from 2024 on.
   (2024 - 2017) / (2027 - 2017)),
   {
+    id: 'ai-training-models',
+    title: 'KI-Training · was die Top-Modelle kosteten',
+    source:
+      'Epoch AI / Stanford AI Index · geschätzte Rechenkosten je Trainingslauf zu Cloud-Mietpreisen, gerundet. Claude 3.5 nach Anthropic-Angabe („einige zehn Millionen"); DeepSeek-V3 laut Paper nur GPU-Miete — Personal und Vorläufe nicht enthalten.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Published per-run compute-cost estimates across the frontier labs
+        // (Epoch AI / Stanford AI Index; Claude per Anthropic's own "a few
+        // tens of millions"). DeepSeek-V3 anchors the low end — its official
+        // figure covers GPU rental only, but the efficiency gap IS the story.
+        label: 'Teuerste Trainingsläufe · Mio. $ · Schätzung',
+        value: 191e6,
+        fmt: (v) => `${localeNum(v / 1e6, 0)} ${tr('Mio')} $`,
+        rowFmt: (v) => `${localeNum(v, v < 10 ? 1 : 0)} ${tr('Mio')} $`,
+        delta: null,
+        color: violet,
+        unit: '',
+        rows: [
+          { name: 'Gemini Ultra · Google', v: 191 },
+          { name: 'Llama 3.1 405B · Meta', v: 170 },
+          { name: 'Grok-2 · xAI', v: 107 },
+          { name: 'GPT-4 · OpenAI', v: 78 },
+          { name: 'Claude 3.5 · Anthropic', v: 40 },
+          { name: 'PaLM · Google', v: 12 },
+          { name: 'DeepSeek-V3 · DeepSeek', v: 5.6 },
+          { name: 'GPT-3 · OpenAI', v: 4.3 },
+        ],
+      }),
+  },
+  {
     id: 'ai-investment',
     title: 'KI-Investitionen international',
     source: 'Stanford AI Index 2025 · private KI-Investitionen 2024, Mrd. US-Dollar, gerundet.',
@@ -3408,19 +3440,107 @@ export const POOL: Dashboard[] = [
       }),
   },
   {
+    id: 'covid-vax-excess',
+    title: 'Impfquote und Übersterblichkeit · Deutschland',
+    source:
+      'OWID (P-Score, Sterbefälle über der Vor-Pandemie-Projektion, monatlich, geglättet) & RKI (vollständig Geimpfte) · gerundet. Zeitlicher Verlauf ohne Kausalaussage: Winterwellen, Hitzesommer und Alterung wirken auf die Übersterblichkeit ein.',
+    draw: (f) =>
+      lineChart(f, {
+        // Rollout curve against the monthly excess-mortality P-score on one
+        // percent axis — the reader sees WHEN the waves sat relative to the
+        // campaign; the source note is explicit that timing is not causation.
+        label: 'Impfquote vs. Übersterblichkeit · 🇩🇪 · %',
+        value: 76,
+        unit: '%',
+        fmt: (v) => localePct(v, 0),
+        delta: null,
+        seed: 461,
+        series: [
+          { name: 'Übersterblichkeit', color: red, data: DE_VAX_EXCESS.rows[0].data },
+          { name: 'Impfquote (vollständig)', color: green, data: DE_VAX_EXCESS.rows[1].data },
+        ],
+        ticks: DE_VAX_EXCESS.ticks,
+        xLabels: ['2020', '2021', '2022', '2023', '2024'],
+        markers: eraMarkers(2020, 2024.5, [
+          [2021, '💉 Impfstart'],
+          [2021.9, '💉 Booster-Kampagne'],
+        ]),
+      }),
+  },
+  {
+    id: 'covid-vax-births',
+    title: 'Impfquote und Geburtenrate · Deutschland',
+    source:
+      'Destatis (Monatsgeburten als Index, 2019 = 100, geglättet) & RKI (vollständig Geimpfte) · gerundet. Der Rückgang beginnt Januar 2022 — neun Monate nach dem Höhepunkt der Erwachsenen-Kampagne (BiB, Bujard/Andersson 2023); die Ursachen sind umstritten: Unsicherheit, aufgeschobene Kinderwünsche und Impfeffekte werden diskutiert.',
+    draw: (f) =>
+      lineChart(f, {
+        // Births held ~100 through 2021 (795k, the highest since 1997),
+        // then stepped down in January 2022 and kept sliding. The chart
+        // shows the timing; the source note carries the causal dispute.
+        label: 'Impfquote vs. Geburten · 🇩🇪 · %',
+        value: 87,
+        unit: '%',
+        fmt: (v) => localePct(v, 0),
+        delta: null,
+        seed: 463,
+        series: [
+          { name: 'Geburten (Index, 2019 = 100)', color: magenta, data: DE_VAX_BIRTHS.rows[0].data },
+          { name: 'Impfquote (vollständig)', color: green, data: DE_VAX_BIRTHS.rows[1].data },
+        ],
+        ticks: DE_VAX_BIRTHS.ticks,
+        xLabels: ['2020', '2021', '2022', '2023', '2024'],
+        markers: eraMarkers(2020, 2024.5, [
+          [2021.35, '💉 Kampagnen-Höhepunkt'],
+          [2022.05, '👶 9 Monate später'],
+        ]),
+      }),
+  },
+  {
+    id: 'covid-myocarditis',
+    title: 'Myokarditis nach mRNA-Impfung · nach Alter und Geschlecht',
+    source:
+      'CDC (Oster et al., JAMA 2022) · gemeldete Myokarditis-/Perikarditis-Fälle je 100.000 zweite Pfizer-Dosen; junge Männer tragen das mit Abstand höchste Risiko, die Verläufe sind meist mild. Moderna liegt bei jungen Männern rund 3× höher (Nordische Kohorte, Karlstad et al., JAMA Cardiol. 2022). Anerkannte Impfnebenwirkung — nicht zu verwechseln mit unbelegten Behauptungen zu Krebs o. Ä.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Reporting rates of myocarditis/pericarditis after a second mRNA
+        // (Pfizer) dose, per 100k doses (CDC/Oster JAMA 2022). The steep
+        // age-sex gradient IS the story: adolescent and young men carry the
+        // signal, older groups and women barely register. A documented,
+        // mostly-mild adverse effect — kept strictly to the published data.
+        label: 'Myokarditis · Fälle je 100.000 · nach 2. mRNA-Dosis',
+        value: 10.6,
+        fmt: (v) => `${localeNum(v, 1)}`,
+        rowFmt: (v) => `${localeNum(v, 1)}`,
+        delta: null,
+        color: red,
+        unit: '',
+        rows: [
+          { name: 'Jungen 16–17', v: 10.6 },
+          { name: 'Jungen 12–15', v: 7.1 },
+          { name: 'Männer 18–24', v: 5.2 },
+          { name: 'Männer 25–29', v: 1.9 },
+          { name: 'Frauen 16–24', v: 1.0 },
+          { name: 'Männer 30–49', v: 0.7 },
+          { name: 'Frauen 25+', v: 0.2 },
+        ],
+      }),
+  },
+  {
     id: 'excess-mortality-map',
     title: 'Übersterblichkeit · Welt',
     source:
-      'The Economist Excess-Mortality-Modell via Our World in Data · kumulierte Übersterblichkeit 2020 bis Mitte 2024 je 100.000 Einwohner, zentrale Schätzung. Die höchste Last trägt Osteuropa — die Weltkarte liest sich fast als Negativ der Impfquoten-Karte.',
+      'The Economist Excess-Mortality-Modell via Our World in Data · kumulierte Übersterblichkeit 2020 bis Mitte 2024 in Prozent der Bevölkerung, zentrale Schätzung. Die höchste Last trägt Osteuropa — die Weltkarte liest sich fast als Negativ der Impfquoten-Karte.',
     draw: (f) =>
       choroplethMap(f, {
         // Cumulative excess deaths per 100k (Economist model, central
         // estimate, through mid-2024). The pattern inverts the vaccination
         // map: the low-uptake belt across Eastern Europe carries the highest
         // cumulative toll, the high-uptake states the lowest.
-        label: 'Übersterblichkeit · 2020–24 · je 100k Einw.',
+        // Values stay per-100k internally (the choropleth ramp needs the
+        // raw spread); only the formatters read them out as % of population.
+        label: 'Übersterblichkeit · 2020–24 · % der Bevölkerung',
         value: 344,
-        fmt: (v) => `+${localeNum(v, 0)}`,
+        fmt: (v) => `+${localePct(v / 1000, 2)}`,
         valueByIso: EXCESS_100K_BY_ISO,
         world: live.worldMap,
         rows: [
@@ -3430,8 +3550,8 @@ export const POOL: Dashboard[] = [
           { name: 'Serbien 🇷🇸', v: 857 },
           { name: 'Belarus 🇧🇾', v: 852 },
         ],
-        rowFmt: (v) => `+${localeNum(v, 0)}`,
-        source: 'OWID/Economist · je 100k Einw. · 2020–Mitte 24',
+        rowFmt: (v) => `+${localePct(v / 1000, 2)}`,
+        source: 'OWID/Economist · % der Bevölkerung · 2020–Mitte 24',
       }),
   },
   {

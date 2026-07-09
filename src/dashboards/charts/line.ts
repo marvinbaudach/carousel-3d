@@ -17,21 +17,38 @@ import {
 import { FONT } from '../theme';
 import { plotRect, withAlpha, xAxisLabels } from './shared';
 
+// Fraction of the x-range over which a gated marker fades from invisible to
+// solid, finishing exactly as the draw-in line reaches its position — short
+// enough that the marker reads as "arriving with the line", not floating in
+// independently. Anchoring full opacity at the crossing (rather than a window
+// past it) guarantees every marker is solid once the line has fully drawn,
+// including ones hugging the right edge.
+const MARKER_REVEAL_FADE = 0.06;
+
 /**
  * Vertical era markers (dashed line + label) shared by the area and line
  * charts. Each label rides at the height where its dashed line crosses the
  * data curve (`curveY`), with a dot pinned on the crossing itself — the event
  * reads against the value it changed instead of sitting detached on the
  * x-axis. Labels that would collide nudge vertically until free.
+ *
+ * On the mobile deck (`f.compact`) each marker holds back until the draw-in
+ * line — at x-fraction `progress` — reaches its position, then fades in over
+ * `MARKER_REVEAL_FADE`, so events appear as the curve arrives at them instead
+ * of all at once. Collision layout is computed for every marker regardless of
+ * reveal, so labels never shift as later ones fade in. Elsewhere (ring/hero,
+ * or when `progress` is omitted) every marker draws solid.
  */
 export function drawEraMarkers(
   f: Frame,
   r: { x0: number; x1: number; y0: number; y1: number },
   marks: { at: number; label: string }[],
   curveY: (frac: number) => number,
+  progress?: number,
 ): void {
   if (!marks.length) return;
   const { ctx, u } = f;
+  const gated = f.compact && progress !== undefined;
   ctx.font = `500 ${13 * u}px ${FONT}`;
   const gap = 6 * u;
   const halfH = 9 * u;
@@ -42,15 +59,8 @@ export function drawEraMarkers(
     const label = tr(m.label);
     const frac = Math.min(1, Math.max(0, m.at));
     const mx = r.x0 + (r.x1 - r.x0) * frac;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(224,156,96,0.8)';
-    ctx.lineWidth = 1.5 * u;
-    ctx.setLineDash([5 * u, 4 * u]);
-    ctx.beginPath();
-    ctx.moveTo(mx, r.y0);
-    ctx.lineTo(mx, r.y1);
-    ctx.stroke();
-    ctx.restore();
+    // Placement is resolved for every marker (even hidden ones) so the settled
+    // layout is stable while markers reveal in sequence.
     const labelW = ctx.measureText(label).width;
     const rightFits = mx + gap + labelW <= r.x1;
     const lx = mx + (rightFits ? gap : -gap);
@@ -62,11 +72,26 @@ export function drawEraMarkers(
     while (overlaps(ly) && ly + 2 * halfH <= yMax) ly += 2 * halfH;
     while (overlaps(ly) && ly - 2 * halfH >= yMin) ly -= 2 * halfH;
     placed.push({ x0, x1, y0: ly - halfH, y1: ly + halfH });
+
+    // Fade spans [frac - FADE, frac]: solid by the moment the line arrives.
+    const reveal = gated
+      ? Math.min(1, Math.max(0, ((progress as number) - frac) / MARKER_REVEAL_FADE + 1))
+      : 1;
+    if (reveal <= 0) continue;
+
+    ctx.save();
+    ctx.globalAlpha = reveal;
+    ctx.strokeStyle = 'rgba(224,156,96,0.8)';
+    ctx.lineWidth = 1.5 * u;
+    ctx.setLineDash([5 * u, 4 * u]);
+    ctx.beginPath();
+    ctx.moveTo(mx, r.y0);
+    ctx.lineTo(mx, r.y1);
+    ctx.stroke();
+    ctx.setLineDash([]);
     // Leader from the crossing point to the label's inner edge, capped with a
     // dot on the dashed line so the attachment point is unambiguous.
-    ctx.strokeStyle = 'rgba(224,156,96,0.8)';
     ctx.fillStyle = 'rgba(224,156,96,0.8)';
-    ctx.lineWidth = 1.5 * u;
     ctx.beginPath();
     ctx.moveTo(mx, ly);
     ctx.lineTo(lx, ly);
@@ -78,6 +103,7 @@ export function drawEraMarkers(
     ctx.textAlign = rightFits ? 'left' : 'right';
     ctx.fillText(label, lx, ly + 4.5 * u);
     ctx.textAlign = 'left';
+    ctx.restore();
   }
 }
 
@@ -307,7 +333,7 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
       ctx.globalAlpha = 1;
     }
   });
-  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(datas[0], yTop, yBottom));
+  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(datas[0], yTop, yBottom), p);
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
   xAxisLabels(f, cfg.xLabels ?? ['Q1', 'Q2', 'Q3', 'Q4'], d.x0, d.x1, r.y1);
 }
@@ -410,7 +436,7 @@ export function areaChart(f: Frame, cfg: AreaCfg): void {
   }
 
   // Vertical era markers (dashed line + label), drawn on top of the curve.
-  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(data, r.y0 + 14 * u, r.y1 - 6 * u));
+  drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(data, r.y0 + 14 * u, r.y1 - 6 * u), p);
 
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
   xAxisLabels(f, cfg.xLabels ?? ['Mon', 'Wed', 'Fri', 'Sun'], d.x0, d.x1, r.y1);
