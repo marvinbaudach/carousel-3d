@@ -1,5 +1,19 @@
 // Dictionary IT: German source string -> Italian. Generated from strings.json.
 export const IT: Record<string, string> = {
+  // de-budget-split card
+  'Bundeshaushalt · genannte Posten vs. Investition': 'Bilancio federale · voci citate vs. investimenti',
+  'Anteil am Bundeshaushalt 2025 · 488 Mrd €': 'Quota del bilancio federale 2025 · 488 Mld €',
+  'Im Video genannt': 'Citati nel video',
+  'Investition · Bund': 'Investimenti · federale',
+  'Größter Posten': 'Voce più grande',
+  'Verteidigung': 'Difesa',
+  'Asyl & Migration': 'Asilo & migrazione',
+  'Ukraine-Hilfe': 'Aiuti all’Ucraina',
+  'Infrastruktur': 'Infrastrutture',
+  'Bildung & Forschung': 'Istruzione & ricerca',
+  'Renten & Soziales': 'Pensioni & welfare',
+  'Bundesfinanzministerium · Statistisches Bundesamt · bpb · Bundeshaushalt 2025':
+    'Ministero federale delle Finanze · Ufficio federale di statistica · bpb · bilancio federale 2025',
   // gas-fertilizer + fert-food-shock + food-crisis cards (Hormuz → catena alimentare 2026)
   'Erdgas · Rohstoff für Dünger': 'Gas naturale · materia prima dei fertilizzanti',
   'Erdgaspreis · Europa · €/MWh': 'Prezzo del gas · Europa · €/MWh',

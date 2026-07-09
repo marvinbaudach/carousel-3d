@@ -10,8 +10,10 @@ export {
   type DebtClockCfg,
   type ForecastCfg,
   type TreemapCfg,
+  type BudgetSplitCfg,
   wealthSplit,
   debtClock,
   weatherForecast,
   treemap,
+  budgetSplit,
 } from './misc';

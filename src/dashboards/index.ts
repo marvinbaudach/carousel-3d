@@ -59,6 +59,7 @@ function shuffled<T>(list: T[]): T[] {
 // One theme tag per card — its single home category. Applied to the POOL
 // right below; clustering and the theme chips both key off tags[0].
 const TAGS_BY_ID: Record<string, string[]> = {
+  'de-budget-split': ['deutschland'],
   military: ['krieg'],
   mideast: ['krieg'],
   'military-per-soldier': ['krieg'],
@@ -272,6 +273,7 @@ for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
  * the pool ordered newest-first so fresh cards are easy to review.
  */
 const ADDED_BY_ID: Record<string, string> = {
+  'de-budget-split': '2026-07-09T20:00:00+02:00',
   'military': '2026-07-07T07:48:18+02:00',
   'mideast': '2026-07-09T12:00:00+02:00',
   'hormuz-oil': '2026-07-09T14:05:00+02:00',
@@ -516,6 +518,7 @@ const FEATURED = new Set([
   'gender-language', 'gender-divide', 'self-id-laws', 'rainbow-camps', 'lgbt-criminal-map', 'executions-map', 'slavery-map', 'drug-deaths-map', 'genocides', 'trans-youth',
   'sdg-progress', 'who-funding', 'excess-mortality', 'cb-gold', 'gold-reserves', 'farm-decline', 'pisa', 'free-speech-feeling', 'birth-collapse', 'big-three',
   'de-bank-branches', 'us-middle-wealth', 'us-consumer-debt',
+  'de-budget-split',
 ]);
 
 /**

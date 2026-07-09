@@ -5,6 +5,7 @@
 import { localeNum, localeNumTrim, localePct, localePctTrim, t as tr } from '../i18n';
 import {
   areaChart,
+  budgetSplit,
   choroplethMap,
   debtClock,
   hBarChart,
@@ -197,6 +198,43 @@ import {
  * in geo.ts, the bundled historical series in ../data/bundled.
  */
 export const POOL: Dashboard[] = [
+  {
+    id: 'de-budget-split',
+    title: 'Bundeshaushalt: genannte Posten vs. Investition',
+    source:
+      'Bundeshaushalt 2025 (Soll, ~488 Mrd €; eigene Einnahmen ~428 Mrd). Verteidigung = Einzelplan 14 + Sondervermögen Bundeswehr (~86 Mrd, 2,0 % BIP) — es gibt keinen „NATO-Beitrag" von 100 Mrd; die 223 Mrd sind ein hypothetisches 5-%-BIP-Ziel. Asyl/Migration: Bundesausgaben für Flucht & Migration ~28 Mrd (Länder zusätzlich ~7 Mrd), enger „asylbedingt" ~21 Mrd (Statistisches Bundesamt, bpb). Ukraine-Hilfe ~8–12 Mrd/Jahr aus dem Haushalt (∑ ~55 Mrd seit 2022). Infrastruktur: Bundesanteil des 500-Mrd-Sondervermögens, ~25 Mrd/Jahr. Renten & Soziales = Einzelplan 11, mit Abstand größter Posten. Anteile am Haushalt, gerundet, Stand 2025.',
+    draw: (f) =>
+      budgetSplit(f, {
+        // The clip frames Asyl/Ukraine/NATO as "waste"; the real budget shares
+        // are far smaller than its 50/20/100-Mrd numbers, and the single item
+        // it never mentions — the pension/social bill — dwarfs all of them. The
+        // reference bar at the foot is that item, so the groups above read
+        // honestly against it. Group label is neutral ("named in the clip"),
+        // not an endorsement of the "waste" judgement.
+        label: 'Bundeshaushalt · genannte Posten vs. Investition',
+        caption: 'Anteil am Bundeshaushalt 2025 · 488 Mrd €',
+        budget: 488,
+        groups: [
+          {
+            title: 'Im Video genannt',
+            rows: [
+              { name: 'Verteidigung', mrd: 86, color: red },
+              { name: 'Asyl & Migration', mrd: 28, color: orange },
+              { name: 'Ukraine-Hilfe', mrd: 10, color: blue },
+            ],
+          },
+          {
+            title: 'Investition · Bund',
+            rows: [
+              { name: 'Infrastruktur', mrd: 25, color: green },
+              { name: 'Bildung & Forschung', mrd: 21, color: aqua },
+            ],
+          },
+        ],
+        reference: { title: 'Größter Posten', name: 'Renten & Soziales', mrd: 179, color: magenta },
+        source: 'Bundesfinanzministerium · Statistisches Bundesamt · bpb · Bundeshaushalt 2025',
+      }),
+  },
   {
     id: 'military',
     title: 'Militärausgaben · Top 10',

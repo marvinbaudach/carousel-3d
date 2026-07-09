@@ -1,7 +1,7 @@
 // The remaining bespoke renderers: the wealth-inequality split, the running
 // debt clock, the weekly weather forecast and the strip treemap.
 
-import { localePct, t as tr } from '../../i18n';
+import { localeNum, localePct, t as tr } from '../../i18n';
 import {
   drawGrid,
   drawGridLabels,
@@ -25,7 +25,7 @@ import {
   SEQ,
   SERIES,
 } from '../theme';
-import { drawSource, plotRect, xAxisLabels } from './shared';
+import { barGradient, drawSource, ellipsize, plotRect, xAxisLabels } from './shared';
 import { curveYFn, drawEraMarkers, markerInsetRange } from './line';
 
 export interface WealthSplitCfg {
@@ -504,4 +504,112 @@ export function treemap(f: Frame, cfg: TreemapCfg): void {
     y += sh;
     i += len;
   }
+}
+
+export interface BudgetSplitCfg {
+  label: string;
+  /** Small caption under the header — the denominator being shared out. */
+  caption: string;
+  /** Denominator in Mrd € for the per-row share labels. */
+  budget: number;
+  /** Labelled clusters of budget items; each row's value is in Mrd €. */
+  groups: { title: string; rows: { name: string; mrd: number; color: string }[] }[];
+  /** The single dominant item, drawn full-width at the foot as the scale
+      anchor — so the smallness of everything above reads honestly against the
+      one posten that actually dwarfs them. */
+  reference: { title: string; name: string; mrd: number; color: string };
+  source: string;
+}
+
+/**
+ * Grouped budget-share bars: two labelled clusters of posten (e.g. the items a
+ * viral clip calls waste vs. what flows into investment), every bar scaled
+ * against the single biggest item, which sits full-width at the foot as the
+ * reference. The reader gets the group contrast and, at a glance, how small any
+ * of it is next to the pension bill.
+ */
+export function budgetSplit(f: Frame, cfg: BudgetSplitCfg): void {
+  const { ctx, u, t, w, h } = f;
+  drawSurface(f);
+  const top = drawHeader(f, cfg.label);
+  const pad = 36 * u;
+  const x0 = pad;
+  const x1 = w - pad;
+  const W = x1 - x0;
+  const refMax = Math.max(cfg.reference.mrd, ...cfg.groups.flatMap((g) => g.rows.map((r) => r.mrd)));
+
+  // Caption directly under the eyebrow.
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = MUTED;
+  ctx.font = `500 ${13.5 * u}px ${FONT}`;
+  ctx.fillText(tr(cfg.caption), x0, top);
+
+  const footer = f.compact ? 16 * u : 46 * u;
+  const refH = 64 * u;
+  const zoneTop = top + 20 * u;
+  const zoneBottom = h - footer - refH;
+  const headH = 24 * u;
+  const nBars = cfg.groups.reduce((n, g) => n + g.rows.length, 0);
+  const rowH = (zoneBottom - zoneTop - cfg.groups.length * headH) / Math.max(1, nBars);
+
+  // Name (left, ellipsized so it never runs under the value) + value (right).
+  const label = (name: string, mrd: number, y: number, alpha: number): void => {
+    const valueStr = `${localeNum(mrd, 0)} ${tr('Mrd')} · ${localePct((mrd / cfg.budget) * 100, 0)}`;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = INK;
+    ctx.font = `600 ${16 * u}px ${FONT}`;
+    const valueW = ctx.measureText(valueStr).width;
+    ctx.textAlign = 'right';
+    ctx.fillText(valueStr, x1, y);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = INK_SECONDARY;
+    ctx.font = `500 ${16 * u}px ${FONT}`;
+    ctx.fillText(ellipsize(ctx, tr(name), W - valueW - 14 * u), x0, y);
+    ctx.globalAlpha = 1;
+  };
+
+  const bar = (mrd: number, color: string, y: number, p: number): void => {
+    ctx.fillStyle = GRID;
+    roundRect(ctx, x0, y, W, 11 * u, 5.5 * u);
+    ctx.fill();
+    ctx.fillStyle = barGradient(ctx, x0, x1, color);
+    roundRect(ctx, x0, y, Math.max(W * (mrd / refMax) * p, 11 * u), 11 * u, 5.5 * u);
+    ctx.fill();
+  };
+
+  const heading = (title: string, y: number): void => {
+    ctx.fillStyle = MUTED;
+    ctx.font = `700 ${12 * u}px ${FONT}`;
+    drawTracked(ctx, tr(title).toUpperCase(), x0, y, 1.6 * u);
+  };
+
+  let y = zoneTop;
+  let idx = 0;
+  cfg.groups.forEach((g) => {
+    heading(g.title, y + 12 * u);
+    y += headH;
+    g.rows.forEach((r) => {
+      const p = Math.max(0, stagger(t, idx, 0.08));
+      label(r.name, r.mrd, y + 13 * u, p);
+      bar(r.mrd, r.color, y + 20 * u, p);
+      y += rowH;
+      idx++;
+    });
+  });
+
+  // Reference anchor at the foot, a divider marking it off from the groups.
+  const ry = zoneBottom + 8 * u;
+  ctx.strokeStyle = GRID;
+  ctx.lineWidth = 1 * u;
+  ctx.beginPath();
+  ctx.moveTo(x0, ry - 6 * u);
+  ctx.lineTo(x1, ry - 6 * u);
+  ctx.stroke();
+  const rp = Math.max(0, stagger(t, idx, 0.08));
+  heading(cfg.reference.title, ry + 14 * u);
+  label(cfg.reference.name, cfg.reference.mrd, ry + 34 * u, rp);
+  bar(cfg.reference.mrd, cfg.reference.color, ry + 41 * u, rp);
+
+  drawSource(f, cfg.source);
 }
