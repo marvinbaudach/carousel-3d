@@ -716,6 +716,26 @@ export const DE_TAX_QUOTA_PANEL: TrendSeries = trend(
   ['1900', '1941', '1982', 'heute'],
 );
 
+// Germany's total cash tax revenue (kassenmäßige Steuereinnahmen insgesamt):
+// federal, state, municipal and EU-share taxes combined, in € billion,
+// nominal (NOT inflation-adjusted). Destatis / BMF; pre-1999 converted from
+// D-Mark, rounded. The "growing revenue" story: it roughly tripled since the
+// 1991 reunification (~338 bn) with only two real dents — the 2009 financial
+// crisis and the 2020 Corona slump — both quickly recovered. 2025 is
+// provisional, 2026/27 are the BMF's 170th tax estimate (May 2026): the take
+// crosses €1 trillion for the first time in 2027 (~1,033 bn). Values are
+// stored directly in € billion; the formatter switches to "Bio. €" past 1000.
+export const DE_TAX_REVENUE_PANEL: TrendSeries = trend(
+  [
+    [1991, 338], [1995, 416], [2000, 467], [2005, 452], [2008, 561],
+    [2009, 524], [2011, 573], [2013, 620], [2015, 674], [2018, 776],
+    [2019, 799], [2020, 740], [2021, 833], [2022, 896], [2023, 916],
+    [2024, 948], [2025, 970], [2026, 999], [2027, 1033],
+  ],
+  (v) => (v >= 1000 ? `${localeNum(v / 1000, 2)} ${tr('Bio.')} €` : `${localeNum(v, 0)} ${tr('Mrd')} €`),
+  ['1991', '2003', '2015', '2027'],
+);
+
 // German household electricity price, euro cents per kWh incl. taxes and
 // levies (BDEW / Destatis / Eurostat, rounded). It roughly tripled since
 // 2000 as the EEG renewables surcharge, grid fees and the 2021 CO2 price
