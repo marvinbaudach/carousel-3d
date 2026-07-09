@@ -7,6 +7,16 @@ and sphere formations.
 
 **Live → [marvinbaudach.github.io/worldpulse](https://marvinbaudach.github.io/worldpulse/)**
 
+## Features
+
+- **Live data, no keys** — dozens of dashboards from keyless public APIs, cached in localStorage, each with a bundled offline fallback
+- **3D carousel** — panels orbit with drag inertia and morph between ring, rows, helix and sphere formations
+- **Canvas-drawn charts** — every panel is painted in Canvas 2D into a WebGL texture and only redraws on data change
+- **Theme filters** — browse by topic; the scene re-tints to the active theme
+- **Four languages** — German, English, French, Italian, picked from the browser
+- **Desktop & mobile** — WebGL ring on desktop, a 2D swipe deck on phones
+- **Bloom + adaptive resolution** — postprocessing glow with render resolution that scales to the device
+
 ## Tech
 
 - **Stack:** React Three Fiber · Three.js · drei · postprocessing (Bloom, Vignette) · Vite 8 · React 19 · TypeScript 6 · oxlint
