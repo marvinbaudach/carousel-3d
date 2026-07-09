@@ -56,13 +56,18 @@ export function plotRect(f: Frame, top: number) {
 /** Evenly spaced x-axis labels along the baseline. */
 // Axis text uses INK_SECONDARY, not MUTED: on the dark surface the muted gray
 // sits below comfortable reading contrast, and axes are primary chart reading.
+// The outer labels anchor to the range ends (first left-aligned, last
+// right-aligned) instead of centering on x0/x1 — a wide end label like
+// "800 Tsd. J." would otherwise spill half its width past the plot edge and
+// clip. Interior labels stay centered on their tick.
 export function xAxisLabels(f: Frame, labels: string[], x0: number, x1: number, y: number): void {
   const { ctx, u } = f;
   ctx.fillStyle = INK_SECONDARY;
   ctx.font = `400 ${15 * u}px ${FONT}`;
-  ctx.textAlign = 'center';
+  const last = labels.length - 1;
   labels.forEach((l, i) => {
-    ctx.fillText(tr(l), x0 + ((x1 - x0) * i) / (labels.length - 1), y + 24 * u);
+    ctx.textAlign = i === 0 ? 'left' : i === last ? 'right' : 'center';
+    ctx.fillText(tr(l), x0 + ((x1 - x0) * i) / last, y + 24 * u);
   });
   ctx.textAlign = 'left';
 }
