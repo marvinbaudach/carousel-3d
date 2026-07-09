@@ -27,38 +27,34 @@ const VERT = `
 // Trimmed copy of Aurora.tsx's fragment shader: 3 fbm octaves instead of 4
 // and no starfield — the remaining flow is what reads as motion on a phone.
 //
-// highp is required, not a nicety: on mobile GPUs mediump is real fp16, and
-// hash()'s large-number arithmetic collapses at that precision — the value
-// noise quantizes into hard contour edges ("sharp banding in the nebula").
-// Desktop GPUs silently run mediump at fp32, which is why the artifact only
-// ever showed on phones. The guard falls back where highp is unsupported
-// (vanishingly rare today).
+// Unconditional highp: on mobile GPUs mediump is real fp16, and an ifdef'd
+// fallback proved treacherous — a Pixel 10 Pro rendered the value noise as
+// flat axis-aligned lattice cells (three rectangle sizes = the three fbm
+// octaves), i.e. the fragment pipeline was quantizing despite the guard. If
+// a relic GPU truly lacks highp the shader fails to compile and the caller
+// swaps to the CSS blobs, which is the better outcome than a broken nebula.
+//
+// The noise itself is texture-backed as a second line of defense: the
+// lattice randoms live in a 256² REPEAT texture and the texture unit does
+// the bilinear interpolation, so there is no fract(big·big) hash arithmetic
+// left to collapse at low float precision — and it's faster on mobile, too.
 const FRAG = `
-  #ifdef GL_FRAGMENT_PRECISION_HIGH
-    precision highp float;
-  #else
-    precision mediump float;
-  #endif
+  precision highp float;
   uniform float uTime;
   uniform float uAspect;
   uniform vec3 uTint;
+  uniform sampler2D uNoise;
+  /* Backing-store px / 256 — makes one dither texel cover one screen px. */
+  uniform vec2 uNoiseScale;
   varying vec2 vUv;
-
-  float hash(vec2 p) {
-    p = fract(p * vec2(123.34, 345.45));
-    p += dot(p, p + 34.345);
-    return fract(p.x * p.y);
-  }
 
   float noise(vec2 p) {
     vec2 i = floor(p);
     vec2 f = fract(p);
     vec2 u = f * f * (3.0 - 2.0 * f);
-    float a = hash(i);
-    float b = hash(i + vec2(1.0, 0.0));
-    float c = hash(i + vec2(0.0, 1.0));
-    float d = hash(i + vec2(1.0, 1.0));
-    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+    /* mod keeps the lookup coordinate in [0,1] forever (the texture repeats
+       at 256 anyway), so precision never degrades as the flow drifts. */
+    return texture2D(uNoise, (mod(i, 256.0) + u + 0.5) / 256.0).r;
   }
 
   float fbm(vec2 p) {
@@ -131,9 +127,11 @@ const FRAG = `
     col = 1.0 - exp(-col * 1.5);
 
     // Ordered-free dither: sub-LSB per-pixel noise breaks the 8-bit banding
-    // that soft, slow gradients otherwise show on OLED phone panels. Time-
-    // salted so the pattern never sits still enough to read as grain.
-    col += (hash(vUv * 913.7 + fract(uTime) * 17.0) - 0.5) * (3.0 / 255.0);
+    // that soft, slow gradients otherwise show on OLED phone panels. One
+    // noise texel per screen pixel (uNoiseScale), time-salted so the pattern
+    // never sits still enough to read as grain.
+    float grain = texture2D(uNoise, vUv * uNoiseScale + fract(uTime * 0.7) * vec2(0.37, 0.19)).r;
+    col += (grain - 0.5) * (3.0 / 255.0);
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -242,12 +240,14 @@ export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
     }
     gl.useProgram(prog);
 
-    // Report the *actual* framebuffer depth and GPU — the two facts that
-    // decide how the nebula quantizes on a given phone.
+    // Report the *actual* framebuffer depth, fragment float precision and GPU
+    // — the three facts that decide how the nebula quantizes on a given phone.
+    // hp23 = fp32; hp10 would mean the driver hands highp only fp16 mantissa.
     const bits = [gl.getParameter(gl.RED_BITS), gl.getParameter(gl.GREEN_BITS), gl.getParameter(gl.BLUE_BITS)].join('');
+    const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
     const dbg = gl.getExtension('WEBGL_debug_renderer_info');
     const gpu = dbg ? String(gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL)) : '';
-    bgDiag.info = `gl ${bits}${gpu ? ` · ${gpu.slice(0, 28)}` : ''}`;
+    bgDiag.info = `gl ${bits} hp${hp ? hp.precision : '?'}${gpu ? ` · ${gpu.slice(0, 28)}` : ''}`;
 
     const buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -256,9 +256,30 @@ export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
     gl.enableVertexAttribArray(aPos);
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
+    // Lattice randoms for the texture-backed value noise: 256² LUMINANCE
+    // (power-of-two, so REPEAT is legal in WebGL1), LINEAR so the texture
+    // unit interpolates between lattice points. Deterministic LCG — every
+    // visit renders the same sky.
+    const noiseTex = gl.createTexture();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, noiseTex);
+    const lattice = new Uint8Array(256 * 256);
+    let lcg = 123456789;
+    for (let i = 0; i < lattice.length; i++) {
+      lcg = (Math.imul(lcg, 1664525) + 1013904223) >>> 0;
+      lattice[i] = lcg >>> 24;
+    }
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, 256, 256, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, lattice);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+    gl.uniform1i(gl.getUniformLocation(prog, 'uNoise'), 0);
+
     const uTime = gl.getUniformLocation(prog, 'uTime');
     const uAspect = gl.getUniformLocation(prog, 'uAspect');
     const uTint = gl.getUniformLocation(prog, 'uTint');
+    const uNoiseScale = gl.getUniformLocation(prog, 'uNoiseScale');
 
     const size = () => {
       const scale = Math.min(1, RES_CAP / canvas.clientWidth);
@@ -268,6 +289,7 @@ export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
       if (canvas.height !== h) canvas.height = h;
       gl.viewport(0, 0, w, h);
       gl.uniform1f(uAspect, w / h);
+      gl.uniform2f(uNoiseScale, w / 256, h / 256);
     };
     size();
 
@@ -327,6 +349,7 @@ export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       gl.deleteBuffer(buf);
+      gl.deleteTexture(noiseTex);
     };
     // onFail is a stable callback (caller memoizes); the GL setup must not
     // re-run on prop identity churn.
