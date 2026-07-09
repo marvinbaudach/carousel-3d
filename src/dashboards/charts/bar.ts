@@ -100,6 +100,39 @@ export function hBarChart(f: Frame, cfg: HBarCfg): void {
   const max = Math.max(...cfg.rows.map((d) => d.v));
   const grad = barGradient(ctx, pad, w - pad, cfg.color);
 
+  // Tight rows (long lists on the short mobile cards): the label-above-bar
+  // group would collide with its neighbors, so the row collapses into one
+  // thick bar carrying its own name and value — every row stays readable
+  // instead of everything squeezing together.
+  if (rowH < 32 * u) {
+    const barH = Math.min(22 * u, rowH - 5 * u);
+    cfg.rows.forEach((d, i) => {
+      const p = stagger(t, i, 0.08);
+      const y = top + 10 * u + rowH * i + (rowH - barH) / 2;
+      const bw = (w - 2 * pad) * (d.v / max) * p;
+      ctx.fillStyle = GRID;
+      roundRect(ctx, pad, y, w - 2 * pad, barH, barH / 2);
+      ctx.fill();
+      ctx.fillStyle = grad;
+      roundRect(ctx, pad, y, Math.max(bw, barH), barH, barH / 2);
+      ctx.fill();
+      // Text rides on the bar; a soft shadow keeps it legible over the
+      // bright end of the magnitude ramp.
+      const ty = y + barH / 2 + 5 * u;
+      ctx.save();
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 3 * u;
+      ctx.fillStyle = INK;
+      ctx.font = `600 ${13.5 * u}px ${FONT}`;
+      ctx.fillText(withFlag(d.name), pad + 9 * u, ty);
+      ctx.textAlign = 'right';
+      ctx.fillText(rowFmt(d.v * p), w - pad - 9 * u, ty);
+      ctx.textAlign = 'left';
+      ctx.restore();
+    });
+    return;
+  }
+
   // Label sits right above its bar (small fixed gap); the pair forms one
   // ~30u group centered in the row slot, so all the slack of tall rows
   // pools between the groups — the label reads as tied to its own bar, not
