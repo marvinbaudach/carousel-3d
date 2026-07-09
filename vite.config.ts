@@ -1,6 +1,19 @@
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+
+/** Short commit id baked into the bundle, so the running build is identifiable
+    on-device (see the BuildBadge easter egg). Falls back to CI's GITHUB_SHA,
+    then 'dev' when git isn't available. execFile with an arg array (no shell). */
+function commitId(): string {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim()
+  } catch {
+    const sha = process.env.GITHUB_SHA
+    return sha ? sha.slice(0, 7) : 'dev'
+  }
+}
 
 /**
  * Prints a loud reminder on dev start and build when the bundled datasets
@@ -38,5 +51,8 @@ function dataVintageCheck(): Plugin {
 export default defineConfig({
   // Relative base so the build works under a GitHub Pages project path.
   base: './',
+  define: {
+    __COMMIT_ID__: JSON.stringify(commitId()),
+  },
   plugins: [react(), dataVintageCheck()],
 })

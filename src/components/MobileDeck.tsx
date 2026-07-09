@@ -9,6 +9,7 @@ import { useMotionPermission } from '../hooks/useMotionPermission';
 import { useReducedMotion } from '../hooks/useReducedMotion';
 import { useThemeFilter } from '../hooks/useThemeFilter';
 import { t as trans } from '../i18n';
+import { BuildBadge } from './BuildBadge';
 import { DeckActionMenu } from './DeckActionMenu';
 import { Dots, DotsDock } from './DeckPager';
 import { FavPill } from './FavPill';
@@ -241,6 +242,8 @@ export function MobileDeck() {
       {!swiped && dashboards.length > 1 && <Hint $gone={false}>{trans('← wischen zum Blättern →')}</Hint>}
 
       <FavPill current={current} />
+
+      <BuildBadge />
 
       <DeckActionMenu
         open={actionsOpen}
