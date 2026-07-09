@@ -8,6 +8,10 @@ export const IT: Record<string, string> = {
   'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.':
     'Curato da tracker di settore (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · capacità IT dei maggiori hub in MW, stima arrotondata; «in costruzione» = in costruzione o fermamente pianificato. Nessuna API live — dati 2026.',
   'Branchen-Tracker · IT-Kapazität der Hubs · 2026': 'Tracker di settore · capacità IT degli hub · 2026',
+  'Leistung je Land': 'Capacità per paese',
+  'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · Länder-Einfärbung = installierte IT-Leistung je Land (USA rund die Hälfte der Welt); Punkte = größte Hubs, in Betrieb mit ihrem Ausbau (im Bau/geplant), in MW; gerundete Schätzung. Kein Live-API — Stand 2025/26.':
+    'Curato da tracker di settore (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · colore dei paesi = capacità IT installata per paese (i soli USA circa metà del mondo); punti = i maggiori hub, in funzione con la loro espansione (in costruzione/pianificata), in MW; stima arrotondata. Nessuna API live — dati 2025/26.',
+  'Branchen-Tracker · RZ-Leistung & Hubs · 2025/26': 'Tracker di settore · capacità DC & hub · 2025/26',
   // datacenter-power card
   'Rechenzentren nach Land': 'Data center per paese',
   'Rechenzentrums-Leistung nach Land': 'Capacità dei data center per paese',
@@ -21,6 +25,18 @@ export const IT: Record<string, string> = {
   'Investition · Bund': 'Investimenti · federale',
   'Größter Posten': 'Voce più grande',
   'davon migrationsbezogen (auch in Asyl)': 'di cui legato alla migrazione (anche in asilo)',
+  // de-aid-peru + de-megaprojects cards
+  'Radwege in Peru · Behauptung vs. Realität': 'Piste ciclabili in Perù · affermazione vs. realtà',
+  'Behauptung': 'Affermazione',
+  'belegt': 'documentato',
+  'BMZ-Zuschüsse 2020+2022': 'Sovvenzioni BMZ 2020+2022',
+  'Mio €': 'Mln €',
+  '+155 Mio € Kredite — Rückzahlung, keine Ausgabe': '+155 Mln € di prestiti — rimborsati, non spesa',
+  'läuft als Klimafinanzierung (int. Verpflichtung)': 'rientra nel finanziamento climatico (impegno int.)',
+  '44 Mio = 0,4 % des Entwicklungsetats (10,3 Mrd €)': '44 Mln = 0,4 % del bilancio per gli aiuti (10,3 Mld €)',
+  'BMZ-Faktencheck · Bundestag · vorwärts / Volksverpetzer · 2024/25': 'Fact-check BMZ · Bundestag · vorwärts / Volksverpetzer · 2024/25',
+  'Kostenexplosion · Großprojekte · Endkosten': 'Sforamenti · grandi opere · costo finale',
+  'Flughafen BER': 'Aeroporto BER',
   'Verteidigung': 'Difesa',
   'Asyl & Migration': 'Asilo & migrazione',
   'Ukraine-Hilfe': 'Aiuti all’Ucraina',

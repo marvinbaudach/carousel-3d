@@ -2,9 +2,9 @@
 // value choropleth and the signed temperature map, each with a ranked top-N
 // list below.
 
-import { localeInt, localeNum, t as tr } from '../../i18n';
+import { localeInt, t as tr } from '../../i18n';
 import { drawHeader, drawSurface, easeOut, fmtCompact, roundRect, stagger, type Frame } from '../draw';
-import { CRITICAL, FONT, GRID, INK, INK_SECONDARY, MUTED, SERIES, SURFACE_DEEP } from '../theme';
+import { CRITICAL, FONT, GRID, INK, INK_SECONDARY, MUTED, SEQ, SERIES, SURFACE_DEEP } from '../theme';
 import { drawRankedList, drawSource, ellipsize, withAlpha, withFlag } from './shared';
 
 export interface NukeMapCfg {
@@ -674,37 +674,38 @@ export function tempMap(f: Frame, cfg: TempMapCfg): void {
 }
 
 // ---------------------------------------------------------------------------
-// Data-center map: the world's leading compute hubs plotted as markers rather
-// than country shading, because the story is *where the buildings sit*, not a
-// per-country total. Two states, two colors: a filled blue dot = capacity in
-// operation ("steht"), a hollow amber ring around it = capacity under
-// construction or planned ("entsteht"). A hub that is both running and
-// expanding gets a blue core inside an amber halo; a brand-new site is a hollow
-// ring only. Both colors are fixed categorical slots (theme.ts), never
-// hand-picked. Top-5 hubs by total capacity listed below.
+// Data-center map: one card that answers both "which countries hold the most
+// compute power" and "where do the buildings sit, running vs. rising". The
+// world is shaded as a choropleth by national capacity (mid-blue ramp), and
+// the leading metros ride on top as markers — a lighter-blue dot with a dark
+// outline for capacity in operation ("steht"), an amber ring for capacity
+// under construction or planned ("entsteht"). The three blues are separated by
+// lightness (shade < dot) and the outline so points never sink into the fill;
+// amber contrasts by hue. Colors are fixed theme slots, never hand-picked.
 
-const DC_LIVE = SERIES[0]; // blue — in operation
+const DC_SHADE = SERIES[0]; // mid-blue — national capacity choropleth + list bars
+const DC_LIVE = SEQ[7]; // light blue — a hub in operation (pops over the shading)
 const DC_BUILD = SERIES[2]; // amber — under construction / planned
 
 export interface DataCenterMapCfg {
   label: string;
   /** Leading hubs with a metro anchor; mw = operational, build = in construction/planned (MW). */
   hubs: { name: string; lon: number; lat: number; mw: number; build: number }[];
+  /** National capacity per ISO3 (MW) — shades the choropleth behind the markers. */
+  powerByIso?: Record<string, number>;
   /** Country outlines keyed by ISO3; a quiet graticule stands in if absent. */
   world?: { id: string; rings: number[][][] }[];
+  /** Ranked countries shown below the map. */
+  rows: { name: string; v: number }[];
+  rowFmt: (v: number) => string;
   source: string;
 }
 
-/** MW → a compact "12,5 GW" / "780 MW" label. */
-function gwLabel(mw: number): string {
-  return mw >= 1000 ? `${localeNum(mw / 1000, 1)} GW` : `${localeInt(Math.round(mw))} MW`;
-}
-
 /**
- * World map of the major data-center hubs. Equirectangular, cropped to
- * 85°N..60°S like the other world maps; markers sized by sqrt(capacity) so the
- * giants stay bounded next to the mid-size metros. Legend spells out the two
- * states with their summed capacity; a top-5 list sits below.
+ * Combined choropleth + hub map. Equirectangular, cropped to 85°N..60°S like
+ * the other world maps; markers sized by sqrt(capacity) so the giants stay
+ * bounded next to the mid-size metros. Legend names all three encodings; a
+ * ranked country list sits below.
  */
 export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
   const { ctx, u, t, w, h } = f;
@@ -724,20 +725,27 @@ export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
   const mh = Math.min(mw / 2, mapMax);
   const px = (lon: number) => mx0 + ((lon + 180) / 360) * mw;
   const py = (lat: number) => my0 + ((85 - Math.min(85, Math.max(-60, lat))) / 145) * mh;
+  const reveal = easeOut(t / 1.1);
 
-  // --- Base map -----------------------------------------------------------
+  // --- Choropleth base ----------------------------------------------------
+  // National capacity, capped well below full opacity so the hub markers on
+  // top always read brighter than the country beneath them.
+  const values = Object.values(cfg.powerByIso ?? {}).toSorted((a, b) => a - b);
+  const ref = values.length ? values[Math.floor(values.length * 0.95)] : 1;
   if (cfg.world) {
     ctx.save();
     ctx.beginPath();
     ctx.rect(mx0, my0, mw, mh);
     ctx.clip();
-    // Flat neutral land + a thin dark seam, so shape reads without competing
-    // with the markers that carry the data.
-    ctx.fillStyle = 'rgba(214,222,236,0.06)';
-    ctx.strokeStyle = 'rgba(5,7,12,0.65)';
+    ctx.strokeStyle = 'rgba(5,7,12,0.6)';
     ctx.lineWidth = 1 * u;
     ctx.lineJoin = 'round';
     for (const country of cfg.world) {
+      const v = cfg.powerByIso?.[country.id];
+      ctx.fillStyle =
+        v === undefined
+          ? 'rgba(214,222,236,0.05)'
+          : withAlpha(DC_SHADE, 0.12 + 0.5 * Math.min(1, Math.max(0, v / ref)) * reveal);
       for (const ring of country.rings) {
         ctx.beginPath();
         ring.forEach(([lon, lat], i) => {
@@ -767,7 +775,7 @@ export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
     }
   }
 
-  // --- Markers ------------------------------------------------------------
+  // --- Hub markers --------------------------------------------------------
   const maxVal = Math.max(...cfg.hubs.flatMap((hb) => [hb.mw, hb.build]), 1);
   const scale = (v: number) => Math.sqrt(Math.max(0, v) / maxVal); // 0..1
 
@@ -784,8 +792,8 @@ export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
     const y = py(hb.lat);
     const appear = Math.max(0, stagger(t, i, 0.04));
     if (appear <= 0) return;
-    const rDot = hb.mw > 0 ? 3 * u + 13 * u * scale(hb.mw) : 0;
-    const ringR = (hb.mw > 0 ? rDot + 2 * u : 0) + 4 * u + 11 * u * scale(hb.build);
+    const rDot = hb.mw > 0 ? 3 * u + 12 * u * scale(hb.mw) : 0;
+    const ringR = (hb.mw > 0 ? rDot + 2 * u : 0) + 4 * u + 10 * u * scale(hb.build);
     // Persistent hollow ring — always visible, even when the reveal has settled.
     ctx.globalAlpha = appear;
     ctx.strokeStyle = withAlpha(DC_BUILD, 0.95);
@@ -794,8 +802,7 @@ export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
     ctx.arc(x, y, ringR, 0, Math.PI * 2);
     ctx.stroke();
     // A restrained expanding pulse — enough to keep the map alive on the intro
-    // reveal without crossing into a scribble where hubs cluster (Europe, US
-    // east). The persistent ring above already carries the build magnitude.
+    // reveal without crossing into a scribble where hubs cluster (Europe, US east).
     const phase = (t * 0.5 + i * 0.27) % 1;
     ctx.globalAlpha = appear * (1 - phase) * 0.4;
     ctx.beginPath();
@@ -804,61 +811,74 @@ export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
     ctx.globalAlpha = 1;
   });
 
-  // Blue operational dots on top.
+  // Light-blue operational dots on top, each with a dark outline so it stays
+  // crisp against the blue country shading beneath it.
   cfg.hubs.forEach((hb, i) => {
     if (hb.mw <= 0) return;
     const x = px(hb.lon);
     const y = py(hb.lat);
     const appear = Math.max(0, stagger(t, i, 0.04));
     if (appear <= 0) return;
-    const r = 3 * u + 13 * u * scale(hb.mw);
+    const r = 3 * u + 12 * u * scale(hb.mw);
     ctx.globalAlpha = appear;
-    ctx.fillStyle = withAlpha(DC_LIVE, 0.28);
-    ctx.beginPath();
-    ctx.arc(x, y, r + 3 * u, 0, Math.PI * 2);
-    ctx.fill();
     ctx.fillStyle = DC_LIVE;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
+    ctx.strokeStyle = 'rgba(5,7,12,0.85)';
+    ctx.lineWidth = 1.4 * u;
+    ctx.stroke();
     ctx.globalAlpha = 1;
   });
   ctx.restore();
 
-  // --- Legend -------------------------------------------------------------
-  const liveMw = cfg.hubs.reduce((s, hb) => s + hb.mw, 0);
-  const buildMw = cfg.hubs.reduce((s, hb) => s + hb.build, 0);
+  // --- Legend: three encodings on one line --------------------------------
   const lgY = my0 + mh + 20 * u;
   ctx.textAlign = 'left';
-  ctx.font = `600 ${13 * u}px ${FONT}`;
-  // Swatch 1: filled blue dot + operational total.
+  ctx.font = `600 ${12.5 * u}px ${FONT}`;
+  let cx = mx0;
+  // 1) Gradient swatch — national capacity shading.
+  const swW = 22 * u;
+  const grad = ctx.createLinearGradient(cx, 0, cx + swW, 0);
+  grad.addColorStop(0, withAlpha(DC_SHADE, 0.18));
+  grad.addColorStop(1, DC_SHADE);
+  ctx.fillStyle = grad;
+  roundRect(ctx, cx, lgY - 9 * u, swW, 9 * u, 2 * u);
+  ctx.fill();
+  cx += swW + 7 * u;
+  ctx.fillStyle = INK_SECONDARY;
+  const l1 = tr('Leistung je Land');
+  ctx.fillText(l1, cx, lgY);
+  cx += ctx.measureText(l1).width + 20 * u;
+  // 2) Light-blue dot — hub in operation.
   ctx.fillStyle = DC_LIVE;
   ctx.beginPath();
-  ctx.arc(mx0 + 5 * u, lgY - 4 * u, 5 * u, 0, Math.PI * 2);
+  ctx.arc(cx + 4.5 * u, lgY - 4 * u, 4.5 * u, 0, Math.PI * 2);
   ctx.fill();
+  ctx.strokeStyle = 'rgba(5,7,12,0.85)';
+  ctx.lineWidth = 1.2 * u;
+  ctx.stroke();
+  cx += 13 * u;
   ctx.fillStyle = INK_SECONDARY;
-  const liveLbl = `${tr('In Betrieb')} · ${gwLabel(liveMw)}`;
-  ctx.fillText(liveLbl, mx0 + 16 * u, lgY);
-  // Swatch 2: hollow amber ring + build total, offset past the first label.
-  const x2 = mx0 + 16 * u + ctx.measureText(liveLbl).width + 26 * u;
+  const l2 = tr('In Betrieb');
+  ctx.fillText(l2, cx, lgY);
+  cx += ctx.measureText(l2).width + 18 * u;
+  // 3) Amber ring — hub under construction.
   ctx.strokeStyle = DC_BUILD;
   ctx.lineWidth = 2 * u;
   ctx.beginPath();
-  ctx.arc(x2 + 5 * u, lgY - 4 * u, 5 * u, 0, Math.PI * 2);
+  ctx.arc(cx + 4.5 * u, lgY - 4 * u, 4.5 * u, 0, Math.PI * 2);
   ctx.stroke();
+  cx += 13 * u;
   ctx.fillStyle = INK_SECONDARY;
-  ctx.fillText(`${tr('Im Bau')} · ${gwLabel(buildMw)}`, x2 + 16 * u, lgY);
+  ctx.fillText(tr('Im Bau'), cx, lgY);
 
-  // --- Top-5 hubs by total capacity ---------------------------------------
-  const rows = cfg.hubs
-    .map((hb) => ({ name: hb.name, v: hb.mw + hb.build }))
-    .toSorted((a, b) => b.v - a.v)
-    .slice(0, 5);
+  // --- Ranked country list ------------------------------------------------
   drawRankedList(f, {
-    rows,
+    rows: cfg.rows,
     top: lgY + listGap,
-    rowFmt: (v) => gwLabel(v),
-    color: DC_LIVE,
+    rowFmt: cfg.rowFmt,
+    color: DC_SHADE,
   });
 
   if (cfg.source) drawSource(f, cfg.source);

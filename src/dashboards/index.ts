@@ -102,7 +102,6 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'ai-investment': ['tech'],
   'ai-datacenter-power': ['tech'],
   'datacenter-map': ['tech'],
-  'datacenter-power': ['tech'],
   'ai-users': ['tech'],
   'youth-unemployment': ['soziales'],
   unemployment: ['soziales'],
@@ -277,8 +276,7 @@ for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
  * the pool ordered newest-first so fresh cards are easy to review.
  */
 const ADDED_BY_ID: Record<string, string> = {
-  'datacenter-power': '2026-07-09T22:10:00+02:00',
-  'datacenter-map': '2026-07-09T21:30:00+02:00',
+  'datacenter-map': '2026-07-09T22:30:00+02:00',
   'de-budget-split': '2026-07-09T20:00:00+02:00',
   'military': '2026-07-07T07:48:18+02:00',
   'mideast': '2026-07-09T12:00:00+02:00',

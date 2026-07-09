@@ -8,6 +8,10 @@ export const FR: Record<string, string> = {
   'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.':
     'Compilé à partir de trackers sectoriels (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · capacité IT des plus grands hubs en MW, estimation arrondie ; « en construction » = en construction ou fermement planifié. Pas d\'API en direct — état 2026.',
   'Branchen-Tracker · IT-Kapazität der Hubs · 2026': 'Trackers sectoriels · capacité IT des hubs · 2026',
+  'Leistung je Land': 'Capacité par pays',
+  'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · Länder-Einfärbung = installierte IT-Leistung je Land (USA rund die Hälfte der Welt); Punkte = größte Hubs, in Betrieb mit ihrem Ausbau (im Bau/geplant), in MW; gerundete Schätzung. Kein Live-API — Stand 2025/26.':
+    'Compilé à partir de trackers sectoriels (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · teinte des pays = capacité IT installée par pays (les États-Unis à eux seuls environ la moitié du monde) ; points = les plus grands hubs, en service avec leur extension (en construction/planifié), en MW ; estimation arrondie. Pas d\'API en direct — état 2025/26.',
+  'Branchen-Tracker · RZ-Leistung & Hubs · 2025/26': 'Trackers sectoriels · capacité DC & hubs · 2025/26',
   // datacenter-power card
   'Rechenzentren nach Land': 'Centres de données par pays',
   'Rechenzentrums-Leistung nach Land': 'Capacité des centres de données par pays',
@@ -21,6 +25,18 @@ export const FR: Record<string, string> = {
   'Investition · Bund': 'Investissement · fédéral',
   'Größter Posten': 'Plus gros poste',
   'davon migrationsbezogen (auch in Asyl)': 'dont lié à la migration (aussi dans l’asile)',
+  // de-aid-peru + de-megaprojects cards
+  'Radwege in Peru · Behauptung vs. Realität': 'Pistes cyclables au Pérou · affirmation vs. réalité',
+  'Behauptung': 'Affirmation',
+  'belegt': 'documenté',
+  'BMZ-Zuschüsse 2020+2022': 'Subventions BMZ 2020+2022',
+  'Mio €': 'M €',
+  '+155 Mio € Kredite — Rückzahlung, keine Ausgabe': '+155 M € de prêts — remboursés, pas une dépense',
+  'läuft als Klimafinanzierung (int. Verpflichtung)': 'relève du financement climat (engagement int.)',
+  '44 Mio = 0,4 % des Entwicklungsetats (10,3 Mrd €)': '44 M = 0,4 % du budget d’aide (10,3 Mrd €)',
+  'BMZ-Faktencheck · Bundestag · vorwärts / Volksverpetzer · 2024/25': 'Fact-check BMZ · Bundestag · vorwärts / Volksverpetzer · 2024/25',
+  'Kostenexplosion · Großprojekte · Endkosten': 'Dérapages · grands projets · coût final',
+  'Flughafen BER': 'Aéroport BER',
   'Verteidigung': 'Défense',
   'Asyl & Migration': 'Asile & migration',
   'Ukraine-Hilfe': 'Aide à l’Ukraine',

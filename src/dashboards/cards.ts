@@ -358,31 +358,16 @@ export const POOL: Dashboard[] = [
     id: 'datacenter-map',
     title: 'Rechenzentren weltweit',
     source:
-      'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.',
+      'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · Länder-Einfärbung = installierte IT-Leistung je Land (USA rund die Hälfte der Welt); Punkte = größte Hubs, in Betrieb mit ihrem Ausbau (im Bau/geplant), in MW; gerundete Schätzung. Kein Live-API — Stand 2025/26.',
     draw: (f) =>
       dataCenterMap(f, {
         label: 'Rechenzentren',
         hubs: DATA_CENTER_HUBS,
-        world: live.worldMap,
-        source: 'Branchen-Tracker · IT-Kapazität der Hubs · 2026',
-      }),
-  },
-  {
-    id: 'datacenter-power',
-    title: 'Rechenzentrums-Leistung nach Land',
-    source:
-      'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, JLL/CBRE) · installierte IT-Leistung der Rechenzentren je Land in MW, gerundete Schätzung; die USA stellen rund die Hälfte der Welt. Kein Live-API — Stand 2025.',
-    draw: (f) =>
-      choroplethMap(f, {
-        label: 'Rechenzentren nach Land',
-        value: DATA_CENTER_POWER_TOP[0].v,
-        fmt: (v) => `${localeNum(v / 1000, 1)} GW`,
-        valueByIso: DATA_CENTER_POWER_MW,
+        powerByIso: DATA_CENTER_POWER_MW,
         world: live.worldMap,
         rows: DATA_CENTER_POWER_TOP,
         rowFmt: (v) => `${localeNum(v / 1000, 1)} GW`,
-        ramp: blue,
-        source: 'Branchen-Tracker · IT-Leistung je Land · 2025',
+        source: 'Branchen-Tracker · RZ-Leistung & Hubs · 2025/26',
       }),
   },
   {
