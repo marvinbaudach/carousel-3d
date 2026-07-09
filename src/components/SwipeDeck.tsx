@@ -61,7 +61,12 @@ const FavButton = styled.button<{ $active: boolean }>`
   color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.7)')};
   font: 600 18px/1 inherit;
   cursor: pointer;
+  transition: transform 120ms ease;
   ${glassSurface}
+
+  &:active {
+    transform: scale(0.88);
+  }
 `;
 
 const CENTER = 'translate(-50%, -50%)';

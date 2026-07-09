@@ -16,6 +16,13 @@ export const GlobalStyle = createGlobalStyle`
     background: #080b14;
   }
 
+  html {
+    /* Kill the mobile browser's gray tap overlay — it flashes over whole
+       gesture surfaces (the swipe card) instead of the control actually
+       tapped. Buttons carry their own :active feedback instead. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
     font-family:
       system-ui,

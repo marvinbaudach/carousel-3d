@@ -45,7 +45,12 @@ const FavButton = styled.button<{ $active: boolean }>`
   color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.8)')};
   font: 600 15px/1 inherit;
   cursor: pointer;
+  transition: transform 120ms ease;
   ${glassSurface}
+
+  &:active {
+    transform: scale(0.88);
+  }
 `;
 
 // PNG export of the open hero: one settled offscreen draw at poster size
