@@ -1,5 +1,13 @@
 // Dictionary EN: German source string -> English. Generated from strings.json.
 export const EN: Record<string, string> = {
+  // datacenter-map card
+  'Rechenzentren': 'Data centres',
+  'Rechenzentren weltweit': 'Data centres worldwide',
+  'In Betrieb': 'Operational',
+  'Im Bau': 'Under construction',
+  'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.':
+    'Curated from industry trackers (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT capacity of the largest hubs in MW, rounded estimate; "under construction" = under construction or firmly planned. No live API — as of 2026.',
+  'Branchen-Tracker · IT-Kapazität der Hubs · 2026': 'Industry trackers · hub IT capacity · 2026',
   // de-budget-split card
   'Bundeshaushalt · genannte Posten vs. Investition': 'Federal budget · named items vs. investment',
   'Anteil am Bundeshaushalt 2025 · 488 Mrd €': 'Share of the 2025 federal budget · €488 bn',
@@ -14,6 +22,25 @@ export const EN: Record<string, string> = {
   'Renten & Soziales': 'Pensions & welfare',
   'Bundesfinanzministerium · Statistisches Bundesamt · bpb · Bundeshaushalt 2025':
     'Federal Ministry of Finance · Federal Statistical Office · bpb · 2025 federal budget',
+  // covid-vax-reports + covid-vax-risks cards
+  'Impf-Verdachtsmeldungen · COVID': 'Vaccine adverse-event reports · COVID',
+  'Verdachtsmeldungen je Mio. Dosen · COVID-Impfstoffe': 'Suspected-reaction reports per million doses · COVID vaccines',
+  'Meldungen gesamt': 'Reports total',
+  'schwerwiegend gemeldet': 'reported serious',
+  'Todesfall gemeldet': 'death reported',
+  '~90 % nicht schwerwiegend': '~90% non-serious',
+  'zeitlich assoziiert, nicht kausal': 'temporally associated, not causal',
+  'EMA EudraVigilance & US-VAERS (CDC/FDA) · passive Spontan-Meldesysteme: jede Person kann melden, die Fälle sind NICHT auf Ursächlichkeit geprüft. Werte je Mio. verabreichter Dosen, gerundet — Größenordnung Stand 2023 (EEA rund 1 Mrd., USA rund 0,7 Mrd. Dosen). Eine Meldung ist kein Nachweis eines durch die Impfung verursachten Schadens: rund 90 % sind nicht schwerwiegend, gemeldete Todesfälle sind zeitlich assoziiert (überwiegend Hochbetagte), nicht kausal belegt. Tatsächlich belegte Risiken: siehe Karte „Belegte Impfrisiken".':
+    'EMA EudraVigilance & US VAERS (CDC/FDA) · passive spontaneous-reporting systems: anyone can file a report and cases are NOT checked for causation. Values per million doses administered, rounded — order of magnitude as of 2023 (EEA ~1 bn, US ~0.7 bn doses). A report is not proof of vaccine-caused harm: ~90% are non-serious, and reported deaths are temporally associated (mostly the very old), not causally established. For the risks actually established, see the "proven vaccine risks" card.',
+  'Belegte Impfrisiken · COVID': 'Proven vaccine risks · COVID',
+  'Belegte Nebenwirkungen je Mio. Dosen · COVID': 'Established adverse effects per million doses · COVID',
+  'Myokarditis': 'Myocarditis',
+  'TTS-Thrombose': 'TTS thrombosis',
+  'Anaphylaxie': 'Anaphylaxis',
+  'junge ♂ · 2. mRNA-Dosis': 'young ♂ · 2nd mRNA dose',
+  'Vektorimpfstoff': 'viral-vector',
+  'CDC/EMA/Fachliteratur · in kontrollierten Studien bestätigte Nebenwirkungsraten je Mio. Dosen, je Impfstoff und Gruppe — Größenordnungen, gerundet. Myokarditis: junge Männer nach 2. mRNA-Dosis, meist milder Verlauf (Oster et al., JAMA 2022; Moderna höher). TTS/VITT: seltene Thrombosen mit Thrombozytopenie nach Vektorimpfstoffen (AstraZeneca/J&J), v. a. Jüngere. Anaphylaxie rund 2–5/Mio. Diese Raten messen tatsächliche Gefährlichkeit — anders als ungeprüfte Verdachtsmeldungen (siehe Karte „Impf-Verdachtsmeldungen").':
+    'CDC/EMA/literature · adverse-event rates confirmed in controlled studies, per million doses, by vaccine and group — orders of magnitude, rounded. Myocarditis: young men after a 2nd mRNA dose, mostly mild (Oster et al., JAMA 2022; Moderna higher). TTS/VITT: rare thrombosis with thrombocytopenia after viral-vector vaccines (AstraZeneca/J&J), mainly younger people. Anaphylaxis ~2–5/M. These rates measure actual risk — unlike unverified suspected-event reports (see the "vaccine adverse-event reports" card).',
   // gas-fertilizer + fert-food-shock + food-crisis cards (Hormuz → food chain 2026)
   'Erdgas · Rohstoff für Dünger': 'Natural gas · feedstock for fertiliser',
   'Erdgaspreis · Europa · €/MWh': 'Gas price · Europe · €/MWh',
@@ -697,6 +724,10 @@ export const EN: Record<string, string> = {
   'Steuer- & Abgabenquote Deutschland': 'Tax & contribution ratio in Germany',
   'Steuer- & Abgabenquote · 🇩🇪 · % des BIP': 'Tax & contribution ratio · 🇩🇪 · % of GDP',
   'Steuer- und Abgabenlast': 'Tax and contribution burden',
+  'Steuereinnahmen Deutschland · seit 1991': 'Tax revenue in Germany · since 1991',
+  'Steuereinnahmen · 🇩🇪 · Bund, Länder, Gemeinden · Prognose bis 2027': 'Tax revenue · 🇩🇪 · federal, state & local · projection to 2027',
+  'Destatis / BMF · Kassenmäßige Steuereinnahmen insgesamt (Bund, Länder, Gemeinden und EU-Anteile), in Mrd €, nominal (nicht inflationsbereinigt), gerundet; vor 1999 aus DM umgerechnet. Ab 2025 gestrichelt = vorläufig bzw. Steuerschätzung (170. Sitzung, Mai 2026): 999 Mrd € 2026, 1.033 Mrd € 2027 — erstmals über 1 Billion €. Stand Juli 2026.':
+    'Destatis / BMF · total cash tax revenue (federal, state, municipal and EU shares), € billion, nominal (not inflation-adjusted), rounded; pre-1999 converted from D-Mark. Dashed from 2025 = provisional / tax estimate (170th session, May 2026): €999 bn in 2026, €1,033 bn in 2027 — above €1 trillion for the first time. As of July 2026.',
   'Strompreis Deutschland': 'Electricity price in Germany',
   'Strompreis · 🇩🇪 · Haushalte · je kWh': 'Electricity price · 🇩🇪 · households · per kWh',
   'Strompreise für Haushalte': 'Household electricity prices',
@@ -767,6 +798,13 @@ export const EN: Record<string, string> = {
   '🇵🇱 Polen': '🇵🇱 Poland',
   '🇳🇱 Niederlande': '🇳🇱 Netherlands',
   '🇮🇹 Italien': '🇮🇹 Italy',
+  '🇩🇰 Dänemark': '🇩🇰 Denmark',
+  '🇮🇪 Irland': '🇮🇪 Ireland',
+  '🇧🇪 Belgien': '🇧🇪 Belgium',
+  '🇨🇿 Tschechien': '🇨🇿 Czechia',
+  '🇪🇺 EU-Schnitt': '🇪🇺 EU average',
+  'Höchste Strompreise Europas': "Europe's highest electricity prices",
+  'Haushaltsstrom': 'Household electricity',
   '🌊 Arabischer Frühling': '🌊 Arab Spring',
   '📈 Krise 2015/16': '📈 2015/16 crisis',
   '🛶 Kanaren-Welle': '🛶 Canaries wave',

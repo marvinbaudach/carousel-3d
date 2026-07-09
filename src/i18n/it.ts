@@ -1,5 +1,13 @@
 // Dictionary IT: German source string -> Italian. Generated from strings.json.
 export const IT: Record<string, string> = {
+  // datacenter-map card
+  'Rechenzentren': 'Data center',
+  'Rechenzentren weltweit': 'Data center nel mondo',
+  'In Betrieb': 'In funzione',
+  'Im Bau': 'In costruzione',
+  'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.':
+    'Curato da tracker di settore (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · capacità IT dei maggiori hub in MW, stima arrotondata; «in costruzione» = in costruzione o fermamente pianificato. Nessuna API live — dati 2026.',
+  'Branchen-Tracker · IT-Kapazität der Hubs · 2026': 'Tracker di settore · capacità IT degli hub · 2026',
   // de-budget-split card
   'Bundeshaushalt · genannte Posten vs. Investition': 'Bilancio federale · voci citate vs. investimenti',
   'Anteil am Bundeshaushalt 2025 · 488 Mrd €': 'Quota del bilancio federale 2025 · 488 Mld €',
@@ -14,6 +22,25 @@ export const IT: Record<string, string> = {
   'Renten & Soziales': 'Pensioni & welfare',
   'Bundesfinanzministerium · Statistisches Bundesamt · bpb · Bundeshaushalt 2025':
     'Ministero federale delle Finanze · Ufficio federale di statistica · bpb · bilancio federale 2025',
+  // covid-vax-reports + covid-vax-risks cards
+  'Impf-Verdachtsmeldungen · COVID': 'Segnalazioni di effetti avversi · COVID',
+  'Verdachtsmeldungen je Mio. Dosen · COVID-Impfstoffe': 'Segnalazioni sospette per milione di dosi · vaccini COVID',
+  'Meldungen gesamt': 'Segnalazioni totali',
+  'schwerwiegend gemeldet': 'gravi segnalate',
+  'Todesfall gemeldet': 'decesso segnalato',
+  '~90 % nicht schwerwiegend': '~90% non gravi',
+  'zeitlich assoziiert, nicht kausal': 'associate nel tempo, non causali',
+  'EMA EudraVigilance & US-VAERS (CDC/FDA) · passive Spontan-Meldesysteme: jede Person kann melden, die Fälle sind NICHT auf Ursächlichkeit geprüft. Werte je Mio. verabreichter Dosen, gerundet — Größenordnung Stand 2023 (EEA rund 1 Mrd., USA rund 0,7 Mrd. Dosen). Eine Meldung ist kein Nachweis eines durch die Impfung verursachten Schadens: rund 90 % sind nicht schwerwiegend, gemeldete Todesfälle sind zeitlich assoziiert (überwiegend Hochbetagte), nicht kausal belegt. Tatsächlich belegte Risiken: siehe Karte „Belegte Impfrisiken".':
+    'EMA EudraVigilance & US VAERS (CDC/FDA) · sistemi di segnalazione spontanea passiva: chiunque può segnalare e i casi NON sono verificati sul nesso causale. Valori per milione di dosi somministrate, arrotondati — ordine di grandezza al 2023 (SEE ~1 mld, USA ~0,7 mld di dosi). Una segnalazione non prova un danno causato dal vaccino: ~90% non sono gravi e i decessi segnalati sono associati nel tempo (soprattutto molto anziani), senza nesso causale accertato. Per i rischi realmente accertati, vedi la scheda «rischi vaccinali provati».',
+  'Belegte Impfrisiken · COVID': 'Rischi vaccinali provati · COVID',
+  'Belegte Nebenwirkungen je Mio. Dosen · COVID': 'Effetti avversi accertati per milione di dosi · COVID',
+  'Myokarditis': 'Miocardite',
+  'TTS-Thrombose': 'Trombosi TTS',
+  'Anaphylaxie': 'Anafilassi',
+  'junge ♂ · 2. mRNA-Dosis': 'giovani ♂ · 2ª dose mRNA',
+  'Vektorimpfstoff': 'vaccino vettoriale',
+  'CDC/EMA/Fachliteratur · in kontrollierten Studien bestätigte Nebenwirkungsraten je Mio. Dosen, je Impfstoff und Gruppe — Größenordnungen, gerundet. Myokarditis: junge Männer nach 2. mRNA-Dosis, meist milder Verlauf (Oster et al., JAMA 2022; Moderna höher). TTS/VITT: seltene Thrombosen mit Thrombozytopenie nach Vektorimpfstoffen (AstraZeneca/J&J), v. a. Jüngere. Anaphylaxie rund 2–5/Mio. Diese Raten messen tatsächliche Gefährlichkeit — anders als ungeprüfte Verdachtsmeldungen (siehe Karte „Impf-Verdachtsmeldungen").':
+    'CDC/EMA/letteratura · tassi di effetti avversi confermati in studi controllati, per milione di dosi, per vaccino e gruppo — ordini di grandezza, arrotondati. Miocardite: giovani uomini dopo la 2ª dose mRNA, decorso per lo più lieve (Oster et al., JAMA 2022; Moderna più alto). TTS/VITT: rare trombosi con trombocitopenia dopo vaccini vettoriali (AstraZeneca/J&J), soprattutto i più giovani. Anafilassi ~2–5/mln. Questi tassi misurano il rischio reale — a differenza delle segnalazioni sospette non verificate (vedi la scheda «segnalazioni di effetti avversi»).',
   // gas-fertilizer + fert-food-shock + food-crisis cards (Hormuz → catena alimentare 2026)
   'Erdgas · Rohstoff für Dünger': 'Gas naturale · materia prima dei fertilizzanti',
   'Erdgaspreis · Europa · €/MWh': 'Prezzo del gas · Europa · €/MWh',
@@ -740,6 +767,10 @@ export const IT: Record<string, string> = {
   'Steuer- & Abgabenquote Deutschland': 'Pressione fiscale e contributiva in Germania',
   'Steuer- & Abgabenquote · 🇩🇪 · % des BIP': 'Pressione fiscale e contributiva · 🇩🇪 · % del PIL',
   'Steuer- und Abgabenlast': 'Carico fiscale e contributivo',
+  'Steuereinnahmen Deutschland · seit 1991': 'Entrate fiscali in Germania · dal 1991',
+  'Steuereinnahmen · 🇩🇪 · Bund, Länder, Gemeinden · Prognose bis 2027': 'Entrate fiscali · 🇩🇪 · Stato, Länder e comuni · previsione fino al 2027',
+  'Destatis / BMF · Kassenmäßige Steuereinnahmen insgesamt (Bund, Länder, Gemeinden und EU-Anteile), in Mrd €, nominal (nicht inflationsbereinigt), gerundet; vor 1999 aus DM umgerechnet. Ab 2025 gestrichelt = vorläufig bzw. Steuerschätzung (170. Sitzung, Mai 2026): 999 Mrd € 2026, 1.033 Mrd € 2027 — erstmals über 1 Billion €. Stand Juli 2026.':
+    'Destatis / BMF · entrate fiscali totali di cassa (Stato federale, Länder, comuni e quota UE), in mld €, nominali (non corretti per l\'inflazione), arrotondati; prima del 1999 convertiti dal marco. Tratteggiato dal 2025 = provvisorio / stima fiscale (170ª sessione, maggio 2026): 999 mld € nel 2026, 1.033 mld € nel 2027 — oltre 1.000 mld € per la prima volta. Al luglio 2026.',
   'Strompreis Deutschland': 'Prezzo dell\'elettricità in Germania',
   'Strompreis · 🇩🇪 · Haushalte · je kWh': 'Prezzo dell\'elettricità · 🇩🇪 · famiglie · per kWh',
   'Strompreise für Haushalte': 'Prezzi dell\'elettricità per le famiglie',
@@ -810,6 +841,13 @@ export const IT: Record<string, string> = {
   '🇵🇱 Polen': '🇵🇱 Polonia',
   '🇳🇱 Niederlande': '🇳🇱 Paesi Bassi',
   '🇮🇹 Italien': '🇮🇹 Italia',
+  '🇩🇰 Dänemark': '🇩🇰 Danimarca',
+  '🇮🇪 Irland': '🇮🇪 Irlanda',
+  '🇧🇪 Belgien': '🇧🇪 Belgio',
+  '🇨🇿 Tschechien': '🇨🇿 Cechia',
+  '🇪🇺 EU-Schnitt': '🇪🇺 Media UE',
+  'Höchste Strompreise Europas': "I prezzi dell'elettricità più alti d'Europa",
+  'Haushaltsstrom': 'Elettricità domestica',
   '🌊 Arabischer Frühling': '🌊 Primavera araba',
   '📈 Krise 2015/16': '📈 crisi 2015/16',
   '🛶 Kanaren-Welle': '🛶 ondata delle Canarie',

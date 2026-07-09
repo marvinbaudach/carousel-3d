@@ -20,6 +20,64 @@ export const NUKE_STATES = [
 
 export const NUKE_TOTAL = NUKE_STATES.reduce((sum, s) => sum + s.count, 0);
 
+/**
+ * Major data-center hubs with a rough metro anchor. `mw` is operational IT
+ * capacity, `build` is capacity under construction or firmly planned — both in
+ * megawatts, curated order-of-magnitude estimates from industry trackers
+ * (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE market reports).
+ * There is no keyless live API for this — figures are revised yearly at best
+ * and cover the leading metros, not every facility worldwide.
+ */
+export const DATA_CENTER_HUBS: {
+  name: string;
+  lon: number;
+  lat: number;
+  mw: number;
+  build: number;
+}[] = [
+  // North America
+  { name: 'Nord-Virginia', lon: -77.5, lat: 39.0, mw: 4200, build: 3000 },
+  { name: 'Phoenix', lon: -112.1, lat: 33.4, mw: 900, build: 1100 },
+  { name: 'Dallas', lon: -96.8, lat: 32.8, mw: 850, build: 700 },
+  { name: 'Chicago', lon: -87.6, lat: 41.8, mw: 800, build: 400 },
+  { name: 'Silicon Valley', lon: -121.9, lat: 37.4, mw: 900, build: 300 },
+  { name: 'Atlanta', lon: -84.4, lat: 33.7, mw: 650, build: 900 },
+  { name: 'Oregon', lon: -122.9, lat: 45.5, mw: 600, build: 500 },
+  { name: 'Columbus', lon: -83.0, lat: 40.0, mw: 350, build: 700 },
+  { name: 'Toronto', lon: -79.4, lat: 43.7, mw: 350, build: 220 },
+  { name: 'Querétaro', lon: -100.4, lat: 20.6, mw: 160, build: 320 },
+  // Europe
+  { name: 'Frankfurt', lon: 8.7, lat: 50.1, mw: 900, build: 650 },
+  { name: 'London', lon: -0.6, lat: 51.5, mw: 1000, build: 550 },
+  { name: 'Amsterdam', lon: 4.9, lat: 52.4, mw: 600, build: 200 },
+  { name: 'Paris', lon: 2.35, lat: 48.9, mw: 500, build: 450 },
+  { name: 'Dublin', lon: -6.3, lat: 53.3, mw: 750, build: 300 },
+  { name: 'Madrid', lon: -3.7, lat: 40.4, mw: 220, build: 620 },
+  { name: 'Mailand', lon: 9.2, lat: 45.5, mw: 180, build: 450 },
+  { name: 'Berlin', lon: 13.4, lat: 52.5, mw: 160, build: 240 },
+  { name: 'Warschau', lon: 21.0, lat: 52.2, mw: 130, build: 220 },
+  { name: 'Oslo', lon: 10.7, lat: 59.9, mw: 200, build: 400 },
+  // Middle East & Africa
+  { name: 'Dubai', lon: 55.3, lat: 25.2, mw: 260, build: 520 },
+  { name: 'Riad', lon: 46.7, lat: 24.7, mw: 160, build: 780 },
+  { name: 'Johannesburg', lon: 28.0, lat: -26.2, mw: 170, build: 260 },
+  { name: 'Lagos', lon: 3.4, lat: 6.5, mw: 70, build: 130 },
+  // Asia-Pacific
+  { name: 'Peking', lon: 116.4, lat: 39.9, mw: 1500, build: 800 },
+  { name: 'Shanghai', lon: 121.5, lat: 31.2, mw: 1200, build: 700 },
+  { name: 'Singapur', lon: 103.8, lat: 1.35, mw: 1000, build: 300 },
+  { name: 'Johor', lon: 103.7, lat: 1.5, mw: 300, build: 1400 },
+  { name: 'Tokio', lon: 139.7, lat: 35.7, mw: 900, build: 620 },
+  { name: 'Mumbai', lon: 72.9, lat: 19.1, mw: 700, build: 900 },
+  { name: 'Hongkong', lon: 114.2, lat: 22.3, mw: 500, build: 200 },
+  { name: 'Seoul', lon: 127.0, lat: 37.5, mw: 500, build: 400 },
+  { name: 'Sydney', lon: 151.2, lat: -33.9, mw: 600, build: 400 },
+  { name: 'Jakarta', lon: 106.8, lat: -6.2, mw: 220, build: 520 },
+  // South America
+  { name: 'São Paulo', lon: -46.6, lat: -23.5, mw: 360, build: 420 },
+  { name: 'Santiago', lon: -70.6, lat: -33.4, mw: 130, build: 300 },
+];
+
 // Transparency International CPI 2024 scores (100 = clean), stored
 // inverted and shifted so the cleanest country (Denmark, 90) sits at the
 // neutral end of the red ramp and the most corrupt render darkest.

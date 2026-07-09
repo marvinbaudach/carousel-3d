@@ -7,6 +7,7 @@ import {
   areaChart,
   budgetSplit,
   choroplethMap,
+  dataCenterMap,
   debtClock,
   hBarChart,
   lineChart,
@@ -19,6 +20,7 @@ import {
 } from './charts';
 import {
   CPI_INVERTED,
+  DATA_CENTER_HUBS,
   DRUG_DEATHS_100K,
   DRUG_DEATHS_TOP,
   EU_DEBT_GDP,
@@ -101,6 +103,7 @@ import {
   DE_NATIONALITY_COMPARE,
   DE_POPULATION_PANEL,
   DE_TAX_QUOTA_PANEL,
+  DE_TAX_REVENUE_PANEL,
   DE_POWER_PRICE_PANEL,
   BERLIN_WARRANTS_PANEL,
   DE_OLD_AGE_PANEL,
@@ -337,6 +340,19 @@ export const POOL: Dashboard[] = [
         states: NUKE_STATES,
         world: live.worldMap,
         source: 'FAS-Schätzung 2025',
+      }),
+  },
+  {
+    id: 'datacenter-map',
+    title: 'Rechenzentren weltweit',
+    source:
+      'Kuratiert nach Branchen-Trackern (Synergy Research, Data Center Map, Cloudscene, JLL/CBRE) · IT-Kapazität der größten Hubs in MW, gerundete Schätzung; „im Bau" = im Bau oder fest geplant. Kein Live-API — Stand 2026.',
+    draw: (f) =>
+      dataCenterMap(f, {
+        label: 'Rechenzentren',
+        hubs: DATA_CENTER_HUBS,
+        world: live.worldMap,
+        source: 'Branchen-Tracker · IT-Kapazität der Hubs · 2026',
       }),
   },
   {
@@ -1498,6 +1514,14 @@ export const POOL: Dashboard[] = [
     [1970, '🏛️ Sozialstaatsausbau'],
     [2021, '📈 Rekord ~39%'],
   ]), 'OECD Revenue Statistics ab 1965; davor historische Schätzungen (Statistisches Reichsamt / Bundesbank), gerundet. Steuern plus Sozialabgaben in % des BIP; Weltkriegsjahre interpoliert (Kriegsfinanzierung lief über Schulden und Inflation), vor 1990 Reichsgebiet bzw. Westdeutschland.'),
+  trendCard('de-tax-revenue', 'Steuereinnahmen Deutschland · seit 1991', 'Steuereinnahmen · 🇩🇪 · Bund, Länder, Gemeinden · Prognose bis 2027', DE_TAX_REVENUE_PANEL, green, (v) => (v >= 1000 ? `${localeNum(v / 1000, 2)} ${tr('Bio.')} €` : `${localeNum(v, 0)} ${tr('Mrd')} €`), 263, eraMarkers(1991, 2027, [
+    // Total cash tax take, € billion: roughly tripled since reunification,
+    // dented only by the 2009 financial crisis and the 2020 Corona slump.
+    // The dashed tail (from 2025) is provisional / the BMF tax estimate —
+    // the take passes €1 trillion for the first time in 2027.
+    [2009, '🏦 Finanzkrise'],
+    [2020, '💸 Corona'],
+  ]), 'Destatis / BMF · Kassenmäßige Steuereinnahmen insgesamt (Bund, Länder, Gemeinden und EU-Anteile), in Mrd €, nominal (nicht inflationsbereinigt), gerundet; vor 1999 aus DM umgerechnet. Ab 2025 gestrichelt = vorläufig bzw. Steuerschätzung (170. Sitzung, Mai 2026): 999 Mrd € 2026, 1.033 Mrd € 2027 — erstmals über 1 Billion €. Stand Juli 2026.', 0.944),
   trendCard('de-power-prices', 'Strompreis Deutschland', 'Strompreis · 🇩🇪 · Haushalte · je kWh', DE_POWER_PRICE_PANEL, blue, (v) => `${localeNum(v, 0)} ct`, 271, eraMarkers(1991, 2025, [
     // The household price roughly tripled since 2000. The EEG renewables law
     // (2000) kicked off the green transition; the nuclear phase-out decision
@@ -1506,6 +1530,39 @@ export const POOL: Dashboard[] = [
     [2011, '☢️ Atomausstieg'],
     [2022, '⚡ Energiekrise'],
   ]), 'BDEW / Destatis / Eurostat · Haushaltsstrompreis inkl. Steuern und Umlagen, ct/kWh, gerundet.'),
+  {
+    id: 'de-power-prices-eu',
+    title: 'Höchste Strompreise Europas',
+    source:
+      'Eurostat (nrg_pc_204) · Haushaltsstrompreis 1. Halbjahr 2024, Verbrauchsband 2 500–4 999 kWh/Jahr, inkl. aller Steuern und Umlagen, in ct/kWh, gerundet. EU-Schnitt = EU-27.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Eurostat H1 2024, household band DC, all taxes and levies included:
+        // Germany has the most expensive household electricity in the EU. The
+        // renewables levies, grid fees and taxes stack on top of a wholesale
+        // price the 2022 gas shock never fully gave back; France (nuclear) and
+        // the EU average sit well below.
+        label: 'Haushaltsstrom · EU · ct/kWh · 2024',
+        value: 39.5,
+        fmt: (v) => `${localeNumTrim(v, 1)} ct`,
+        rowFmt: (v) => `${localeNumTrim(v, 1)} ct`,
+        delta: null,
+        color: orange,
+        unit: '',
+        rows: [
+          { name: '🇩🇪 Deutschland', v: 39.5 },
+          { name: '🇮🇪 Irland', v: 37.5 },
+          { name: '🇩🇰 Dänemark', v: 37.4 },
+          { name: '🇧🇪 Belgien', v: 37.0 },
+          { name: '🇮🇹 Italien', v: 35.9 },
+          { name: '🇨🇿 Tschechien', v: 32.6 },
+          { name: '🇳🇱 Niederlande', v: 31.3 },
+          { name: '🇦🇹 Österreich', v: 30.6 },
+          { name: '🇪🇺 EU-Schnitt', v: 28.9 },
+          { name: '🇫🇷 Frankreich', v: 27.6 },
+        ],
+      }),
+  },
   trendCard('berlin-warrants', 'Offene Haftbefehle · Berlin', 'Offene Haftbefehle · Berlin', BERLIN_WARRANTS_PANEL, red, (v) => `${localeNum(v / 1000, 0)}k`, 283, undefined, 'Senatsverwaltung für Justiz Berlin (parlamentarische Anfragen) und Presseberichte. Definitionen variieren — Größenordnung, frühe Werte grob geschätzt.'),
   trendCard('de-state-quota', 'Staatsquote Deutschland', 'Staatsquote · 🇩🇪 · Staatsausgaben % des BIP', DE_STATE_QUOTA_PANEL, orange, (v) => `${localePct(v, 1)}`, 227, eraMarkers(1880, 2024, [
     // Government spending as a share of GDP on the 1880–2024 axis: the secular

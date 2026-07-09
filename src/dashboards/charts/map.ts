@@ -2,9 +2,9 @@
 // value choropleth and the signed temperature map, each with a ranked top-N
 // list below.
 
-import { localeInt, t as tr } from '../../i18n';
+import { localeInt, localeNum, t as tr } from '../../i18n';
 import { drawHeader, drawSurface, easeOut, fmtCompact, roundRect, stagger, type Frame } from '../draw';
-import { CRITICAL, FONT, GRID, INK, INK_SECONDARY, MUTED, SURFACE_DEEP } from '../theme';
+import { CRITICAL, FONT, GRID, INK, INK_SECONDARY, MUTED, SERIES, SURFACE_DEEP } from '../theme';
 import { drawRankedList, drawSource, ellipsize, withAlpha, withFlag } from './shared';
 
 export interface NukeMapCfg {
@@ -668,6 +668,197 @@ export function tempMap(f: Frame, cfg: TempMapCfg): void {
     top: capY + captionH + listGap - 12 * u,
     bottom: h - 46 * u - axisH,
     rowFmt: cfg.rowFmt,
+  });
+
+  if (cfg.source) drawSource(f, cfg.source);
+}
+
+// ---------------------------------------------------------------------------
+// Data-center map: the world's leading compute hubs plotted as markers rather
+// than country shading, because the story is *where the buildings sit*, not a
+// per-country total. Two states, two colors: a filled blue dot = capacity in
+// operation ("steht"), a hollow amber ring around it = capacity under
+// construction or planned ("entsteht"). A hub that is both running and
+// expanding gets a blue core inside an amber halo; a brand-new site is a hollow
+// ring only. Both colors are fixed categorical slots (theme.ts), never
+// hand-picked. Top-5 hubs by total capacity listed below.
+
+const DC_LIVE = SERIES[0]; // blue — in operation
+const DC_BUILD = SERIES[2]; // amber — under construction / planned
+
+export interface DataCenterMapCfg {
+  label: string;
+  /** Leading hubs with a metro anchor; mw = operational, build = in construction/planned (MW). */
+  hubs: { name: string; lon: number; lat: number; mw: number; build: number }[];
+  /** Country outlines keyed by ISO3; a quiet graticule stands in if absent. */
+  world?: { id: string; rings: number[][][] }[];
+  source: string;
+}
+
+/** MW → a compact "12,5 GW" / "780 MW" label. */
+function gwLabel(mw: number): string {
+  return mw >= 1000 ? `${localeNum(mw / 1000, 1)} GW` : `${localeInt(Math.round(mw))} MW`;
+}
+
+/**
+ * World map of the major data-center hubs. Equirectangular, cropped to
+ * 85°N..60°S like the other world maps; markers sized by sqrt(capacity) so the
+ * giants stay bounded next to the mid-size metros. Legend spells out the two
+ * states with their summed capacity; a top-5 list sits below.
+ */
+export function dataCenterMap(f: Frame, cfg: DataCenterMapCfg): void {
+  const { ctx, u, t, w, h } = f;
+  drawSurface(f);
+  const top = drawHeader(f, cfg.label);
+  const pad = 36 * u;
+
+  const mx0 = pad;
+  const mw = w - 2 * pad;
+  const my0 = top + 4 * u;
+  // Reserve height for the legend line and the 5-row list so a short, wide card
+  // can't let the 2:1 map grow tall enough to squeeze them out (mirrors nukeMap).
+  const legendH = 30 * u;
+  const listGap = 16 * u;
+  const rowMin = 42 * u;
+  const mapMax = h - 46 * u - my0 - legendH - listGap - 5 * rowMin;
+  const mh = Math.min(mw / 2, mapMax);
+  const px = (lon: number) => mx0 + ((lon + 180) / 360) * mw;
+  const py = (lat: number) => my0 + ((85 - Math.min(85, Math.max(-60, lat))) / 145) * mh;
+
+  // --- Base map -----------------------------------------------------------
+  if (cfg.world) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(mx0, my0, mw, mh);
+    ctx.clip();
+    // Flat neutral land + a thin dark seam, so shape reads without competing
+    // with the markers that carry the data.
+    ctx.fillStyle = 'rgba(214,222,236,0.06)';
+    ctx.strokeStyle = 'rgba(5,7,12,0.65)';
+    ctx.lineWidth = 1 * u;
+    ctx.lineJoin = 'round';
+    for (const country of cfg.world) {
+      for (const ring of country.rings) {
+        ctx.beginPath();
+        ring.forEach(([lon, lat], i) => {
+          if (i === 0) ctx.moveTo(px(lon), py(lat));
+          else ctx.lineTo(px(lon), py(lat));
+        });
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  } else {
+    ctx.strokeStyle = GRID;
+    ctx.lineWidth = 1 * u;
+    for (let lon = -150; lon <= 150; lon += 30) {
+      ctx.beginPath();
+      ctx.moveTo(px(lon), my0);
+      ctx.lineTo(px(lon), my0 + mh);
+      ctx.stroke();
+    }
+    for (let lat = -60; lat <= 80; lat += 20) {
+      ctx.beginPath();
+      ctx.moveTo(mx0, py(lat));
+      ctx.lineTo(mx0 + mw, py(lat));
+      ctx.stroke();
+    }
+  }
+
+  // --- Markers ------------------------------------------------------------
+  const maxVal = Math.max(...cfg.hubs.flatMap((hb) => [hb.mw, hb.build]), 1);
+  const scale = (v: number) => Math.sqrt(Math.max(0, v) / maxVal); // 0..1
+
+  // Clip markers to the map so a coastal hub's halo can't bleed onto the legend.
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(mx0, my0 - 4 * u, mw, mh + 8 * u);
+  ctx.clip();
+
+  // Amber build rings first, so a combined hub's blue core lands on top.
+  cfg.hubs.forEach((hb, i) => {
+    if (hb.build <= 0) return;
+    const x = px(hb.lon);
+    const y = py(hb.lat);
+    const appear = Math.max(0, stagger(t, i, 0.04));
+    if (appear <= 0) return;
+    const rDot = hb.mw > 0 ? 3 * u + 13 * u * scale(hb.mw) : 0;
+    const ringR = (hb.mw > 0 ? rDot + 2 * u : 0) + 4 * u + 11 * u * scale(hb.build);
+    // Persistent hollow ring — always visible, even when the reveal has settled.
+    ctx.globalAlpha = appear;
+    ctx.strokeStyle = withAlpha(DC_BUILD, 0.95);
+    ctx.lineWidth = 2 * u;
+    ctx.beginPath();
+    ctx.arc(x, y, ringR, 0, Math.PI * 2);
+    ctx.stroke();
+    // A restrained expanding pulse — enough to keep the map alive on the intro
+    // reveal without crossing into a scribble where hubs cluster (Europe, US
+    // east). The persistent ring above already carries the build magnitude.
+    const phase = (t * 0.5 + i * 0.27) % 1;
+    ctx.globalAlpha = appear * (1 - phase) * 0.4;
+    ctx.beginPath();
+    ctx.arc(x, y, ringR + phase * 6 * u, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  });
+
+  // Blue operational dots on top.
+  cfg.hubs.forEach((hb, i) => {
+    if (hb.mw <= 0) return;
+    const x = px(hb.lon);
+    const y = py(hb.lat);
+    const appear = Math.max(0, stagger(t, i, 0.04));
+    if (appear <= 0) return;
+    const r = 3 * u + 13 * u * scale(hb.mw);
+    ctx.globalAlpha = appear;
+    ctx.fillStyle = withAlpha(DC_LIVE, 0.28);
+    ctx.beginPath();
+    ctx.arc(x, y, r + 3 * u, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = DC_LIVE;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+  ctx.restore();
+
+  // --- Legend -------------------------------------------------------------
+  const liveMw = cfg.hubs.reduce((s, hb) => s + hb.mw, 0);
+  const buildMw = cfg.hubs.reduce((s, hb) => s + hb.build, 0);
+  const lgY = my0 + mh + 20 * u;
+  ctx.textAlign = 'left';
+  ctx.font = `600 ${13 * u}px ${FONT}`;
+  // Swatch 1: filled blue dot + operational total.
+  ctx.fillStyle = DC_LIVE;
+  ctx.beginPath();
+  ctx.arc(mx0 + 5 * u, lgY - 4 * u, 5 * u, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = INK_SECONDARY;
+  const liveLbl = `${tr('In Betrieb')} · ${gwLabel(liveMw)}`;
+  ctx.fillText(liveLbl, mx0 + 16 * u, lgY);
+  // Swatch 2: hollow amber ring + build total, offset past the first label.
+  const x2 = mx0 + 16 * u + ctx.measureText(liveLbl).width + 26 * u;
+  ctx.strokeStyle = DC_BUILD;
+  ctx.lineWidth = 2 * u;
+  ctx.beginPath();
+  ctx.arc(x2 + 5 * u, lgY - 4 * u, 5 * u, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = INK_SECONDARY;
+  ctx.fillText(`${tr('Im Bau')} · ${gwLabel(buildMw)}`, x2 + 16 * u, lgY);
+
+  // --- Top-5 hubs by total capacity ---------------------------------------
+  const rows = cfg.hubs
+    .map((hb) => ({ name: hb.name, v: hb.mw + hb.build }))
+    .toSorted((a, b) => b.v - a.v)
+    .slice(0, 5);
+  drawRankedList(f, {
+    rows,
+    top: lgY + listGap,
+    rowFmt: (v) => gwLabel(v),
+    color: DC_LIVE,
   });
 
   if (cfg.source) drawSource(f, cfg.source);
