@@ -10,8 +10,10 @@ import styled from 'styled-components';
 // blob background (MobileBackground) when unavailable or when the user
 // prefers reduced motion.
 const RES_CAP = 480;
-// Accents are bright chart colors; scaled to nebula luminance (desktop match).
-const TINT_SCALE = 0.48;
+// Accents are bright chart colors; scaled to nebula luminance. Runs hotter
+// than the desktop aurora — on the phone the backdrop is a narrow frame
+// around the card and has to carry the whole mood.
+const TINT_SCALE = 0.62;
 
 const VERT = `
   attribute vec2 aPos;
@@ -73,17 +75,18 @@ const FRAG = `
     float n = fbm(uv * 2.0 + q * 1.5 + vec2(t * 0.9, t * 0.3));
     float n2 = fbm(uv * 3.5 - q * 1.2 - vec2(t * 0.6, t * 0.4));
 
-    // Lifted base + layer weights (desktop match): the card is dark, so the
-    // room behind it carries the light — hazy dusk, not near-black space.
-    vec3 base = vec3(0.030, 0.042, 0.078);
+    // Lifted base + layer weights, hotter than the desktop aurora: the card
+    // is dark, so the room behind it carries the light — hazy dusk, not
+    // near-black space.
+    vec3 base = vec3(0.050, 0.068, 0.118);
     vec3 blue = mix(vec3(0.07, 0.17, 0.40), uTint, 0.6);
     vec3 violet = vec3(0.20, 0.12, 0.38);
     vec3 teal = mix(vec3(0.06, 0.23, 0.28), uTint, 0.45);
 
     vec3 col = base;
-    col += blue * smoothstep(0.30, 0.92, n) * 0.70;
-    col += violet * smoothstep(0.50, 1.02, n2) * 0.50;
-    col += teal * smoothstep(0.55, 1.0, n * n2) * 0.34;
+    col += blue * smoothstep(0.25, 0.9, n) * 0.95;
+    col += violet * smoothstep(0.45, 1.0, n2) * 0.65;
+    col += teal * smoothstep(0.5, 1.0, n * n2) * 0.45;
 
     // Light shafts: two soft diagonal beams panning at different speeds.
     // Multiplied by the nebula density so they read as light through haze,
@@ -99,10 +102,13 @@ const FRAG = `
     float glint = smoothstep(0.78, 0.98, n * n2 * (1.4 + 0.6 * sin(uTime * 0.6)));
     col += (uTint + vec3(0.25)) * glint * 0.35;
 
-    // Calm center so the card stays readable; the edge glow breathes slowly.
+    // No center dimming — the card covers the middle anyway. The visible
+    // band around the card is only a narrow frame in portrait, so the edge
+    // boost is strong and starts just outside the card's footprint
+    // (d ≈ 0.35); it breathes slowly so the frame feels alive.
     float d = distance(vUv, vec2(0.5));
-    float breath = 1.3 + 0.1 * sin(uTime * 0.45);
-    col *= mix(0.82, breath, smoothstep(0.1, 0.75, d));
+    float breath = 1.9 + 0.2 * sin(uTime * 0.45);
+    col *= mix(1.0, breath, smoothstep(0.3, 0.62, d));
 
     gl_FragColor = vec4(col, 1.0);
   }
@@ -264,7 +270,15 @@ export function MobileAurora({ accent, onFail, ref }: MobileAuroraProps) {
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('resize', size);
       canvas.removeEventListener('webglcontextlost', onLost);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      // Do NOT loseContext() here: StrictMode re-runs this effect on the same
+      // canvas, and getContext() would hand the second run the same — now
+      // dead — context, failing every compile (dev-only aurora blackout that
+      // silently swapped in the blob fallback). Freeing the GL objects is
+      // enough; the context itself dies with the canvas element.
+      gl.deleteProgram(prog);
+      gl.deleteShader(vs);
+      gl.deleteShader(fs);
+      gl.deleteBuffer(buf);
     };
     // onFail is a stable callback (caller memoizes); the GL setup must not
     // re-run on prop identity churn.

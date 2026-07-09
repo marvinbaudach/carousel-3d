@@ -22,17 +22,22 @@ const Stack = styled.div`
   perspective: 1400px; /* gives the throw a real sense of depth */
 `;
 
-// Fill the available area rather than locking the panel's 4:5 shape: on a tall
-// phone that left big empty bands top and bottom. The chart renderers adapt to
-// whatever aspect the card takes; width is capped so it stays sane on tablets.
+// The card deliberately does NOT fill the stack: the aurora behind it is the
+// mood of the whole view, and a near-fullscreen card reduced it to invisible
+// slivers (dark card on black again). The caps leave a visible glowing frame
+// on every side; the chart renderers adapt to whatever aspect remains, and
+// width is capped so it stays sane on tablets.
 const Card = styled.div`
   position: absolute;
-  top: 50%;
+  /* Sits slightly above center: the pager dots live in the band below the
+     card and need clear daylight to the card's bottom edge. */
+  top: calc(50% - 14px);
   left: 50%;
-  width: min(94vw, 560px, 72vh);
+  width: min(88vw, 560px, 68vh);
   /* Cap by the actual stack area (not just the viewport) so the card never
-     overruns the header and gets clipped; the subtracted margin is the gap. */
-  height: min(85vh, calc(100% - 32px));
+     overruns the header or the pager band; the subtracted margin is the
+     top+bottom gap. */
+  height: min(76vh, calc(100% - 88px));
   border-radius: 18px;
   overflow: hidden;
   touch-action: none;
@@ -46,9 +51,11 @@ const Card = styled.div`
     0 24px 60px rgba(0, 0, 0, 0.55);
 `;
 
-// Star toggle riding the active card's top-right corner. Lives in the DOM, not
-// the canvas texture, so toggling never forces a card redraw. pointerdown is
-// stopped so a tap here can never arm the swipe drag underneath.
+// Star toggle riding each card's top-right corner — every card in the 3-card
+// window carries its own, so the star is already in place while a neighbour
+// rises during a throw (it used to pop in only after the index advanced).
+// Lives in the DOM, not the canvas texture, so toggling never forces a card
+// redraw. pointerdown is stopped so a tap here can never arm the swipe drag.
 const FavButton = styled.button<{ $active: boolean }>`
   position: absolute;
   top: 12px;
@@ -327,7 +334,24 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
   const prev = wrap ? dashboards[(index - 1 + n) % n] : index > 0 ? dashboards[index - 1] : null;
   const next = wrap ? dashboards[(index + 1) % n] : index < n - 1 ? dashboards[index + 1] : null;
   if (!cur) return <Stack />;
-  const curFav = favoriteIds.includes(cur.id);
+
+  const favButtonFor = (d: Dashboard) => {
+    const active = favoriteIds.includes(d.id);
+    return (
+      <FavButton
+        $active={active}
+        aria-pressed={active}
+        aria-label={trans(active ? 'Favorit entfernen' : 'Zu Favoriten')}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={() => {
+          hapticTick();
+          toggleFavorite(d.id);
+        }}
+      >
+        <FavStar id={d.id} active={active} />
+      </FavButton>
+    );
+  };
 
   return (
     <Stack>
@@ -338,11 +362,13 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
       {prev && (
         <Card key={prev.id} ref={prevRef} style={{ zIndex: 2, opacity: 0, transform: BEHIND }}>
           <CardCanvas dashboard={prev} animate={false} restT={reducedMotion ? undefined : 0} />
+          {favButtonFor(prev)}
         </Card>
       )}
       {next && (
         <Card key={next.id} ref={nextRef} style={{ zIndex: 1, transform: BEHIND }}>
           <CardCanvas dashboard={next} animate={false} restT={reducedMotion ? undefined : 0} />
+          {favButtonFor(next)}
         </Card>
       )}
       <Card
@@ -359,18 +385,7 @@ export function SwipeDeck({ dashboards, onIndex, onRefresh, onColor }: SwipeDeck
             same slot rather than mounting fresh. So `animate` flipping
             false -> true here is what replays CardCanvas's fly-in on landing. */}
         <CardCanvas dashboard={cur} animate={!reducedMotion} onColor={onColor} />
-        <FavButton
-          $active={curFav}
-          aria-pressed={curFav}
-          aria-label={trans(curFav ? 'Favorit entfernen' : 'Zu Favoriten')}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => {
-            hapticTick();
-            toggleFavorite(cur.id);
-          }}
-        >
-          <FavStar id={cur.id} active={curFav} />
-        </FavButton>
+        {favButtonFor(cur)}
       </Card>
     </Stack>
   );
