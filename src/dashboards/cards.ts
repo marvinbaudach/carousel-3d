@@ -19,7 +19,14 @@ import { CPI_INVERTED, EU_DEBT_GDP, EXECUTIONS_2024, LGBT_CRIMINAL, NUKE_STATES,
 import type { Dashboard } from './types';
 import { live } from '../data/store';
 import { EXCESS_100K_BY_ISO, VAX_RATE_BY_ISO } from '../data/covidWorld';
-import { FALLBACK_TEMPS, FALLBACK_TEMP_ROWS, HOLOCENE_PANEL } from '../data/climate';
+import {
+  DEGLACIATION_PANEL,
+  FALLBACK_TEMPS,
+  FALLBACK_TEMP_ROWS,
+  HOLOCENE_PANEL,
+  ICE_CORE_PANEL,
+  SEALEVEL_PANEL,
+} from '../data/climate';
 import {
   AFRICA_ROUTES_COMPARE,
   AI_JOBS_COMPARE,
@@ -296,6 +303,49 @@ export const POOL: Dashboard[] = [
       });
     },
   },
+  trendCard(
+    'ice-cores',
+    'Eiszeiten · 800.000 Jahre',
+    'Antarktis-Temperatur · Δ vs. heute',
+    ICE_CORE_PANEL,
+    blue,
+    (v) => `${v > 0 ? '+' : ''}${localeNum(v, 1)} °C`,
+    77,
+    eraMarkers(-800, 0, [
+      [-125, '☀️ Eem-Warmzeit'],
+      [-20, '❄️ Eiszeit-Maximum'],
+    ]),
+    'EPICA Community Members 2004 / Jouzel et al. 2007 · antarktische Eiskerntemperatur (Dome C), Δ zum heutigen Wert. Acht Eiszeit-Zyklen; die Antarktis schwankt ~2× stärker als das globale Mittel.',
+  ),
+  trendCard(
+    'deglaciation',
+    'Das Ende der letzten Eiszeit',
+    'Globale Temperatur · Δ vs. 1850',
+    DEGLACIATION_PANEL,
+    orange,
+    (v) => `${v > 0 ? '+' : ''}${localeNum(v, 1)} °C`,
+    78,
+    eraMarkers(-24000, 0, [
+      [-22000, '❄️ Eiszeit-Maximum'],
+      [-12900, '❄️ Jüngere Dryas'],
+      [-11700, '🌱 Holozän'],
+    ]),
+    'Osman et al. 2021 / Shakun et al. 2012 · globale Mitteltemperatur seit dem letzten Eiszeit-Maximum; ab 1850 Instrumentaldaten (HadCRUT5). Der Sprung am Ende ist die industrielle Erwärmung.',
+  ),
+  trendCard(
+    'sea-level',
+    'Meeresspiegel seit der Eiszeit',
+    'Meeresspiegel · m vs. heute',
+    SEALEVEL_PANEL,
+    aqua,
+    (v) => `${localeNum(v, 0)} m`,
+    79,
+    eraMarkers(-20000, 0, [
+      [-14500, '🌊 Schmelzwasserpuls 1A'],
+      [-7000, '⚖️ stabil'],
+    ]),
+    'Lambeck et al. 2014 (PNAS) · globaler Meeresspiegel relativ zu heute. +125 m seit der Eiszeit, seit ~7000 Jahren nahezu stabil — der moderne mm-Anstieg ist auf dieser Skala unsichtbar.',
+  ),
   {
     id: 'swiss-pop',
     title: 'Schweizer Bevölkerung · 500 Jahre',

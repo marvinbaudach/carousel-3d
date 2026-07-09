@@ -4,7 +4,7 @@
 // 10,000-year global temperature reconstruction.
 
 import { localeNum } from '../i18n';
-import { interpAt, niceScale, norm } from './series';
+import { interpAt, niceScale, norm, trend } from './series';
 import { WORLD } from './world';
 
 // ---------------------------------------------------------------------------
@@ -167,3 +167,67 @@ function holocenePanel() {
 }
 
 export const HOLOCENE_PANEL = holocenePanel();
+
+// ---------------------------------------------------------------------------
+// Deep-time paleoclimate: three single-series panels that put the modern
+// record in its ice-age context. All built with `trend()` (yearly interp +
+// nice axis), delta chip suppressed at the card. Units are kept internal to
+// each panel — the ice core works in kyr before present, the other two in
+// years before present — so the matching eraMarkers() call in cards.ts uses
+// the same range. X grows toward the present (year 0), so the axis reads
+// oldest → today left to right.
+
+const signedC = (v: number): string => `${v > 0 ? '+' : ''}${localeNum(v, 1)} °C`;
+
+// 800,000 years of Antarctic ice-core temperature (EPICA Dome C / Vostok,
+// Jouzel et al. 2007) as anomaly vs. the present value: eight glacial cycles,
+// the sawtooth every schoolbook skips. Interglacial peaks reach +1…+3 °C, full
+// glacials drop to about −9 °C — and today (0) sits on a warm peak. Antarctic
+// swings run ~2× the global mean; the card says so. x = −kyr before present.
+const ICE_CORE_ANCHORS: [number, number][] = [
+  [-800, -6], [-790, 1], [-760, -4], [-740, -6], [-712, 1], [-680, -6],
+  [-660, -7], [-620, 1.5], [-600, -4], [-575, 0], [-540, -7], [-500, -3],
+  [-490, 1.5], [-465, -6], [-430, -8.5], [-410, 2], [-380, 0], [-350, -7],
+  [-337, -8], [-325, 2.5], [-300, -4], [-270, -8], [-243, 2], [-220, -6],
+  [-200, -7], [-160, -7], [-150, -8], [-130, -6], [-125, 3], [-110, -2],
+  [-80, -4], [-65, -6], [-40, -5], [-20, -9], [-12, -4], [-10, -0.5],
+  [-5, 0.3], [0, 0],
+];
+export const ICE_CORE_PANEL = trend(
+  ICE_CORE_ANCHORS,
+  signedC,
+  ['800 Tsd. J.', '525 Tsd.', '250 Tsd.', 'heute'],
+  120,
+);
+
+// The exit from the last ice age: global mean temperature from the Last
+// Glacial Maximum to today (Osman et al. 2021 / Shakun et al. 2012), anomaly
+// vs. 1850. A ~4.5 °C climb over ~10,000 years, then the instrumental jump to
+// +1.3 °C at the very end. x = −years before present.
+const DEGLACIATION_ANCHORS: [number, number][] = [
+  [-24000, -4.5], [-21000, -4.6], [-18000, -4.4], [-17000, -4.2],
+  [-16000, -3.6], [-14700, -1.6], [-14000, -1.4], [-12900, -1.8],
+  [-11700, -0.6], [-10000, -0.1], [-8000, 0.2], [-6000, 0.4], [-4000, 0.2],
+  [-2000, 0.05], [-170, 0.0], [-70, 0.3], [0, 1.3],
+];
+export const DEGLACIATION_PANEL = trend(
+  DEGLACIATION_ANCHORS,
+  signedC,
+  ['24.000 J.', '16.000', '8.000', 'heute'],
+  64,
+);
+
+// Sea level since the last ice age (Lambeck et al. 2014, PNAS): +125 m as the
+// ice sheets melted, near-stable for ~7,000 years. The modern mm-scale rise is
+// invisible at this scale — the card notes it. x = −years before present.
+const SEALEVEL_ANCHORS: [number, number][] = [
+  [-20000, -125], [-18000, -120], [-16000, -105], [-14500, -95],
+  [-14000, -90], [-12000, -60], [-11500, -55], [-10000, -40], [-8000, -13],
+  [-7000, -5], [-6000, -3], [-4000, -1.5], [-2000, -0.5], [0, 0],
+];
+export const SEALEVEL_PANEL = trend(
+  SEALEVEL_ANCHORS,
+  (v) => `${localeNum(v, 0)} m`,
+  ['20.000 J.', '13.000', '7.000', 'heute'],
+  64,
+);

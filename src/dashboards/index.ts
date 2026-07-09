@@ -34,6 +34,10 @@ export const TAGS: { id: string; label: string; accent: string; primary?: boolea
   // the palette is fixed (CVD-validated), never extended by hand.
   { id: 'tech', label: 'TECH', accent: SERIES[4] }, // violet
   { id: 'welt', label: 'WELT', accent: SERIES[0] }, // blue
+  // Climate category: the live world-temperature map plus the deep-time
+  // paleoclimate panels. Shares aqua with GESUNDHEIT — the palette is fixed
+  // (CVD-validated), and aqua reads cold/ice for a climate theme.
+  { id: 'klima', label: 'KLIMA', accent: SERIES[1] }, // aqua
   // Review chip: the whole pool ordered newest-first (see ADDED_BY_ID) instead
   // of the usual clustered shuffle, so freshly added cards are easy to check.
   { id: 'neu', label: 'NEU', accent: SERIES[3] }, // green
@@ -61,8 +65,11 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'us-debt': ['geld'],
   nukes: ['krieg'],
   'homicide-map': ['soziales', 'welt'],
-  'temp-map': ['welt'],
-  'holocene': ['welt'],
+  'temp-map': ['klima', 'welt'],
+  'holocene': ['klima', 'welt'],
+  'ice-cores': ['klima', 'welt'],
+  'deglaciation': ['klima', 'welt'],
+  'sea-level': ['klima', 'welt'],
   'swiss-pop': ['welt', 'soziales'],
   'world-pop': ['welt', 'soziales'],
   'oil-consumption': ['welt', 'geld'],
@@ -387,6 +394,9 @@ const ADDED_BY_ID: Record<string, string> = {
   'margin-debt': '2026-07-09T02:00:00+02:00',
   'temp-map': '2026-07-08T12:00:00+02:00',
   'holocene': '2026-07-08T12:00:00+02:00',
+  'ice-cores': '2026-07-09T14:30:00+02:00',
+  'deglaciation': '2026-07-09T14:30:00+02:00',
+  'sea-level': '2026-07-09T14:30:00+02:00',
   'de-income-tax-share': '2026-07-08T13:00:00+02:00',
   'sdg-progress': '2026-07-09T03:00:00+02:00',
   'who-funding': '2026-07-09T03:00:00+02:00',
@@ -429,7 +439,7 @@ export const NEWEST: Dashboard[] = [...POOL].sort((a, b) =>
 const FEATURED = new Set([
   'us-wars', 'us-bases', 'modern-slavery', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
   'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
-  'world-pop', 'oil-consumption', 'temp-map', 'holocene', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees', 'refugees-interventions',
+  'world-pop', 'oil-consumption', 'temp-map', 'holocene', 'ice-cores', 'deglaciation', 'sea-level', 'de-insolvenz-jobs', 'conflict-deaths', 'refugees', 'refugees-interventions',
   'military', 'military-per-soldier', 'military-gdp', 'de-industry', 'recent-wars', 'de-state-quota', 'de-tax-quota', 'de-income-tax-share', 'de-public-employment', 'de-power-prices', 'de-old-age-ratio', 'de-aging-nations', 'berlin-warrants',
   'youth-unemployment', 'unemployment', 'poverty',
   'teen-mde', 'female-lfp',
