@@ -26,8 +26,19 @@ const VERT = `
 
 // Trimmed copy of Aurora.tsx's fragment shader: 3 fbm octaves instead of 4
 // and no starfield — the remaining flow is what reads as motion on a phone.
+//
+// highp is required, not a nicety: on mobile GPUs mediump is real fp16, and
+// hash()'s large-number arithmetic collapses at that precision — the value
+// noise quantizes into hard contour edges ("sharp banding in the nebula").
+// Desktop GPUs silently run mediump at fp32, which is why the artifact only
+// ever showed on phones. The guard falls back where highp is unsupported
+// (vanishingly rare today).
 const FRAG = `
-  precision mediump float;
+  #ifdef GL_FRAGMENT_PRECISION_HIGH
+    precision highp float;
+  #else
+    precision mediump float;
+  #endif
   uniform float uTime;
   uniform float uAspect;
   uniform vec3 uTint;
@@ -111,6 +122,11 @@ const FRAG = `
     float d = distance(vUv, vec2(0.5));
     float breath = 1.9 + 0.2 * sin(uTime * 0.45);
     col *= mix(1.0, breath, smoothstep(0.3, 0.62, d));
+
+    // Ordered-free dither: ±1 LSB of per-pixel noise breaks the 8-bit banding
+    // that soft, slow gradients otherwise show on OLED phone panels. Time-
+    // salted so the pattern never sits still enough to read as grain.
+    col += (hash(vUv * 913.7 + fract(uTime) * 17.0) - 0.5) * (2.0 / 255.0);
 
     gl_FragColor = vec4(col, 1.0);
   }
