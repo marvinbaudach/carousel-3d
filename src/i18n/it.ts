@@ -1,5 +1,10 @@
 // Dictionary IT: German source string -> Italian. Generated from strings.json.
-export const IT: Record<string, string> = {
+import type { MessageKey } from './en';
+
+// Typed against EN's keys: every string English translates must be present here
+// too, or `tsc` fails. Extra keys — strings whose English form is identical, so
+// EN omits them (country names, layout labels…) — are allowed via the index sig.
+export const IT: Record<MessageKey, string> & Record<string, string> = {
   // datacenter-map card
   'Rechenzentren': 'Data center',
   'Rechenzentren weltweit': 'Data center nel mondo',
@@ -1294,4 +1299,8 @@ export const IT: Record<string, string> = {
   'Deutsche Bundesbank · Bankstellenstatistik (Zweigstellen inländischer Kreditinstitute) und Bundesbank/EHI (Geldautomaten), gerundete Bestände.': 'Deutsche Bundesbank · statistiche degli sportelli (filiali di istituti di credito nazionali) e Bundesbank/EHI (bancomat), consistenze arrotondate.',
   'US Federal Reserve · Distributional Financial Accounts, Anteil am Haushaltsnettovermögen; Mittelschicht = 50.–90. Vermögensperzentil, gerundet.': 'Federal Reserve USA · Distributional Financial Accounts, quota del patrimonio netto delle famiglie; classe media = 50°–90° percentile patrimoniale, arrotondato.',
   'Federal Reserve Bank of New York · Household Debt and Credit Report, ausstehende Salden ohne Hypotheken, gerundet auf Billionen US-Dollar.': 'Federal Reserve Bank of New York · Household Debt and Credit Report, saldi in essere esclusi i mutui, arrotondati in migliaia di miliardi di dollari.',
+  // Cognate keys, added so EN ⊆ IT holds (see MessageKey in en.ts).
+  'Europa': 'Europa',
+  '🇷🇼 Ruanda': '🇷🇼 Ruanda',
+  '🛠️ Gastarbeiter': '🛠️ Lavoratori ospiti',
 };

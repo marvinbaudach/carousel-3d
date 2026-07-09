@@ -99,3 +99,17 @@ describe('dictionary sanity', () => {
     }
   });
 });
+
+describe('dictionary coverage (EN ⊆ FR, IT)', () => {
+  // The type layer (MessageKey in en.ts) enforces this at build time; this is
+  // the friendly runtime backstop that lists all drift at once if the types are
+  // ever loosened. EN is the "needs translation" set — every key it carries must
+  // also be translated in French and Italian.
+  it.each([
+    ['FR', FR],
+    ['IT', IT],
+  ] as const)('%s translates every key EN translates', (_name, dict) => {
+    const missing = Object.keys(EN).filter((k) => !Object.hasOwn(dict, k));
+    expect(missing).toEqual([]);
+  });
+});

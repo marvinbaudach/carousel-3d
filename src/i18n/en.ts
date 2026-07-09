@@ -1,5 +1,7 @@
 // Dictionary EN: German source string -> English. Generated from strings.json.
-export const EN: Record<string, string> = {
+// `satisfies` (not an annotation) keeps the literal keys, so `keyof typeof EN`
+// below is the exact set of translated strings FR and IT are checked against.
+export const EN = {
   // datacenter-map card
   'Rechenzentren': 'Data centres',
   'Rechenzentren weltweit': 'Data centres worldwide',
@@ -1251,4 +1253,10 @@ export const EN: Record<string, string> = {
   'Deutsche Bundesbank · Bankstellenstatistik (Zweigstellen inländischer Kreditinstitute) und Bundesbank/EHI (Geldautomaten), gerundete Bestände.': 'Deutsche Bundesbank · branch statistics (branches of domestic credit institutions) and Bundesbank/EHI (ATMs), rounded stocks.',
   'US Federal Reserve · Distributional Financial Accounts, Anteil am Haushaltsnettovermögen; Mittelschicht = 50.–90. Vermögensperzentil, gerundet.': 'US Federal Reserve · Distributional Financial Accounts, share of household net worth; middle class = 50th–90th wealth percentile, rounded.',
   'Federal Reserve Bank of New York · Household Debt and Credit Report, ausstehende Salden ohne Hypotheken, gerundet auf Billionen US-Dollar.': 'Federal Reserve Bank of New York · Household Debt and Credit Report, outstanding balances excluding mortgages, rounded to trillions of US dollars.',
-};
+} satisfies Record<string, string>;
+
+// The exact set of German source strings that get a non-identity English
+// rendering. FR and IT are typed against this, so `tsc` fails if either one is
+// missing a key that English translates — the drift that ships a card in German
+// to non-German visitors.
+export type MessageKey = keyof typeof EN;

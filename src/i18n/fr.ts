@@ -1,5 +1,10 @@
 // Dictionary FR: German source string -> French. Generated from strings.json.
-export const FR: Record<string, string> = {
+import type { MessageKey } from './en';
+
+// Typed against EN's keys: every string English translates must be present here
+// too, or `tsc` fails. Extra keys — strings whose English form is identical, so
+// EN omits them (country names, layout labels…) — are allowed via the index sig.
+export const FR: Record<MessageKey, string> & Record<string, string> = {
   // datacenter-map card
   'Rechenzentren': 'Centres de données',
   'Rechenzentren weltweit': 'Centres de données dans le monde',
@@ -1305,4 +1310,9 @@ export const FR: Record<string, string> = {
   'Deutsche Bundesbank · Bankstellenstatistik (Zweigstellen inländischer Kreditinstitute) und Bundesbank/EHI (Geldautomaten), gerundete Bestände.': 'Deutsche Bundesbank · statistiques des agences (agences des établissements de crédit nationaux) et Bundesbank/EHI (distributeurs), stocks arrondis.',
   'US Federal Reserve · Distributional Financial Accounts, Anteil am Haushaltsnettovermögen; Mittelschicht = 50.–90. Vermögensperzentil, gerundet.': 'Réserve fédérale américaine · Distributional Financial Accounts, part du patrimoine net des ménages ; classe moyenne = 50e–90e centile de patrimoine, arrondi.',
   'Federal Reserve Bank of New York · Household Debt and Credit Report, ausstehende Salden ohne Hypotheken, gerundet auf Billionen US-Dollar.': 'Federal Reserve Bank of New York · Household Debt and Credit Report, encours hors hypothèques, arrondi en milliers de milliards de dollars.',
+  // Cognate keys, added so EN ⊆ FR holds (see MessageKey in en.ts).
+  'Industrie · 🇩🇪 · 2015 = 100': 'Industrie · 🇩🇪 · 2015 = 100',
+  'Irak': 'Irak',
+  'Irak · 2003–11': 'Irak · 2003–11',
+  '🇮🇶 Irak': '🇮🇶 Irak',
 };

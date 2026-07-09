@@ -4,13 +4,18 @@
 // components never deal with translation keys. Unknown strings fall through
 // unchanged, so a missing entry can never blank out a panel.
 
-import { EN } from './en';
+import { EN, type MessageKey } from './en';
 import { FR } from './fr';
 import { IT } from './it';
 
 export type Locale = 'de' | 'en' | 'fr' | 'it';
 
-const DICTS: Partial<Record<Locale, Record<string, string>>> = {
+// A dictionary must cover every key EN translates (MessageKey) and may carry
+// extras via the index signature. Keying DICTS by the non-German locales makes
+// it explicit that each one needs a full dictionary: add a Locale without a dict
+// and this line stops compiling.
+type Dict = Record<MessageKey, string> & Record<string, string>;
+const DICTS: Record<Exclude<Locale, 'de'>, Dict> = {
   en: EN,
   fr: FR,
   it: IT,
