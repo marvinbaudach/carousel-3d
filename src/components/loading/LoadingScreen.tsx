@@ -1,43 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { LIVE_FEEDS } from '../data/sources';
-import { MOBILE_QUERY, useIsMobile } from '../hooks/useIsMobile';
+import { LIVE_FEEDS, feedStates, feedsSettled, type FeedState } from '../../data/sources';
+import { useIsMobile } from '../../hooks/useIsMobile';
+import { CONVERGE_MS, MONO } from './loaderConstants';
+import { progressTarget } from './loaderMath';
+import { useLoaderGlobe } from './useLoaderGlobe';
+import { FeedStrip } from './FeedStrip';
 
 interface LoadingScreenProps {
   done: boolean;
   onExited: () => void;
 }
 
-// Where the data stations sit on the globe — the cities of the real APIs in
-// data/sources.ts, so the loader stays honest about its sources.
-const CITY: Record<string, { lat: number; lon: number }> = {
-  ZRH: { lat: 47.4, lon: 8.5 },
-  SFO: { lat: 37.8, lon: -122.4 },
-  WAS: { lat: 38.9, lon: -77.0 },
-};
-
-const STATIONS = [...new Set(LIVE_FEEDS.map((f) => f.code))].filter((c) => CITY[c]);
-
-// Relay nodes padding out the uplink network — purely visual waypoints on the
-// data route. The real sources stay the hub stations above; relays render
-// smaller and dimmer so the hierarchy remains readable.
-const RELAY: Record<string, { lat: number; lon: number }> = {
-  HNL: { lat: 21.3, lon: -157.9 },
-  GRU: { lat: -23.5, lon: -46.6 },
-  KEF: { lat: 64.1, lon: -21.9 },
-  LON: { lat: 51.5, lon: -0.1 },
-  JNB: { lat: -26.2, lon: 28.0 },
-  DEL: { lat: 28.6, lon: 77.2 },
-  SIN: { lat: 1.4, lon: 103.8 },
-  TYO: { lat: 35.7, lon: 139.7 },
-  SYD: { lat: -33.9, lon: 151.2 },
-};
-
-// How long the dots take to converge into the center once loading is done —
-// they collapse into exactly the point the carousel panels bloom out of.
-const CONVERGE_MS = 750;
-
-const MONO = "ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace";
+const FEED_TOTAL = LIVE_FEEDS.length;
 
 // The background lights breathe slowly, so the illumination drifts.
 const breathe = keyframes`
@@ -322,7 +297,8 @@ const GlobeGap = styled.div`
 
 // Numeric progress under the globe — portrait phones only. The ring arc gets
 // thin at phone size, and the tall screen leaves the lower third empty; a
-// plain tabular readout fills it with the one number that matters.
+// plain tabular readout fills it with the numbers that matter: the honest
+// percentage plus how many of the live sources have checked in.
 const PctReadout = styled.div<{ $done: boolean }>`
   display: none;
   position: absolute;
@@ -342,27 +318,10 @@ const PctReadout = styled.div<{ $done: boolean }>`
   }
 `;
 
-/** lat/lon (degrees) -> unit sphere. */
-function toVec(lat: number, lon: number): [number, number, number] {
-  const la = (lat * Math.PI) / 180;
-  const lo = (lon * Math.PI) / 180;
-  return [Math.cos(la) * Math.sin(lo), Math.sin(la), Math.cos(la) * Math.cos(lo)];
-}
-
-/** Spherical interpolation between two unit vectors. */
-function slerp(
-  a: [number, number, number],
-  b: [number, number, number],
-  t: number,
-): [number, number, number] {
-  const dot = Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
-  const th = Math.acos(dot);
-  if (th < 1e-4) return a;
-  const s = Math.sin(th);
-  const wa = Math.sin((1 - t) * th) / s;
-  const wb = Math.sin(t * th) / s;
-  return [wa * a[0] + wb * b[0], wa * a[1] + wb * b[1], wa * a[2] + wb * b[2]];
-}
+const PctFeeds = styled.span`
+  color: rgba(143, 184, 236, 0.5);
+  font-size: 0.82em;
+`;
 
 export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
   // The explosion handoff is choreographed for the desktop ring, which blooms
@@ -373,11 +332,19 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
   const isMobile = useIsMobile();
   const [leaving, setLeaving] = useState(false);
   const [pct, setPct] = useState(0);
+  const [feedSnapshot, setFeedSnapshot] = useState<FeedState[]>(() => [...feedStates]);
   const pctRef = useRef(0);
+  const timeRef = useRef(0);
+  const settledRef = useRef(0);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starRef = useRef<HTMLCanvasElement>(null);
   const doneRef = useRef(false);
   doneRef.current = done;
+
+  const settled = feedSnapshot.reduce((n, s) => (s === 'pending' ? n : n + 1), 0);
+
+  // The globe canvas: built once, reads pct/done through the refs above.
+  useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave: () => setLeaving(true) });
 
   // Starfield: painted exactly once; afterwards only the CSS drift moves it.
   useEffect(() => {
@@ -408,256 +375,24 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
     }
   }, []);
 
-  // The globe: ~1500 dots on a sphere swirling in from the center, rotating;
-  // a particle graticule (equator + two meridians) gives it structure, the
-  // data stations pulse and send packets along great-circle arcs. On `done`
-  // everything spirals back into the screen center — the same point the iris
-  // then closes over and the carousel panels bloom out of.
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return; // reduced motion: no globe, exit handled by the timer below
-    }
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    // One-shot check (a viewport class change mid-boot is not a real case):
-    // mobile skips the shockwave/dust — they radiate from the center, where
-    // the deck's first card already sits (see the note on `isMobile` below).
-    const mobileExit = window.matchMedia(MOBILE_QUERY).matches;
-
-    // Fibonacci sphere.
-    const N = 2600;
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    const pts: [number, number, number][] = Array.from({ length: N }, (_, i) => {
-      const y = 1 - (2 * (i + 0.5)) / N;
-      const r = Math.sqrt(Math.max(0, 1 - y * y));
-      const a = i * golden;
-      return [Math.sin(a) * r, y, Math.cos(a) * r];
-    });
-    // Particle graticule: equator plus two perpendicular meridians.
-    const G = 96;
-    const grid: [number, number, number][] = [];
-    for (let k = 0; k < G; k++) {
-      const a = (k / G) * Math.PI * 2;
-      grid.push([Math.sin(a), 0, Math.cos(a)]);
-      grid.push([0, Math.sin(a), Math.cos(a)]);
-      grid.push([Math.sin(a), Math.cos(a), 0]);
-    }
-    // Hubs + relays, sorted by longitude so the closed arc loop reads as one
-    // eastbound round-the-world data route instead of criss-cross chords.
-    const stations = [
-      ...STATIONS.map((code) => ({ code, hub: true, lon: CITY[code].lon, v: toVec(CITY[code].lat, CITY[code].lon) })),
-      ...Object.entries(RELAY).map(([code, c]) => ({ code, hub: false, lon: c.lon, v: toVec(c.lat, c.lon) })),
-    ].toSorted((a, b) => a.lon - b.lon);
-    // Great-circle arcs between consecutive stations (loop closed).
-    const arcs = stations.map((s, i) => ({
-      a: s.v,
-      b: stations[(i + 1) % stations.length].v,
-      phase: i / stations.length,
-    }));
-
-    // Supernova dust: motes hurled outward by the shockwave when the flash
-    // bursts. Each mote gets its own direction, launch delay, speed and a
-    // slight tangential curl so the cloud reads as turbulence, not spokes.
-    const dust = Array.from({ length: 260 }, () => ({
-      angle: Math.random() * Math.PI * 2,
-      speed: 0.4 + Math.random() ** 1.6 * 0.65,
-      size: 1.3 + Math.random() * 3.1,
-      delay: Math.random() * 0.14,
-      curl: (Math.random() - 0.5) * 0.7,
-      glow: Math.random(),
-    }));
-    // The wave fires as the iris starts closing (the moment the flash peaks)
-    // and rides out on the screen fade.
-    const WAVE_DELAY_MS = CONVERGE_MS * 0.45;
-    const WAVE_MS = 950;
-
-    const TILT = 0.42;
-    let raf = 0;
-    let doneAt: number | null = null;
-    let exited = false;
-    const t0 = performance.now();
-    // Rotation is integrated per frame so it can speed up with progress
-    // without ever jumping: spin rate scales from idle up to ~3x at 100%.
-    let spin = 0;
-    let lastNow = t0;
-
-    const draw = (now: number) => {
-      const t = (now - t0) / 1000;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-      if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-        canvas.width = w * dpr;
-        canvas.height = h * dpr;
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-
-      // Convergence: after done, dots spiral into the center. The iris starts
-      // closing partway through the implosion — overlapping the two reads as
-      // one continuous motion instead of two circles pulsing in sequence.
-      if (doneRef.current && doneAt === null) doneAt = now;
-      const conv = doneAt ? Math.min(1, (now - doneAt) / CONVERGE_MS) : 0;
-      const ease = conv * conv * (3 - 2 * conv); // smoothstep
-      if (conv >= 0.45 && !exited) {
-        exited = true;
-        setLeaving(true);
-      }
-
-      const cx = w / 2;
-      const cy = h / 2;
-      // Portrait phones: scale on width to fill the tall screen, tracking the
-      // ring's 86vw sizing (ring radius 0.378w; globe stays just inside it).
-      const base = h > w && w <= 640 ? w * 0.348 : Math.min(w, h) * 0.3;
-      const R = base * (1 - ease);
-      // Assembly: dots swirl outward from the center during the first beat.
-      const assemble = Math.min(1, t / 1.1);
-      const aEase = 1 - Math.pow(1 - assemble, 3);
-      const dt = Math.min(0.1, (now - lastNow) / 1000);
-      lastNow = now;
-      spin += dt * (0.32 + (pctRef.current / 100) * 0.65);
-      // Assembly swirl and exit spin-up both wind in the SAME direction as
-      // the idle spin (hence the minus: the offset unwinds forward), so the
-      // globe never visibly stops and reverses.
-      const rot = spin - (1 - aEase) * 2.2 + ease * 1.6;
-
-      const sinR = Math.sin(rot);
-      const cosR = Math.cos(rot);
-      const sinT = Math.sin(TILT);
-      const cosT = Math.cos(TILT);
-      const project = (p: [number, number, number]) => {
-        const x1 = p[0] * cosR + p[2] * sinR;
-        const z1 = -p[0] * sinR + p[2] * cosR;
-        const y2 = p[1] * cosT - z1 * sinT;
-        const z2 = p[1] * sinT + z1 * cosT;
-        return { x: cx + x1 * R * aEase, y: cy - y2 * R * aEase, z: z2 };
-      };
-
-      // Sphere dots — back ones dim, front ones bright.
-      for (let i = 0; i < N; i++) {
-        const q = project(pts[i]);
-        const depth = (q.z + 1) / 2;
-        const alpha = (0.34 + depth * 0.62) * aEase * (1 - ease * 0.6);
-        ctx.fillStyle = `rgba(142, 190, 255, ${alpha})`;
-        const s = 1.6 + depth * 2.3;
-        ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s);
-      }
-
-      // Graticule dots — fainter and finer than the sphere fill.
-      for (const g of grid) {
-        const q = project(g);
-        const depth = (q.z + 1) / 2;
-        const alpha = (0.14 + depth * 0.3) * aEase * (1 - ease);
-        ctx.fillStyle = `rgba(175, 208, 255, ${alpha})`;
-        const s = 0.9 + depth * 1.2;
-        ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s);
-      }
-
-      // Arcs with a travelling packet each.
-      for (const arc of arcs) {
-        const head = (t * 0.45 + arc.phase) % 1;
-        for (let k = 0; k <= 44; k++) {
-          const ft = k / 44;
-          const v = slerp(arc.a, arc.b, ft);
-          const lift = 1 + 0.28 * Math.sin(Math.PI * ft);
-          const q = project([v[0] * lift, v[1] * lift, v[2] * lift]);
-          if (q.z < -0.15) continue; // behind the globe
-          const packet = Math.max(0, 1 - Math.abs(ft - head) * 14);
-          const alpha = (0.3 + packet * 0.7) * aEase * (1 - ease);
-          ctx.fillStyle =
-            packet > 0.25
-              ? `rgba(168, 158, 255, ${alpha})`
-              : `rgba(88, 162, 255, ${alpha})`;
-          const s = 2.2 + packet * 3.6;
-          ctx.fillRect(q.x - s / 2, q.y - s / 2, s, s);
-        }
-      }
-
-      // Stations: bright dot, ping ring, code label on the front side.
-      // Hubs (the real API cities) stay big and bright; relays render
-      // smaller and dimmer so the source hierarchy stays readable.
-      stations.forEach((st, i) => {
-        const q = project(st.v);
-        if (q.z < -0.05) return;
-        const front = Math.min(1, (q.z + 0.05) / 0.6);
-        const a = front * aEase * (1 - ease) * (st.hub ? 1 : 0.6);
-        const dotR = st.hub ? 4.5 : 3;
-        ctx.fillStyle = `rgba(150, 200, 255, ${Math.min(1, a * 1.2)})`;
-        ctx.beginPath();
-        ctx.arc(q.x, q.y, dotR, 0, Math.PI * 2);
-        ctx.fill();
-        const ring = (t * 0.7 + i * 0.33) % 1;
-        ctx.strokeStyle = `rgba(95, 165, 255, ${(1 - ring) * 0.7 * a})`;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.arc(q.x, q.y, dotR + ring * (st.hub ? 14 : 9), 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = `rgba(170, 205, 250, ${(st.hub ? 0.95 : 0.7) * a})`;
-        ctx.font = st.hub ? `600 11px ${MONO}` : `500 9px ${MONO}`;
-        ctx.fillText(st.code, q.x + dotR + 5, q.y + 4);
-      });
-
-      // Shockwave + dust: once the flash peaks, a pressure ring races outward
-      // and drags a cloud of nebula dust with it. Each mote starts ember-warm
-      // and cools to blue as it flies — the flash's color story, scattered.
-      const waveT = !mobileExit && doneAt
-        ? Math.min(1, Math.max(0, (now - doneAt - WAVE_DELAY_MS) / WAVE_MS))
-        : 0;
-      if (waveT > 0 && waveT < 1) {
-        const we = 1 - Math.pow(1 - waveT, 3); // easeOutCubic
-        const maxR = Math.min(w, h) * 0.72;
-        const fade = 1 - waveT;
-
-        // Pressure front: a thin bright ring with a soft trailing band.
-        ctx.strokeStyle = `rgba(205, 224, 255, ${0.55 * fade})`;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.arc(cx, cy, we * maxR, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.strokeStyle = `rgba(120, 160, 235, ${0.22 * fade})`;
-        ctx.lineWidth = 10 + 26 * we;
-        ctx.beginPath();
-        ctx.arc(cx, cy, we * maxR * 0.9, 0, Math.PI * 2);
-        ctx.stroke();
-
-        for (const d of dust) {
-          const p = Math.min(1, Math.max(0, (waveT - d.delay) / (1 - d.delay)));
-          if (p <= 0) continue;
-          const pe = 1 - Math.pow(1 - p, 2.6);
-          const a = d.angle + d.curl * pe;
-          const r = pe * maxR * d.speed;
-          // Ember → blue: the warm channel decays as the mote flies out.
-          const warm = Math.max(0, 1 - p * 2.2);
-          const cr = Math.round(168 + 87 * warm);
-          const cg = Math.round(198 - 28 * warm);
-          const cb = Math.round(255 - 145 * warm);
-          const alpha = (1 - p) * (0.55 + d.glow * 0.45);
-          ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
-          const s = d.size * (1 - p * 0.55);
-          ctx.fillRect(cx + Math.cos(a) * r - s / 2, cy + Math.sin(a) * r - s / 2, s, s);
-        }
-      }
-
-      // Keep drawing behind the closing iris until the dots reach the center
-      // and the shockwave has run its course (mobile skips the wave).
-      const waveDone =
-        mobileExit || (doneAt !== null && now - doneAt >= WAVE_DELAY_MS + WAVE_MS);
-      if (conv < 1 || !waveDone) raf = requestAnimationFrame(draw);
-    };
-
-    raf = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  // Eased percentage: climbs toward 92 while booting, snaps to 100 on done.
+  // Honest percentage. A self-easing time baseline guarantees motion even if
+  // every source fails, and settled feeds surge the target above it (see
+  // progressTarget). Snaps to 100 on done. The loop also snapshots feed states
+  // for the strip whenever the settled count changes — no store subscription,
+  // which also catches feeds that resolved from cache before this mounted.
   useEffect(() => {
     let raf = 0;
     const tick = () => {
-      const target = done ? 100 : 92;
-      pctRef.current += (target - pctRef.current) * (done ? 0.2 : 0.045);
+      timeRef.current += (100 - timeRef.current) * 0.045;
+      const nowSettled = feedsSettled();
+      const target = progressTarget(timeRef.current, nowSettled / FEED_TOTAL, done);
+      pctRef.current += (target - pctRef.current) * (done ? 0.2 : 0.08);
       const next = Math.round(pctRef.current);
       setPct((prev) => (prev === next ? prev : next));
+      if (nowSettled !== settledRef.current) {
+        settledRef.current = nowSettled;
+        setFeedSnapshot([...feedStates]);
+      }
       if (pctRef.current < 99.6) raf = requestAnimationFrame(tick);
       else setPct(100);
     };
@@ -741,7 +476,13 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
         </ScannerSvg>
       </RingWrap>
 
-      {isMobile && <PctReadout $done={done}>{pct} %</PctReadout>}
+      {isMobile ? (
+        <PctReadout $done={done}>
+          {pct} % <PctFeeds>· {settled}/{FEED_TOTAL}</PctFeeds>
+        </PctReadout>
+      ) : (
+        <FeedStrip states={feedSnapshot} done={done} />
+      )}
 
       <Column $done={done}>
         <Wordmark>WORLDPULSE</Wordmark>

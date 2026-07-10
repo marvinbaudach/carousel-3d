@@ -510,6 +510,20 @@ export const LIVE_FEEDS: LiveFeed[] = [
   { code: 'HOR', source: 'IMF PORTWATCH', city: 'STRASSE VON HORMUS', item: 'Tanker-Transite', load: loadHormuzTankers },
 ];
 
+/** Per-feed lifecycle, index-aligned with `LIVE_FEEDS`. Read by the loading
+    screen to drive honest progress and its feed strip — a plain mutable array
+    beside `live`, so the loader can poll it without a subscription (and so a
+    localStorage-cached feed that settled before the loader mounted is still
+    counted). `failed` still advances progress; a dead source must never stall
+    the ring. */
+export type FeedState = 'pending' | 'ok' | 'failed';
+export const feedStates: FeedState[] = LIVE_FEEDS.map(() => 'pending');
+
+/** How many feeds have settled (succeeded or failed) so far. */
+export function feedsSettled(): number {
+  return feedStates.reduce((n, s) => (s === 'pending' ? n : n + 1), 0);
+}
+
 let started = false;
 
 /** Kick off all sources; each panel fills in as its dataset arrives. */
@@ -520,15 +534,19 @@ export function loadLiveData(): void {
   live.worldMap = WORLD;
   // Heartbeat for the "live" panels (debt clock): re-render once a second.
   setInterval(() => emitLiveUpdate('tick'), 1000);
-  LIVE_FEEDS.forEach((feed) => {
+  LIVE_FEEDS.forEach((feed, i) => {
     feed
       .load()
-      .then(() => emitLiveUpdate('data'))
-      .catch((err) =>
+      .then(() => {
+        feedStates[i] = 'ok';
+        return emitLiveUpdate('data'); // success-only: dashboards redraw on real data
+      })
+      .catch((err) => {
+        feedStates[i] = 'failed';
         console.warn(
           `[live-data] ${feed.source} ${feed.item} failed, panel keeps demo data`,
           err,
-        ),
-      );
+        );
+      });
   });
 }

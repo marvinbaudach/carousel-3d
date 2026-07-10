@@ -4,7 +4,7 @@ import { useEnvironment } from '@react-three/drei';
 import { Carousel3D } from './components/Carousel3D';
 import { MobileDeck } from './components/MobileDeck';
 import { PerfHud } from './components/PerfHud';
-import { LoadingScreen } from './components/LoadingScreen';
+import { LoadingScreen } from './components/loading/LoadingScreen';
 import { GlobalStyle } from './GlobalStyle';
 import { loadLiveData } from './data/sources';
 import { useIsMobile } from './hooks/useIsMobile';

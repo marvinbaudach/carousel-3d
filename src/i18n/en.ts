@@ -479,6 +479,10 @@ export const EN = {
   'World Bank · Militärausgaben in laufenden US-$, live abgerufen (letztes Jahr je Land); Fallback-Reihenfolge nach SIPRI 2025.': 'World Bank · military spending in current US$, fetched live (latest year per country); fallback order per SIPRI 2025.',
   'World Bank · Tötungsdelikte pro 100k': 'World Bank · homicides per 100k',
   'World Bank · vorsätzliche Tötungen je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land.': 'World Bank · intentional homicides per 100k people, fetched live; latest available year per country.',
+  // loading-screen feed labels (no card label of their own)
+  'Datenquellen': 'Data sources',
+  'Opferzahlen': 'Casualty figures',
+  'Tanker-Transite': 'Tanker transits',
   // suicide-map card
   'Suizidrate': 'Suicide rate',
   'Suizidrate weltweit': 'Suicide rates worldwide',

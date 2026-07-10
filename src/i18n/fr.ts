@@ -521,6 +521,10 @@ export const FR: Record<MessageKey, string> & Record<string, string> = {
   'World Bank · Militärausgaben in laufenden US-$, live abgerufen (letztes Jahr je Land); Fallback-Reihenfolge nach SIPRI 2025.': 'World Bank · dépenses militaires en dollars US courants, données en direct (dernière année par pays) ; ordre de repli selon SIPRI 2025.',
   'World Bank · Tötungsdelikte pro 100k': 'World Bank · homicides pour 100k',
   'World Bank · vorsätzliche Tötungen je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land.': 'World Bank · homicides volontaires pour 100k habitants, données en direct ; dernière année disponible par pays.',
+  // loading-screen feed labels (no card label of their own)
+  'Datenquellen': 'Sources de données',
+  'Opferzahlen': 'Bilan des victimes',
+  'Tanker-Transite': 'Transits de pétroliers',
   // suicide-map card
   'Suizidrate': 'Taux de suicide',
   'Suizidrate weltweit': 'Taux de suicide dans le monde',
