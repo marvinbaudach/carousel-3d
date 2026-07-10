@@ -15,24 +15,36 @@ import { glassSurface } from './glass';
 // ping still play here — FavStar owns that; the pill just anchors it.
 const Pill = styled.button<{ $active: boolean }>`
   position: fixed;
-  /* One 56px button plus a 12px gap to the left of the "⋯" menu (right: 16px):
-     16 + 56 + 12 = 84. 56px keeps the tap target comfortably above the 44px
-     minimum and reads as an app-scale control on phones. */
-  right: 84px;
+  /* One 60px button plus a 12px gap to the left of the "⋯" menu (right: 16px):
+     16 + 60 + 12 = 88. 60px reads as an app-scale control and sits well clear
+     of the 44px minimum tap target. */
+  right: 88px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
   z-index: 12;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border: none;
   border-radius: 999px;
   color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.7)')};
-  font: 600 24px/1 inherit;
+  font: 600 26px/1 inherit;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}
 
   &:active {
     transform: scale(0.88);
+  }
+
+  /* Landscape phones: the deck card fills the width, so the bottom-right action
+     cluster moves up into the empty right side of the top bar to clear it.
+     52px keeps it app-scale without eating the scarce vertical room. */
+  @media (max-height: 520px) {
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: calc(env(safe-area-inset-right, 0px) + 78px);
+    bottom: auto;
+    width: 52px;
+    height: 52px;
+    font-size: 23px;
   }
 `;
 

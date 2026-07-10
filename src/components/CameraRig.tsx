@@ -54,6 +54,11 @@ const SETTLE_DOLLY = 0.7; // world units of push-in at a centred detent
 const SETTLE_FADE_SPEED = 1.6; // rad/s of spin at which the settle beat is gone
 // Exponential damping rate (1/λ seconds) for the roll and the dolly targets.
 const GUIDE_LAMBDA = 4;
+// Damping rate for the guidance's overall influence when `guided` toggles.
+// Deliberately slower than GUIDE_LAMBDA: when a hero closes, the settle dolly
+// otherwise re-engages at full depth in a single frame and the camera surges
+// at the ring — fading the influence back in turns that into a slow breath.
+const GUIDE_BLEND_LAMBDA = 2;
 
 /**
  * Owns the camera framing: keeps the ring fit to any aspect ratio, adds an
@@ -82,6 +87,10 @@ export function CameraRig({
   const roll = useRef(0);
   // Eased dolly offset (world units) added to the base distance.
   const dolly = useRef(0);
+  // Eased guidance influence: 1 in free flight, fading to 0 while a hero owns
+  // the screen. A hard on/off would step the settle-dolly target by its full
+  // depth in one frame when the hero closes — a visible surge at the viewer.
+  const guideWeight = useRef(guided ? 1 : 0);
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 1 / 30);
@@ -89,9 +98,17 @@ export function CameraRig({
     const pullback = MathUtils.clamp(REF_ASPECT / aspect, 1, MAX_PULLBACK);
     const baseDist = (radius + gap / zoom) * pullback;
 
-    // Cinematic guidance reads the live spin; it is silenced while a hero owns
-    // the screen so the detail card stays perfectly head-on.
-    const motion = guided ? guidance?.current : undefined;
+    // Cinematic guidance reads the live spin; its influence fades out while a
+    // hero owns the screen (the detail card stays perfectly head-on) and back
+    // in after the close, so the targets never step.
+    guideWeight.current = MathUtils.damp(
+      guideWeight.current,
+      guided ? 1 : 0,
+      GUIDE_BLEND_LAMBDA,
+      dt,
+    );
+    const weight = guideWeight.current;
+    const motion = guidance?.current;
     const speed = motion ? Math.abs(motion.velocity) : 0;
 
     // Dolly target: pull back with spin speed, push in when a card is centred.
@@ -105,13 +122,16 @@ export function CameraRig({
       const slow = MathUtils.clamp(1 - speed / SETTLE_FADE_SPEED, 0, 1);
       dollyTarget -= settle * slow * SETTLE_DOLLY;
     }
+    dollyTarget *= weight;
     dolly.current = MathUtils.damp(dolly.current, dollyTarget, GUIDE_LAMBDA, dt);
     const dist = baseDist + dolly.current;
 
     // Bank into the spin direction, then hold the horizon level again at rest.
-    const rollTarget = motion
-      ? MathUtils.clamp(-motion.velocity * BANK_PER_VEL, -BANK_MAX, BANK_MAX)
-      : 0;
+    const rollTarget =
+      weight *
+      (motion
+        ? MathUtils.clamp(-motion.velocity * BANK_PER_VEL, -BANK_MAX, BANK_MAX)
+        : 0);
     roll.current = MathUtils.damp(roll.current, rollTarget, GUIDE_LAMBDA, dt);
     camera.up.set(Math.sin(roll.current), Math.cos(roll.current), 0);
 

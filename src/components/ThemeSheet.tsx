@@ -57,15 +57,21 @@ const Handle = styled.div`
 `;
 
 const Option = styled.button<{ $active: boolean }>`
-  padding: 14px 12px;
+  min-height: 52px;
+  padding: 16px 14px;
   border: none;
   border-radius: 12px;
   background: ${(p) => (p.$active ? 'rgba(57, 135, 229, 0.28)' : 'rgba(255, 255, 255, 0.05)')};
   color: ${(p) => (p.$active ? '#cfe4ff' : 'rgba(255, 255, 255, 0.75)')};
-  font: 600 13px/1 inherit;
+  font: 600 14px/1 inherit;
   letter-spacing: 0.1em;
   text-align: left;
   cursor: pointer;
+  transition: transform 120ms ease;
+
+  &:active {
+    transform: scale(0.97);
+  }
 `;
 
 interface ThemeSheetProps {

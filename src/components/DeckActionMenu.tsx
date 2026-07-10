@@ -12,22 +12,39 @@ const MenuButton = styled.button`
   right: 16px;
   bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
   z-index: 12;
-  width: 56px;
-  height: 56px;
+  width: 60px;
+  height: 60px;
   border: none;
   border-radius: 999px;
   color: #cfe4ff;
-  font: 700 26px/1 inherit;
+  font: 700 28px/1 inherit;
   cursor: pointer;
+  transition: transform 120ms ease;
   ${glassSurface}
+
+  &:active {
+    transform: scale(0.9);
+  }
+
+  /* Landscape phones: the card fills the width, so the action cluster docks
+     into the empty right side of the top bar instead of the bottom edge. */
+  @media (max-height: 520px) {
+    top: calc(env(safe-area-inset-top, 0px) + 10px);
+    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    bottom: auto;
+    width: 52px;
+    height: 52px;
+    font-size: 25px;
+  }
 `;
 
-// Small glass action menu unfolding above the context button.
+// Small glass action menu unfolding above the context button (below it in
+// landscape, where the button lives in the top bar).
 const Menu = styled.div`
   position: fixed;
   right: 16px;
-  /* Clears the 56px button (top at inset + 74px) with an 8px gap. */
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 82px);
+  /* Clears the 60px button (top at inset + 78px) with an 8px gap. */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
   z-index: 13;
   display: flex;
   flex-direction: column;
@@ -47,15 +64,23 @@ const Menu = styled.div`
       transform: translateY(0);
     }
   }
+
+  /* Unfold downward from the top-bar button (top at inset + 62px + 8px gap). */
+  @media (max-height: 520px) {
+    top: calc(env(safe-area-inset-top, 0px) + 70px);
+    right: calc(env(safe-area-inset-right, 0px) + 16px);
+    bottom: auto;
+  }
 `;
 
 const Item = styled.button`
-  padding: 13px 16px;
+  min-height: 44px;
+  padding: 14px 18px;
   border: none;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.85);
-  font: 600 13px/1 inherit;
+  font: 600 14px/1 inherit;
   letter-spacing: 0.06em;
   text-align: left;
   cursor: pointer;
@@ -70,12 +95,13 @@ const LangRow = styled.div`
 
 const LangButton = styled.button<{ $active: boolean }>`
   flex: 1;
-  padding: 11px 0;
+  min-height: 44px;
+  padding: 13px 0;
   border: none;
   border-radius: 10px;
   background: ${(p) => (p.$active ? 'rgba(57, 135, 229, 0.28)' : 'rgba(255, 255, 255, 0.05)')};
   color: ${(p) => (p.$active ? '#cfe4ff' : 'rgba(255, 255, 255, 0.7)')};
-  font: 600 12px/1 inherit;
+  font: 600 13px/1 inherit;
   letter-spacing: 0.08em;
   cursor: pointer;
 `;

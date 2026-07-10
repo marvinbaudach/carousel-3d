@@ -112,13 +112,20 @@ const FRAG = `
     float glint = smoothstep(0.78, 0.98, n * n2 * (1.4 + 0.6 * sin(uTime * 0.6)));
     col += (tint + vec3(0.28)) * glint * 0.4;
 
-    // No center dimming — the card covers the middle anyway. The visible
-    // band around the card is only a narrow frame in portrait, so the edge
-    // boost is strong and starts just outside the card's footprint
-    // (d ≈ 0.35); it breathes slowly so the frame feels alive.
-    float d = distance(vUv, vec2(0.5));
+    // Edge-hugging frame glow, orientation-independent. A radial
+    // distance(vUv, 0.5) put the bright ring at a FIXED radius from centre —
+    // fine for the tall portrait card (the ring sits on the thin side frame),
+    // but in landscape the card is short and that ring's top/bottom arcs land
+    // in the open space just above/below it, reading as a hard "broken shadow"
+    // seam. A per-axis edge distance (max of the two) instead peaks exactly at
+    // the four screen edges in BOTH orientations, so the glow always hugs the
+    // frame and never forms a band beside the card. The wide smoothstep keeps
+    // it a soft gradient (narrow windows draw straight-edged seams on OLED); it
+    // breathes slowly so the frame feels alive.
+    vec2 edge = abs(vUv - 0.5) * 2.0;   // 0 at centre → 1 at each screen edge
+    float frame = max(edge.x, edge.y);
     float breath = 1.9 + 0.2 * sin(uTime * 0.45);
-    col *= mix(1.0, breath, smoothstep(0.3, 0.62, d));
+    col *= mix(1.0, breath, smoothstep(0.55, 1.0, frame));
 
     // Filmic-ish tone map instead of a hard clip: the brightness push can
     // drive channels past 1.0, and raw clipping flattens those regions into

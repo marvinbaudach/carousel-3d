@@ -33,17 +33,17 @@ const Card = styled.div`
      top+bottom gap. */
   height: min(76vh, calc(100% - 88px));
 
-  /* Landscape phones: the portrait caps (width keyed to vh) shrink the card
-     to a stamp with ~35% dead margin either side. Now that CardCanvas keys its
-     unit u to the height past REF_ASPECT, the renderers no longer balloon when
-     the card widens — so let it grow to ~1.7:1 and reclaim that space as chart
-     room. Width stays vh-linked (height is vh-linked too), which pins the
-     aspect regardless of screen; the vw/px caps keep it sane on wide displays
-     and tablets. The remaining side gap is the intentional aurora frame. */
+  /* Landscape phones: portrait caps (width keyed to vh) shrank the card to a
+     stamp with wide dead margins either side. The action cluster moves up into
+     the top bar in this orientation (see FavPill / DeckActionMenu), so the card
+     is free to fill almost the whole width — the reclaimed room becomes chart
+     space, and timeline cards flow into two columns to use it (CardCanvas keys
+     u to the height past REF_ASPECT, so wider never balloons the type). A thin
+     aurora frame is all that's left. */
   @media (max-height: 520px) {
-    top: calc(50% - 10px);
-    width: min(92vw, 840px, 135vh);
-    height: min(80vh, calc(100% - 40px));
+    top: calc(50% - 9px);
+    width: min(96vw, 1040px, 220vh);
+    height: min(94vh, calc(100% - 12px));
   }
   border-radius: 18px;
   overflow: hidden;

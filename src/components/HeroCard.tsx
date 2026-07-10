@@ -35,52 +35,22 @@ interface HeroCardProps {
   poses?: RefObject<Map<string, HeroStart>>;
 }
 
-const OPEN_TIME = 0.75; // seconds for the dramatic fly-in
-const CLOSE_TIME = 0.5; // snappier fly-back
+const OPEN_TIME = 0.85; // seconds for the unhurried fly-in
+const CLOSE_TIME = 0.55; // slightly quicker fly-back
 const IDENTITY = new Quaternion();
-// Peak forward swing (radians) at mid-flight, as if grabbed at the top edge.
-const MAX_HINGE = 0.8;
-// Peak yaw swing (radians) at mid-flight: the card corkscrews slightly toward
-// the side of the ring it launched from, so the flight reads as a swoop
-// rather than a straight slide.
-const MAX_YAW = 0.45;
-// World-units the flight path arcs upward at mid-flight.
-const ARC_LIFT = 0.55;
-// How far position/scale punch past the target near the end of the flight
-// before settling (fraction of the full travel). Reversed on close it reads
-// as a small anticipation pop before the card flies back.
-const OVERSHOOT = 0.06;
-// Anticipation: the card recoils back along its path, dips and leans back into
-// the ring before it launches, peaking early in the opening flight.
-const RECOIL_DIST = 0.13;
-const RECOIL_LEAN = 0.2;
-// Banking: peak roll (radians) the card leans into its flight direction at
-// mid-flight, leveling out for the landing.
-const MAX_BANK = 0.38;
-const UP = new Vector3(0, 1, 0);
+// World-units the flight path bows upward at mid-flight, so the card glides
+// on a gentle curve instead of sliding along a straight line.
+const ARC_LIFT = 0.35;
+// Peak lean (radians) about the card's horizontal axis at mid-flight — a
+// whisper of pitch that keeps the glide from reading mechanical. Zero at
+// both ends, so launch and landing poses stay exact.
+const GLIDE_TILT = 0.07;
+// Fraction of the flight within which the card finishes turning to face the
+// viewer. Resolving the orientation early means most of the glide is flat
+// and readable; reversed on close, the card stays readable until it tucks
+// back into its ring slot near the end.
+const FACE_RESOLVE = 0.8;
 const X_AXIS = new Vector3(1, 0, 0);
-const Z_AXIS = new Vector3(0, 0, 1);
-const TWO_PI = Math.PI * 2;
-
-// Flight personalities. One is drawn at random each time a hero opens, so the
-// same card can arrive with a different flourish — mostly the elegant swoop,
-// occasionally a full-turn stunt for surprise. Every extra move is scaled so it
-// is exactly zero at t=0 and lands flat at t=1 (partial swings ride `swing`, a
-// sin envelope; full 360° turns ride `spin`, a monotone 0→1 that hits 2π).
-type Variant = 'swoop' | 'barrel' | 'flip' | 'corkscrew' | 'tumble';
-// Weighted bag: swoop is the calm default, the stunts are the rare surprise.
-const VARIANT_BAG: Variant[] = [
-  'swoop', 'swoop', 'swoop', 'swoop', 'swoop',
-  'barrel', 'barrel', 'flip', 'flip', 'corkscrew', 'corkscrew', 'tumble',
-];
-function pickVariant(): Variant {
-  return VARIANT_BAG[Math.floor(Math.random() * VARIANT_BAG.length)];
-}
-// Smootherstep on the (already eased) progress: a full turn accelerates and
-// decelerates gently instead of spinning at constant rate.
-function smoother(t: number): number {
-  return t * t * t * (t * (t * 6 - 15) + 10);
-}
 
 // Card aspect (4:5, = PANEL_W / PANEL_H) shared by the ring plate and hero.
 const CARD_ASPECT = 0.8;
@@ -117,25 +87,25 @@ const HERO_GLASS_OPACITY = 0.06;
 const _pos = new Vector3();
 const _scale = new Vector3();
 const _target = new Vector3();
-const _up = new Vector3();
-const _qBase = new Quaternion();
-const _hinge = new Quaternion();
-const _yaw = new Quaternion();
-const _bank = new Quaternion();
-const _dir = new Vector3();
-const _spin = new Quaternion();
+const _q = new Quaternion();
+const _tilt = new Quaternion();
 
-// Ease that starts and ends gently for an elegant flight.
+// Travel ease: soft departure, weightless middle, feather landing.
+function easeInOutQuart(t: number): number {
+  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+}
+
+// Facing ease, gentler than the travel so the turn never snaps.
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
 /**
- * An enlarged panel that is "grabbed" at its top edge and pulled toward the
- * viewer: it hinges about that top edge, leading with the top and settling
- * flat and front-and-center. Rendered at the scene root so its target pose is
- * expressed in plain world space. The pivot group sits at the card's top edge;
- * the inner group hangs the card down from it.
+ * An enlarged panel that glides from its ring slot to front-and-center in one
+ * calm, deterministic motion: it turns to face the viewer early in the flight,
+ * then floats in flat and readable along a gently bowed path — no spins, no
+ * overshoot. Rendered at the scene root so its target pose is expressed in
+ * plain world space.
  */
 export function HeroCard({
   dashboard,
@@ -146,8 +116,7 @@ export function HeroCard({
   startOpen,
   poses,
 }: HeroCardProps) {
-  const pivotRef = useRef<Group>(null);
-  const innerRef = useRef<Group>(null);
+  const groupRef = useRef<Group>(null);
   const imgRef = useRef<Mesh>(null);
   const backRef = useRef<Mesh>(null);
   const glassRef = useRef<Mesh>(null);
@@ -160,27 +129,17 @@ export function HeroCard({
   // throttled (static heroes never redraw).
   const lastDrawAt = useRef(-Infinity);
 
-  // One random flight personality per opened hero (stable for its lifetime).
-  // startOpen cards (the outgoing side of an arrow switch) mount at progress 1,
-  // so they never actually play a flourish — plain swoop keeps them still.
-  const variant = useMemo<Variant>(() => (startOpen ? 'swoop' : pickVariant()), [startOpen]);
-
-  // Plane for the back face, UVs flipped so the hero's own chart reads the right
-  // way round when a stunt turns the card away. Which axis to flip depends on
-  // the stunt's spin axis: an X-axis somersault (flip/tumble) shows the back
-  // vertically mirrored → flip V; a Y-axis spin (corkscrew) shows it
-  // horizontally mirrored → flip U. (swoop/barrel never turn the back to us.)
+  // Plane for the back face with horizontal UVs flipped — same convention as
+  // the ring panels: a card seen from behind shows its chart mirrored, and
+  // flipping U cancels that. Only visible in edge cases (a formation change
+  // while the hero is open can angle the fly-back slot away from the camera).
   const backGeo = useMemo(() => {
     const g = new PlaneGeometry(1, 1);
     const uv = g.attributes.uv;
-    const flipV = variant === 'flip' || variant === 'tumble';
-    for (let i = 0; i < uv.count; i++) {
-      if (flipV) uv.setY(i, 1 - uv.getY(i));
-      else uv.setX(i, 1 - uv.getX(i));
-    }
+    for (let i = 0; i < uv.count; i++) uv.setX(i, 1 - uv.getX(i));
     uv.needsUpdate = true;
     return g;
-  }, [variant]);
+  }, []);
   useEffect(() => () => backGeo.dispose(), [backGeo]);
 
   // Size the hero canvas once at mount (window dimensions don't change under
@@ -192,10 +151,9 @@ export function HeroCard({
   useEffect(() => onLocaleChange(() => dash.render(SETTLED_T)), [dash]);
 
   useFrame((state, delta) => {
-    const pivot = pivotRef.current;
-    const inner = innerRef.current;
+    const group = groupRef.current;
     const img = imgRef.current;
-    if (!pivot || !inner || !img) return;
+    if (!group || !img) return;
 
     // The chart is already drawn settled at mount, so a static hero never
     // redraws — no per-frame canvas rasterise or texture upload while it is
@@ -220,16 +178,12 @@ export function HeroCard({
     // Fly-back: track the slot's live pose so it still lands correctly after a
     // formation or count change made while the hero was open.
     const from = closing ? (poses?.current.get(dashboard.id) ?? start) : start;
-    const t = easeInOutCubic(progress.current);
-    // Flourish envelope: 0 at both ends, 1 at mid-flight — every extra move
-    // (arc, yaw) is scaled by it, so start and landing poses stay exact.
-    const swing = Math.sin(Math.PI * t);
-    // Late overshoot: punches past the target in the last stretch of the
-    // flight and settles back to exactly 1 at t = 1.
-    const tPunch =
-      t + Math.sin(Math.PI * Math.max(0, (t - 0.55) / 0.45)) * OVERSHOOT;
-    // Which side of the ring the card launched from drives the yaw direction.
-    const side = Math.sign(from.position.x) || 1;
+    const t = easeInOutQuart(progress.current);
+    // Orientation resolves ahead of the travel (see FACE_RESOLVE).
+    const tFace = easeInOutCubic(Math.min(1, progress.current / FACE_RESOLVE));
+    // Glide envelope: 0 at both ends, 1 at mid-flight — the arc and the lean
+    // ride it, so launch and landing poses stay exact.
+    const drift = Math.sin(Math.PI * t);
 
     // Largest size (keeping the panel's aspect) that fits the visible frustum
     // at the hero's depth, with a margin. Evaluated per frame because the
@@ -239,58 +193,23 @@ export function HeroCard({
     const h = Math.min(vp.height * FIT, (vp.width * FIT) / cardAspect);
     _target.set(h * cardAspect, h, 1);
 
-    // Card center + size interpolate from the ring slot to the hero pose,
-    // with a late overshoot (tPunch) and an upward arc so the flight swoops
-    // instead of sliding on a straight line.
-    _pos.lerpVectors(from.position, targetPosition, tPunch);
-    _pos.y += swing * ARC_LIFT;
-    // Anticipation: early in the opening flight the card winds up — pulling
-    // back along its path and dipping before it launches (0 on close).
-    const anticipate = closing ? 0 : Math.sin(Math.PI * MathUtils.clamp(t / 0.22, 0, 1));
-    _dir.subVectors(targetPosition, from.position).normalize();
-    _pos.addScaledVector(_dir, -RECOIL_DIST * anticipate);
-    _pos.y -= RECOIL_DIST * 0.4 * anticipate;
-    _scale.lerpVectors(from.scale, _target, tPunch);
-    const halfH = _scale.y / 2;
+    // Card center and size glide from the ring slot to the hero pose along a
+    // gently bowed path.
+    _pos.lerpVectors(from.position, targetPosition, t);
+    _pos.y += drift * ARC_LIFT;
+    _scale.lerpVectors(from.scale, _target, t);
 
-    // Base orientation eases from the tilted ring pose to facing the camera.
-    _qBase.slerpQuaternions(from.quaternion, IDENTITY, t);
+    // Orientation: turn from the tilted ring pose to face the camera, with a
+    // whisper of mid-flight lean so the glide reads carried, not mechanical.
+    _q.slerpQuaternions(from.quaternion, IDENTITY, tFace);
+    _tilt.setFromAxisAngle(X_AXIS, -drift * GLIDE_TILT);
 
-    // Flourish, in two layers. The base swoop (hinge/yaw/bank about the top-edge
-    // pivot) all rides `swing`, so it vanishes at both ends; under a stunt it is
-    // damped so the pivot lean doesn't fight the spin. The full 360° turn rides
-    // `spin` (a monotone 0→1 hitting exactly 2π, so it lands flat) and is applied
-    // to the inner group, whose origin is the card centre — the card spins in
-    // place and stays framed instead of orbiting the top edge out of view.
-    const spin = smoother(t);
-    const damp = variant === 'swoop' ? 1 : variant === 'tumble' ? 0.8 : 0.5;
-    // Base hinge about the top edge (flip stays almost flat so the centre
-    // somersault reads cleanly), plus the launch-recoil lean-back.
-    const hingeScale = variant === 'flip' ? 0.2 : damp;
-    _hinge.setFromAxisAngle(X_AXIS, -swing * MAX_HINGE * hingeScale + RECOIL_LEAN * anticipate);
-    _yaw.setFromAxisAngle(UP, side * swing * MAX_YAW * damp);
-    _bank.setFromAxisAngle(Z_AXIS, -side * swing * MAX_BANK * damp);
+    group.position.copy(_pos);
+    group.quaternion.copy(_q).multiply(_tilt);
 
-    // Pivot sits at the top edge (card center + up * halfH, in base orientation).
-    _up.copy(UP).applyQuaternion(_qBase);
-    pivot.position.copy(_pos).addScaledVector(_up, halfH);
-    pivot.quaternion.copy(_qBase).multiply(_yaw).multiply(_bank).multiply(_hinge);
-
-    // Centre stunt: a full turn about the card's own axis (identity for swoop).
-    // barrel = roll (Z), corkscrew = spin (Y), flip/tumble = somersault (X).
-    if (variant === 'barrel') _spin.setFromAxisAngle(Z_AXIS, side * TWO_PI * spin);
-    else if (variant === 'corkscrew') _spin.setFromAxisAngle(UP, side * TWO_PI * spin);
-    else if (variant === 'flip' || variant === 'tumble') _spin.setFromAxisAngle(X_AXIS, -TWO_PI * spin);
-    else _spin.identity();
-
-    // Inner group hangs the card down from the pivot; the image mesh carries
-    // its size (aspect stays constant, so imperative scaling never distorts).
-    // Its origin sits at the card centre, so the stunt quaternion spins the card
-    // about its own middle.
-    inner.position.set(0, -halfH, 0);
-    inner.quaternion.copy(_spin);
+    // The image mesh carries the card's size (aspect stays constant, so
+    // imperative scaling never distorts).
     img.scale.set(_scale.x, _scale.y, 1);
-    // Back slab tracks the card's size so the flip reveals a clean dark panel.
     const back = backRef.current;
     if (back) back.scale.set(_scale.x, _scale.y, 1);
     // The glass slab (unit-sized geometry) tracks the card, so the panel
@@ -309,31 +228,29 @@ export function HeroCard({
   });
 
   return (
-    <group ref={pivotRef}>
-      <group ref={innerRef}>
-        {/* Back face: the hero's own chart, UV-flipped (see backGeo) so it
-            reads correctly when a flight stunt turns the card away. */}
-        <mesh ref={backRef} geometry={backGeo} position={[0, 0, -0.006]} raycast={() => null}>
-          <meshBasicMaterial
-            map={dash.tex}
-            side={BackSide}
-            transparent
-            toneMapped={false}
-            depthWrite={false}
-          />
-        </mesh>
-        <Image
-          ref={imgRef}
-          texture={dash.tex}
-          scale={[start.scale.x, start.scale.y]}
+    <group ref={groupRef}>
+      {/* Back face: the hero's own chart, UV-flipped (see backGeo) so it
+          reads correctly on an angled fly-back. */}
+      <mesh ref={backRef} geometry={backGeo} position={[0, 0, -0.006]} raycast={() => null}>
+        <meshBasicMaterial
+          map={dash.tex}
+          side={BackSide}
           transparent
           toneMapped={false}
-          side={FrontSide}
-          radius={0.06}
-          onClick={(e) => e.stopPropagation()}
+          depthWrite={false}
         />
-        <GlassPlate width={1} height={1} meshRef={glassRef} />
-      </group>
+      </mesh>
+      <Image
+        ref={imgRef}
+        texture={dash.tex}
+        scale={[start.scale.x, start.scale.y]}
+        transparent
+        toneMapped={false}
+        side={FrontSide}
+        radius={0.06}
+        onClick={(e) => e.stopPropagation()}
+      />
+      <GlassPlate width={1} height={1} meshRef={glassRef} />
     </group>
   );
 }

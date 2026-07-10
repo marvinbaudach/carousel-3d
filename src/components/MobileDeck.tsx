@@ -34,20 +34,32 @@ const TopBar = styled.div`
   align-items: center;
   justify-content: space-between;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) 16px 8px;
+
+  /* Landscape phones: vertical space is scarce and the action cluster shares
+     this row, so tighten the padding to hand the extra height to the card. */
+  @media (max-height: 520px) {
+    padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px 6px;
+  }
 `;
 
 const FilterButton = styled.button`
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 15px 26px;
+  min-height: 52px;
+  padding: 16px 30px;
   border: none;
   border-radius: 999px;
   color: #cfe4ff;
-  font: 600 16px/1 inherit;
+  font: 600 17px/1 inherit;
   letter-spacing: 0.14em;
   cursor: pointer;
+  transition: transform 120ms ease;
   ${glassSurface}
+
+  &:active {
+    transform: scale(0.96);
+  }
 `;
 
 // One-time swipe cue: the pager is a native horizontal scroll, so nothing
