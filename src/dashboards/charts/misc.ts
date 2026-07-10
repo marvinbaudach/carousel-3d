@@ -494,6 +494,13 @@ export function treemap(f: Frame, cfg: TreemapCfg): void {
         ctx.fillText(tr(r.short ?? r.name), x + 7 * u, y + 19 * u, bw - 14 * u);
         ctx.font = `700 ${12 * u}px ${FONT}`;
         ctx.fillText(pct, x + 7 * u, y + 36 * u, bw - 14 * u);
+      } else if (bw > 46 * u && sh > 22 * u) {
+        // Short-but-wide strip (the bottom slivers): a two-line label won't
+        // fit vertically, so put the flag and share on one centered line so
+        // no block stays anonymous.
+        ctx.fillStyle = r.muted ? INK_SECONDARY : INK;
+        ctx.font = `600 ${12 * u}px ${FONT}`;
+        ctx.fillText(`${tr(r.short ?? r.name)}  ${pct}`, x + 7 * u, y + sh / 2 + 4 * u, bw - 14 * u);
       }
       ctx.globalAlpha = 1;
 

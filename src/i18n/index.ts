@@ -43,6 +43,22 @@ function detectLocale(): Locale {
 
 export let LOCALE: Locale = detectLocale();
 
+// --- Coverage instrumentation (test-only) --------------------------------
+// The coverage guard (i18n.coverage.test.ts) installs a recorder to learn
+// which German strings the render path actually hands to `t()`, then asserts
+// each is covered by the dictionaries. It is null in production, so the only
+// cost is a single null-check on `t()`'s *miss* paths — a translated hit
+// returns before ever reaching it. Not public API; hence the `__` prefix.
+type MissRecorder = (source: string, unresolved: readonly string[]) => void;
+let missRecorder: MissRecorder | null = null;
+
+/** Test hook: observe every string `t()` cannot fully resolve in the active
+    locale. `unresolved` is the list of ' · '-segments (or the whole string)
+    that had no dictionary entry. Pass `null` to detach. */
+export function __setMissRecorder(fn: MissRecorder | null): void {
+  missRecorder = fn;
+}
+
 const TAGLINE: Record<Locale, string> = {
   de: '3D-Datenkarussell',
   en: '3D data carousel',
@@ -90,11 +106,11 @@ export function t(s: string): string {
   const hit = dict[s];
   if (hit) return hit;
   if (s.includes(' · ')) {
-    return s
-      .split(' · ')
-      .map((seg) => dict[seg] ?? seg)
-      .join(' · ');
+    const segs = s.split(' · ');
+    if (missRecorder) missRecorder(s, segs.filter((seg) => !dict[seg]));
+    return segs.map((seg) => dict[seg] ?? seg).join(' · ');
   }
+  if (missRecorder) missRecorder(s, [s]);
   return s;
 }
 

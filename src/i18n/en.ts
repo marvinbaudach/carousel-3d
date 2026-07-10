@@ -1407,6 +1407,35 @@ export const EN = {
   'mRNA · BioNTech': 'mRNA · BioNTech',
   'Paul-Ehrlich-Institut · Pharmakovigilanzbericht COVID-19-Impfstoffe. 350.868 gemeldete Verdachtsfälle bei rund 197 Mio. Impfungen (Stand 31.12.2024), davon 63.909 (18,2 %) schwerwiegend; Melderate gesamt 1,78/1.000 Dosen. Balken: Melderate der Verdachtsfälle je 1.000 Dosen nach Impfstoff (27.12.2020–30.9.2021) — Vektorimpfstoffe über den mRNA-Impfstoffen. Passive Spontanerfassung: eine Meldung ist kein Kausalitätsnachweis; das PEI meldet seit 03/2023 kein neues Risikosignal.':
     'Paul Ehrlich Institute · pharmacovigilance report on COVID-19 vaccines. 350,868 suspected-case reports across about 197 million vaccinations (as of 31 Dec 2024), of which 63,909 (18.2%) serious; overall reporting rate 1.78 per 1,000 doses. Bars: reporting rate of suspected cases per 1,000 doses by vaccine (27 Dec 2020–30 Sep 2021) — vector vaccines above the mRNA ones. Passive spontaneous reporting: a report is not proof of causation; the PEI has reported no new risk signal since 03/2023.',
+  // --- Coverage-guard backfill: strings the render path uses that had no
+  // entry yet. Keyed by the exact German source, like the rest of the file.
+  'Bundeshaushalt: genannte Posten vs. Investition': 'Federal budget: named items vs. investment',
+  'Bundeshaushalt 2025 (Soll, ~488 Mrd €; eigene Einnahmen ~428 Mrd). Verteidigung = Einzelplan 14 + Sondervermögen Bundeswehr (~86 Mrd, 2,0 % BIP) — es gibt keinen „NATO-Beitrag" von 100 Mrd; die 223 Mrd sind ein hypothetisches 5-%-BIP-Ziel. Asyl/Migration: Bundesausgaben für Flucht & Migration ~28 Mrd (Länder zusätzlich ~7 Mrd), enger „asylbedingt" ~21 Mrd (Statistisches Bundesamt, bpb). Ukraine-Hilfe ~8–12 Mrd/Jahr aus dem Haushalt (∑ ~55 Mrd seit 2022). Infrastruktur: Bundesanteil des 500-Mrd-Sondervermögens, ~25 Mrd/Jahr. Renten & Soziales = Einzelplan 11, mit Abstand größter Posten; enthält ~13 Mrd migrationsbezogenes Bürgergeld (SGB II, u.a. Ukrainer seit 2022), das sich mit dem Asyl-Posten überschneidet — nicht additiv. Anteile am Haushalt, gerundet, Stand 2025.': 'Federal budget 2025 (planned, ~€488bn; own revenue ~€428bn). Defense = budget section 14 + Bundeswehr special fund (~€86bn, 2.0% GDP) — there is no "NATO contribution" of €100bn; the €223bn is a hypothetical 5%-of-GDP target. Asylum/migration: federal spending on refugees & migration ~€28bn (states an additional ~€7bn), narrowly "asylum-related" ~€21bn (Federal Statistical Office, bpb). Ukraine aid ~€8–12bn/year from the budget (∑ ~€55bn since 2022). Infrastructure: federal share of the €500bn special fund, ~€25bn/year. Pensions & social = budget section 11, by far the largest item; includes ~€13bn migration-related Bürgergeld (SGB II, incl. Ukrainians since 2022), which overlaps with the asylum item — not additive. Shares of the budget, rounded, as of 2025.',
+  'BMZ-Faktencheck. Die „315 Mio €" stammen aus einer Bundestagsrede (J. Cotar, AfD) und wurden vom BMZ und Faktencheckern (vorwärts, Volksverpetzer) widerlegt. Real: 44 Mio € Zuschüsse (2020: 20 + 2022: 24) für ein Radschnellwegenetz in Lima, dazu ~155 Mio € Kredite (Rückzahlung, keine Ausgabe); läuft als internationale Klimafinanzierung. BMZ-Entwicklungsetat 2025: 10,27 Mrd €. Stand 2024/25.': 'BMZ fact-check. The "€315m" comes from a Bundestag speech (J. Cotar, AfD) and was refuted by the BMZ and fact-checkers (vorwärts, Volksverpetzer). Actual: €44m in grants (2020: 20 + 2022: 24) for a fast-cycle-route network in Lima, plus ~€155m in loans (repayment, not spending); counts as international climate finance. BMZ development budget 2025: €10.27bn. As of 2024/25.',
+  'Milliardengräber': 'billion-euro sinkholes',
+  'geplant vs. tatsächlich': 'planned vs. actual',
+  'Bund der Steuerzahler / öffentliche Baubilanzen': 'Bund der Steuerzahler / public construction balance sheets',
+  'tatsächliche bzw. prognostizierte Endkosten gegen die ursprüngliche Planung. Stuttgart 21 ~4,5 → 14,5 Mrd € (Eröffnung 2031), Flughafen BER 2 → 7 Mrd € (9 Jahre Verzug), Elbphilharmonie 77 Mio → 866 Mio €. Öffentliche Großprojekte überschreiten ihr Budget im Schnitt um rund 70 %. Werte gerundet, Stand 2025.': 'Actual or projected final costs against the original plan. Stuttgart 21 ~€4.5 → 14.5bn (opening 2031), BER airport 2 → €7bn (9 years\' delay), Elbphilharmonie €77m → €866m. Public megaprojects exceed their budget by around 70% on average. Values rounded, as of 2025.',
+  'Getötete = Gaza & Westjordanland': 'Killed = Gaza & West Bank',
+  'Getötete: Tech for Palestine (Gaza & Westjordanland, Gesundheitsministerium/OCHA), live abgerufen. Raketen: iranische Raketen auf Israel, 12-Tage-Krieg Juni 2025 (FPRI/WSJ). Nur die Opferzahl ist live — die Raketenzahl ist datierter Kontext.': 'Killed: Tech for Palestine (Gaza & West Bank, Health Ministry/OCHA), fetched live. Rockets: Iranian rockets on Israel, 12-day war June 2025 (FPRI/WSJ). Only the casualty figure is live — the rocket count is dated context.',
+  'Stand Mitte 2026': 'As of mid-2026',
+  'Heroin': 'heroin',
+  '8–14 J.': '8–14 yrs',
+  '14–18 J.': '14–18 yrs',
+  '18–21 J.': '18–21 yrs',
+  'Haushaltsstrompreis 1. Halbjahr 2024, Verbrauchsband 2 500–4 999 kWh/Jahr, inkl. aller Steuern und Umlagen, in ct/kWh, gerundet. EU-Schnitt = EU-27.': 'Household electricity price, H1 2024, consumption band 2 500–4 999 kWh/year, incl. all taxes and levies, in ct/kWh, rounded. EU average = EU-27.',
+  'Hauspreis je Einkommen': 'House price to income',
+  'Wem gehört das Eigenheim': 'Who owns the home',
+  'Vermögen der Jungen schrumpft': 'Wealth of the young is shrinking',
+  'Mittelschicht schrumpft': 'Middle class is shrinking',
+  'Schuldenlast der Mittelschicht': 'Debt burden of the middle class',
+  'Wind + Solar': 'Wind + solar',
+  'Bankfilialen & Geldautomaten': 'Bank branches & ATMs',
+  'verschlechtert': 'worsened',
+  'verbessert': 'improved',
+  'English Housing Survey / IFS, US Census, IW Köln (DE) und INSEE / Banque de France (FR), gerundete Survey-Werte.': 'English Housing Survey / IFS, US Census, IW Köln (DE) and INSEE / Banque de France (FR), rounded survey values.',
+  'geschätzte Rechenkosten je Trainingslauf zu Cloud-Mietpreisen, gerundet. Claude 3.5 nach Anthropic-Angabe („einige zehn Millionen"); DeepSeek-V3 laut Paper nur GPU-Miete — Personal und Vorläufe nicht enthalten.': 'estimated compute cost per training run at cloud rental prices, rounded. Claude 3.5 per Anthropic\'s statement (“a few tens of millions”); DeepSeek-V3 per the paper is GPU rental only — staff and preliminary runs not included.',
+  'umstritten': 'disputed',
 } satisfies Record<string, string>;
 
 // The exact set of German source strings that get a non-identity English

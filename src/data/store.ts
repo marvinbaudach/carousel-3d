@@ -30,15 +30,6 @@ export interface BaselineTrend {
 }
 
 export interface LiveData {
-  weather?: {
-    currentTemp: number;
-    /** 7-day forecast (today first) with WMO weather codes. */
-    forecast: { day: string; code: number; min: number; max: number }[];
-  };
-  wiki?: {
-    rows: { name: string; v: number }[];
-    topViews: number;
-  };
   /** Most-read Wikipedia articles from Switzerland (all languages). */
   swiss?: {
     rows: { name: string; v: number }[];

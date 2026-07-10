@@ -99,7 +99,15 @@ export function hBarChart(f: Frame, cfg: HBarCfg): void {
   const rowFmt = cfg.rowFmt ?? ((v: number) => fmtCompact(v, unit));
   const top = drawHeader(f, cfg.label);
   const pad = 36 * u;
-  const rowH = (f.h - 60 * u - (top + 10 * u)) / cfg.rows.length;
+  const areaTop = top + 10 * u;
+  const areaH = f.h - 60 * u - areaTop;
+  // Cap the row height so a short list (3–4 bars) keeps a comfortable rhythm
+  // and centres in the panel, instead of each row stretching across the full
+  // height and leaving the top half empty. Long lists stay under the cap and
+  // are laid out exactly as before.
+  const MAX_ROW_H = 96 * u;
+  const rowH = Math.min(areaH / cfg.rows.length, MAX_ROW_H);
+  const blockTop = areaTop + Math.max(0, (areaH - rowH * cfg.rows.length) / 2);
   const max = Math.max(...cfg.rows.map((d) => d.v));
   const grad = barGradient(ctx, pad, w - pad, cfg.color);
 
@@ -111,7 +119,7 @@ export function hBarChart(f: Frame, cfg: HBarCfg): void {
     const barH = Math.min(22 * u, rowH - 5 * u);
     cfg.rows.forEach((d, i) => {
       const p = stagger(t, i, 0.08);
-      const y = top + 10 * u + rowH * i + (rowH - barH) / 2;
+      const y = blockTop + rowH * i + (rowH - barH) / 2;
       const bw = (w - 2 * pad) * (d.v / max) * p;
       ctx.fillStyle = GRID;
       roundRect(ctx, pad, y, w - 2 * pad, barH, barH / 2);
@@ -151,7 +159,7 @@ export function hBarChart(f: Frame, cfg: HBarCfg): void {
   const groupH = 30 * u;
   cfg.rows.forEach((d, i) => {
     const p = stagger(t, i, 0.08);
-    const y = top + 10 * u + rowH * i + Math.max(0, (rowH - groupH) / 2);
+    const y = blockTop + rowH * i + Math.max(0, (rowH - groupH) / 2);
     const valueStr = rowFmt(d.v * p);
     // Measure the value in its own weight, then cap the label so it can't run
     // under the right-aligned value on a narrow panel.

@@ -17,6 +17,9 @@ import {
 import { FONT } from '../theme';
 import { plotRect, withAlpha, xAxisLabels } from './shared';
 
+/** A series whose label is a bare flag emoji (two regional-indicator glyphs). */
+const isFlagName = (n: string): boolean => /^(?:\p{Regional_Indicator}){2}$/u.test(n);
+
 // Fraction of the x-range over which a gated marker fades from invisible to
 // solid, finishing exactly as the draw-in line reaches its position — short
 // enough that the marker reads as "arriving with the line", not floating in
@@ -55,6 +58,13 @@ export function drawEraMarkers(
   const yMin = r.y0 + 16 * u;
   const yMax = r.y1 - 12 * u;
   const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+  // The y-axis tick labels sit inside the plot at the left edge (drawGridLabels
+  // draws them at x≈pad, the bottom "0" tick ending on the baseline). Reserve
+  // that bottom-left cell so a marker whose curve bottoms out at the left — an
+  // invention/reform at year 0 on a from-zero series — doesn't stack its label
+  // on the "0" tick; the collision loop below then lifts it one row clear.
+  const pad = 36 * u;
+  placed.push({ x0: pad - 4 * u, x1: pad + 64 * u, y0: yMax - 6 * u, y1: r.y1 });
   for (const m of marks) {
     const label = tr(m.label);
     const frac = Math.min(1, Math.max(0, m.at));
@@ -289,6 +299,7 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
   const yBottom = r.y1 - 6 * u;
   const splitX =
     cfg.projectFrom !== undefined ? d.x0 + (d.x1 - d.x0) * cfg.projectFrom : undefined;
+  const ends: { x: number; y: number }[] = [];
   cfg.series.forEach((s, si) => {
     const data = datas[si];
     ctx.strokeStyle = s.color;
@@ -332,7 +343,30 @@ export function lineChart(f: Frame, cfg: LineCfg): void {
       ctx.stroke();
       ctx.globalAlpha = 1;
     }
+    ends.push(end);
   });
+  // Direct endpoint labels for many-series flag charts: a top legend swatch
+  // alone can't tell two lines apart where they converge (e.g. two countries
+  // hugging a cash/press-freedom floor). When every series is labelled by a
+  // flag, repeat the flag in the right margin at the line's end, de-collided
+  // vertically, so each line stays identifiable there regardless of colour.
+  if (splitX === undefined && cfg.series.length >= 3 && cfg.series.every((s) => isFlagName(s.name)) && p >= 1) {
+    ctx.font = `${15 * u}px ${FONT}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    const lineH = 17 * u;
+    const lx = r.x1 + 6 * u;
+    const items = ends
+      .map((e, i) => ({ y: e.y, name: cfg.series[i].name }))
+      .toSorted((a, b) => a.y - b.y);
+    for (let i = 1; i < items.length; i++) {
+      if (items[i].y - items[i - 1].y < lineH) items[i].y = items[i - 1].y + lineH;
+    }
+    const overflow = items.length ? items[items.length - 1].y - (r.y1 - 2 * u) : 0;
+    if (overflow > 0) for (const it of items) it.y -= overflow;
+    for (const it of items) ctx.fillText(it.name, lx, it.y);
+    ctx.textBaseline = 'alphabetic';
+  }
   drawEraMarkers(f, { ...r, ...d }, marks, curveYFn(datas[0], yTop, yBottom), p);
   drawGridLabels(f, r.y0, r.y1, cfg.ticks);
   xAxisLabels(f, cfg.xLabels ?? ['Q1', 'Q2', 'Q3', 'Q4'], d.x0, d.x1, r.y1);

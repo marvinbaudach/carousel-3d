@@ -106,16 +106,28 @@ function drawEyebrow({ ctx, u, w }: Frame, label: string): number {
   // INK_SECONDARY, not MUTED: the eyebrow is the card's only heading and the
   // muted gray was too dim to read comfortably (user feedback).
   ctx.fillStyle = INK_SECONDARY;
-  ctx.font = `600 ${17 * u}px ${FONT}`;
+  const baseSize = 17 * u;
   const tracking = 2.4 * u;
+  ctx.font = `600 ${baseSize}px ${FONT}`;
   // All panel labels arrive in German; translation happens at this single
   // choke point so the card definitions stay untouched.
   const upper = tr(label).toUpperCase();
   const maxW = w - 2 * pad;
   if (trackedWidth(ctx, upper, tracking) > maxW) {
     const [l1, l2] = wrapTwo(ctx, upper, tracking, maxW);
-    drawTracked(ctx, l1, pad, pad + 14 * u, tracking);
-    drawTracked(ctx, l2, pad, pad + 34 * u, tracking);
+    // A very long label (a long word, or many "·"-joined segments) can leave
+    // the second line still wider than the panel. Scale the whole eyebrow
+    // down to fit rather than letting it clip at the right edge; the common
+    // case (both lines already fit) keeps scale 1 and is untouched.
+    const widest = Math.max(
+      trackedWidth(ctx, l1, tracking),
+      trackedWidth(ctx, l2, tracking),
+    );
+    const scale = widest > maxW ? Math.max(0.72, maxW / widest) : 1;
+    const s = tracking * scale;
+    ctx.font = `600 ${baseSize * scale}px ${FONT}`;
+    drawTracked(ctx, l1, pad, pad + 14 * u, s);
+    drawTracked(ctx, l2, pad, pad + 34 * u, s);
     return 22 * u;
   }
   drawTracked(ctx, upper, pad, pad + 16 * u, tracking);

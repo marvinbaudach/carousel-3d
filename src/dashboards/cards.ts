@@ -3009,7 +3009,10 @@ export const POOL: Dashboard[] = [
           { name: 'Kohle', color: orange, data: DE_ENERGY_MIX.rows[0].data },
           { name: 'Kernkraft', color: violet, data: DE_ENERGY_MIX.rows[1].data },
           { name: 'Wind + Solar', color: green, data: DE_ENERGY_MIX.rows[2].data },
-          { name: 'Netzeingriffe', color: red, data: DE_GRID_OVERLAY.data },
+          // Blue (not red): Netzeingriffe is a different quantity on its own
+          // scale (redispatch TWh vs. installed GW), and red sat too close to
+          // the orange Kohle line where the two cross around 2013–2020.
+          { name: 'Netzeingriffe', color: blue, data: DE_GRID_OVERLAY.data },
         ],
         ticks: DE_ENERGY_MIX.ticks,
         xLabels: ['1990', '2001', '2013', '2024'],
@@ -4172,10 +4175,10 @@ export const POOL: Dashboard[] = [
         unit: '',
         rows: [
           { name: 'Holocaust · 1941–45', v: 6.0e6 },
-          { name: 'Holodomor · 1932–33 · Einstufung umstritten', v: 3.9e6 },
+          { name: 'Holodomor · 1932–33 · umstritten', v: 3.9e6 },
           { name: 'Kambodscha · Rote Khmer · 1975–79', v: 1.7e6 },
           { name: 'Armenier · 1915–17 · Türkei bestreitet', v: 1.2e6 },
-          { name: 'Bangladesch · 1971 · Einstufung umstritten', v: 1.0e6 },
+          { name: 'Bangladesch · 1971 · umstritten', v: 1.0e6 },
           { name: 'Ruanda · Tutsi · 1994', v: 0.8e6 },
           { name: 'Darfur · seit 2003', v: 0.3e6 },
           { name: 'Herero & Nama · 1904–08', v: 80e3 },

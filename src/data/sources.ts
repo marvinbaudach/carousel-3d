@@ -22,45 +22,6 @@ const MIN = 60_000;
 const THIS_YEAR = new Date().getFullYear();
 
 // ---------------------------------------------------------------------------
-// Open-Meteo forecast — Zurich: 7-day forecast for the symbol panel plus the
-// current temperature.
-
-interface MeteoLocation {
-  daily: {
-    time: string[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    weather_code: number[];
-  };
-  current: { temperature_2m: number };
-}
-
-const DAY_NAME = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
-
-async function loadWeather(): Promise<void> {
-  const zurich = await cached('weather-ch3', 15 * MIN, () =>
-    fetchJson<MeteoLocation>(
-      'https://api.open-meteo.com/v1/forecast' +
-        '?latitude=47.37&longitude=8.54' +
-        '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
-        '&current=temperature_2m' +
-        '&timezone=Europe%2FZurich&forecast_days=7',
-    ),
-  );
-
-  live.weather = {
-    currentTemp: zurich.current.temperature_2m,
-    forecast: zurich.daily.time.map((day, i) => ({
-      day: i === 0 ? 'Heute' : DAY_NAME[new Date(`${day}T12:00:00`).getDay()],
-      code: zurich.daily.weather_code[i],
-      min: zurich.daily.temperature_2m_min[i],
-      max: zurich.daily.temperature_2m_max[i],
-    })),
-  };
-}
-
-
-// ---------------------------------------------------------------------------
 // Open-Meteo — current 2-m temperature for one anchor point per country
 // (bbox centre of its largest outline ring, see data/climate.ts). Open-Meteo
 // accepts comma-separated coordinate lists; chunked so no URL gets silly.
@@ -117,13 +78,7 @@ async function loadWorldTemp(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Wikimedia — yesterday's most-viewed English Wikipedia articles.
-
-interface WikiTop {
-  items: { articles: { article: string; views: number }[] }[];
-}
-
-const WIKI_SKIP = /^(Main_Page|Special:|Wikipedia:|Portal:|File:|Help:|Talk:)/;
+// Wikimedia pageviews — shared helpers for the per-country trends feed.
 
 const WIKI_API = 'https://wikimedia.org/api/rest_v1/metrics/pageviews';
 
@@ -140,20 +95,6 @@ function wikiDatePath(daysAgo: number): string {
 function wikiTitle(article: string): string {
   const name = article.replaceAll('_', ' ');
   return name.length > 22 ? `${name.slice(0, 21)}…` : name;
-}
-
-async function loadWiki(): Promise<void> {
-  const rows = await cached('wiki', 3 * 60 * MIN, async () => {
-    const data = await fetchJson<WikiTop>(
-      `${WIKI_API}/top/en.wikipedia/all-access/${wikiDatePath(1)}`,
-    );
-    return data.items[0].articles
-      .filter((a) => !WIKI_SKIP.test(a.article))
-      .slice(0, 5)
-      .map((a) => ({ name: wikiTitle(a.article), v: a.views }));
-  });
-
-  live.wiki = { rows, topViews: rows[0]?.v ?? 0 };
 }
 
 // ---------------------------------------------------------------------------
@@ -558,9 +499,7 @@ export interface LiveFeed {
  * stays in sync with what the panels actually load.
  */
 export const LIVE_FEEDS: LiveFeed[] = [
-  { code: 'ZRH', source: 'OPEN-METEO', city: 'ZÜRICH', item: '7-Tage-Prognose', load: loadWeather },
   { code: 'ZRH', source: 'OPEN-METEO', city: 'ZÜRICH', item: 'Welt-Temperaturen', load: loadWorldTemp },
-  { code: 'SFO', source: 'WIKIMEDIA', city: 'SAN FRANCISCO', item: 'Top-Artikel', load: loadWiki },
   { code: 'SFO', source: 'WIKIMEDIA', city: 'SAN FRANCISCO', item: 'Schweizer Trends', load: loadSwissTrends },
   { code: 'WAS', source: 'US TREASURY', city: 'WASHINGTON', item: 'Staatsschulden', load: loadDebt },
   { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'Militärausgaben', load: loadMilitary },
