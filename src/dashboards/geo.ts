@@ -375,6 +375,10 @@ export const MODERN_SLAVERY_1K: Record<string, number> = {
 // the same scale as the choropleth shading. Absolute victim counts (India ~11
 // Mio etc.) live on the separate 'modern-slavery' bar card, not duplicated
 // here. North Korea and Eritrea are extrapolated (no survey access).
+// Top 6 only: the choropleth is the picture, and the ranked list must leave the
+// map real vertical room. Longer lists (10 rows) squeezed the map to a thin
+// strip on desktop and collapsed it entirely on the taller mobile card. This
+// matches the row count of every sibling choropleth card (drug-deaths, poverty…).
 export const MODERN_SLAVERY_TOP = [
   { name: 'Nordkorea', v: 104.6 },
   { name: 'Eritrea', v: 90.3 },
@@ -382,10 +386,6 @@ export const MODERN_SLAVERY_TOP = [
   { name: 'Saudi-Arabien', v: 21.3 },
   { name: 'Türkei', v: 15.6 },
   { name: 'Tadschikistan', v: 14.0 },
-  { name: 'VAE', v: 13.4 },
-  { name: 'Russland', v: 13.0 },
-  { name: 'Afghanistan', v: 13.0 },
-  { name: 'Kuwait', v: 13.0 },
 ];
 
 // ---------------------------------------------------------------------------

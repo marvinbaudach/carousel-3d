@@ -151,17 +151,6 @@ export function HeroCard({
   const imgRef = useRef<Mesh>(null);
   const backRef = useRef<Mesh>(null);
   const glassRef = useRef<Mesh>(null);
-  // UV-flipped plane so the hero's back shows its own chart the right way round
-  // (readable) when a flight stunt turns it away, rather than a mirrored front
-  // or a branded slab.
-  const backGeo = useMemo(() => {
-    const g = new PlaneGeometry(1, 1);
-    const uv = g.attributes.uv;
-    for (let i = 0; i < uv.count; i++) uv.setX(i, 1 - uv.getX(i));
-    uv.needsUpdate = true;
-    return g;
-  }, []);
-  useEffect(() => () => backGeo.dispose(), [backGeo]);
   const progress = useRef(startOpen ? 1 : 0);
   // The chart intro plays from the moment the hero opens, so the diagram
   // animates in during the fly-in instead of making the viewer wait for the
@@ -175,6 +164,24 @@ export function HeroCard({
   // startOpen cards (the outgoing side of an arrow switch) mount at progress 1,
   // so they never actually play a flourish — plain swoop keeps them still.
   const variant = useMemo<Variant>(() => (startOpen ? 'swoop' : pickVariant()), [startOpen]);
+
+  // Plane for the back face, UVs flipped so the hero's own chart reads the right
+  // way round when a stunt turns the card away. Which axis to flip depends on
+  // the stunt's spin axis: an X-axis somersault (flip/tumble) shows the back
+  // vertically mirrored → flip V; a Y-axis spin (corkscrew) shows it
+  // horizontally mirrored → flip U. (swoop/barrel never turn the back to us.)
+  const backGeo = useMemo(() => {
+    const g = new PlaneGeometry(1, 1);
+    const uv = g.attributes.uv;
+    const flipV = variant === 'flip' || variant === 'tumble';
+    for (let i = 0; i < uv.count; i++) {
+      if (flipV) uv.setY(i, 1 - uv.getY(i));
+      else uv.setX(i, 1 - uv.getX(i));
+    }
+    uv.needsUpdate = true;
+    return g;
+  }, [variant]);
+  useEffect(() => () => backGeo.dispose(), [backGeo]);
 
   // Size the hero canvas once at mount (window dimensions don't change under
   // it), then let the shared hook own the texture's creation and disposal.
