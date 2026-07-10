@@ -25,3 +25,6 @@ dist-ssr
 
 # Claude Code worktrees (parallel sessions)
 .claude/worktrees/
+
+# Local, private project instructions — never commit
+CLAUDE.local.md
