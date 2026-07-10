@@ -455,6 +455,32 @@ export const POOL: Dashboard[] = [
     },
   },
   {
+    id: 'suicide-map',
+    title: 'Suizidrate weltweit',
+    source:
+      'World Bank / WHO · Suizidrate je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land. Modellierte WHO-Schätzung.',
+    dynamic: true,
+    draw: (f) => {
+      const sc = live.suicide;
+      choroplethMap(f, {
+        label: 'Suizidrate',
+        value: sc?.world ?? 9,
+        fmt: (v) => `${localeNumTrim(v, 1)} /100k`,
+        valueByIso: sc?.byIso,
+        world: live.worldMap,
+        rows: sc?.rows ?? [
+          { name: 'Lesotho', v: 28.7 },
+          { name: 'Südkorea', v: 27.5 },
+          { name: 'Eswatini', v: 27.2 },
+          { name: 'Guyana', v: 24.8 },
+          { name: 'Uruguay', v: 24.8 },
+        ],
+        rowFmt: (v) => localeNumTrim(v, 1),
+        source: 'World Bank / WHO · Suizidrate je 100k',
+      });
+    },
+  },
+  {
     id: 'temp-map',
     title: 'Welt-Temperaturen · jetzt',
     source:

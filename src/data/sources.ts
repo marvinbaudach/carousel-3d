@@ -382,6 +382,55 @@ async function loadHomicide(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// World Bank / WHO — suicide mortality per 100k: a world choropleth (latest
+// year per country) plus a top-5 ranking. The figures are WHO-modelled
+// estimates (SH.STA.SUIC.P5), so the card labels them as such. A 500k
+// population floor keeps the ranking free of micro-state noise while retaining
+// the genuinely high-rate small nations (Guyana, Eswatini, Suriname) that the
+// 1M floor used for the homicide list would drop.
+
+async function loadSuicide(): Promise<void> {
+  const data = await cached('suicide', 24 * 60 * MIN, async () => {
+    const [world, pop] = await Promise.all([
+      fetchJson<[unknown, WorldBankRow[]]>(
+        'https://api.worldbank.org/v2/country/all/indicator/SH.STA.SUIC.P5' +
+          `?format=json&date=${THIS_YEAR - 8}:${THIS_YEAR}&per_page=3000`,
+      ),
+      fetchJson<[unknown, WorldBankRow[]]>(
+        'https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL' +
+          // mrv=1 → most recent non-null population per country, whenever that is.
+          '?format=json&mrv=1&per_page=400',
+      ),
+    ]);
+    const populous = new Set(
+      (pop[1] ?? [])
+        .filter((r) => (r.value ?? 0) >= 500_000)
+        .map((r) => r.countryiso3code),
+    );
+
+    const latest = new Map<string, { name: string; v: number; year: string }>();
+    for (const row of world[1] ?? []) {
+      if (row.value === null || row.countryiso3code.length !== 3) continue;
+      const prev = latest.get(row.countryiso3code);
+      if (!prev || row.date > prev.year) {
+        latest.set(row.countryiso3code, { name: row.country.value, v: row.value, year: row.date });
+      }
+    }
+    return {
+      byIso: Object.fromEntries([...latest.entries()].map(([iso3, e]) => [iso3, e.v])),
+      world: latest.get('WLD')?.v ?? 9,
+      top: [...latest.entries()]
+        .filter(([iso3]) => iso3 !== 'WLD' && populous.has(iso3))
+        .map(([, e]) => ({ name: e.name, v: e.v }))
+        .toSorted((a, b) => b.v - a.v)
+        .slice(0, 5),
+    };
+  });
+
+  live.suicide = { byIso: data.byIso, rows: data.top, world: data.world };
+}
+
+// ---------------------------------------------------------------------------
 // Tech for Palestine — Gaza & West-Bank casualties. Keyless, CORS-enabled
 // static JSON (Cloudflare), refreshed ~daily. The only one of the Nahost
 // card's three metrics with a real live feed; Hormuz and the missile figure
@@ -447,6 +496,7 @@ export const LIVE_FEEDS: LiveFeed[] = [
   { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'Militärausgaben', load: loadMilitary },
   { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'Bevölkerung', load: loadPopulation },
   { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'Mordrate', load: loadHomicide },
+  { code: 'WAS', source: 'WORLD BANK', city: 'WASHINGTON', item: 'Suizidrate', load: loadSuicide },
   { code: 'GZA', source: 'TECH FOR PALESTINE', city: 'GAZA', item: 'Opferzahlen', load: loadMideast },
 ];
 

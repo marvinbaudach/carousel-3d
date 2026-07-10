@@ -69,6 +69,7 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'us-debt': ['geld'],
   nukes: ['krieg'],
   'homicide-map': ['soziales'],
+  'suicide-map': ['soziales'],
   'temp-map': ['klima'],
   'ice-cores': ['klima'],
   deglaciation: ['klima'],
@@ -293,7 +294,9 @@ for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
  * the pool ordered newest-first so fresh cards are easy to review.
  */
 const ADDED_BY_ID: Record<string, string> = {
-  // EU freedom-restriction dossier — newest, so it leads the NEU chip.
+  // Suicide-rate world map — newest, so it leads the NEU chip.
+  'suicide-map': '2026-07-10T10:05:00+02:00',
+  // EU freedom-restriction dossier.
   chatkontrolle: '2026-07-10T10:04:00+02:00',
   'asset-register': '2026-07-10T10:03:00+02:00',
   'data-retention': '2026-07-10T10:02:00+02:00',
@@ -532,7 +535,7 @@ export const NEWEST: Dashboard[] = [...POOL].sort((a, b) =>
  */
 const FEATURED = new Set([
   'us-wars', 'us-bases', 'modern-slavery', 'corruption', 'incarceration', 'obesity-nations', 'nukes',
-  'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map',
+  'us-debt', 'us-interest', 'm2', 'dollar', 'wealth', 'homicide-map', 'suicide-map',
   'world-pop', 'oil-consumption', 'temp-map', 'ice-cores', 'deglaciation', 'sea-level',
   'co2-800k', 'global-temp-800k', 'global-temp-anomaly', 'abs-temp', 'climate-sensitivity', 'models-vs-obs', 'disaster-deaths', 'crop-yields',
   'de-insolvenz-jobs', 'conflict-deaths', 'refugees', 'refugees-interventions',

@@ -97,6 +97,12 @@ export interface LiveData {
     cheLatest: number;
     ticks: string[];
   };
+  /** Suicide mortality per 100k (World Bank / WHO, latest year per country). */
+  suicide?: {
+    byIso: Record<string, number>;
+    rows: { name: string; v: number }[];
+    world: number;
+  };
 }
 
 export const live: LiveData = {};

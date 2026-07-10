@@ -132,6 +132,7 @@ const COUNTRY_FLAGS: Record<string, string> = {
   Madagaskar: '🇲🇬', Malawi: '🇲🇼', 'Zentralafr. Republik': '🇨🇫', Burundi: '🇧🇮',
   Mosambik: '🇲🇿', 'DR Kongo': '🇨🇩', Sambia: '🇿🇲',
   VAE: '🇦🇪', Mali: '🇲🇱', Niger: '🇳🇪', Algerien: '🇩🇿', Indonesien: '🇮🇩',
+  Eswatini: '🇸🇿', Guyana: '🇬🇾', Uruguay: '🇺🇾',
 };
 
 const HAS_FLAG = /\p{Regional_Indicator}/u;

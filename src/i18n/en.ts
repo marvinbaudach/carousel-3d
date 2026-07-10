@@ -471,6 +471,12 @@ export const EN = {
   'World Bank · Militärausgaben in laufenden US-$, live abgerufen (letztes Jahr je Land); Fallback-Reihenfolge nach SIPRI 2025.': 'World Bank · military spending in current US$, fetched live (latest year per country); fallback order per SIPRI 2025.',
   'World Bank · Tötungsdelikte pro 100k': 'World Bank · homicides per 100k',
   'World Bank · vorsätzliche Tötungen je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land.': 'World Bank · intentional homicides per 100k people, fetched live; latest available year per country.',
+  // suicide-map card
+  'Suizidrate': 'Suicide rate',
+  'Suizidrate weltweit': 'Suicide rates worldwide',
+  'World Bank / WHO · Suizidrate je 100k': 'World Bank / WHO · suicide rate per 100k',
+  'World Bank / WHO · Suizidrate je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land. Modellierte WHO-Schätzung.':
+    'World Bank / WHO · suicide rate per 100k people, fetched live; latest available year per country. Modelled WHO estimate.',
   'World Prison Brief · Gefangene je 100k Einwohner, Stand 2023–25.': 'World Prison Brief · prisoners per 100k people, as of 2023–25.',
   'Zentralafr. Republik': 'Central African Rep.',
   'Zusammenstellung nach Daniele Ganser („Imperium USA"). Totenzahlen sind Mittelwerte gängiger Schätzungen, teils stark umstritten — Größenordnungen, keine exakten Zahlen.': 'Compiled after Daniele Ganser ("Imperium USA"). Death tolls are means of common estimates, some heavily disputed — orders of magnitude, not exact figures.',

@@ -515,6 +515,12 @@ export const FR: Record<MessageKey, string> & Record<string, string> = {
   'World Bank · Militärausgaben in laufenden US-$, live abgerufen (letztes Jahr je Land); Fallback-Reihenfolge nach SIPRI 2025.': 'World Bank · dépenses militaires en dollars US courants, données en direct (dernière année par pays) ; ordre de repli selon SIPRI 2025.',
   'World Bank · Tötungsdelikte pro 100k': 'World Bank · homicides pour 100k',
   'World Bank · vorsätzliche Tötungen je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land.': 'World Bank · homicides volontaires pour 100k habitants, données en direct ; dernière année disponible par pays.',
+  // suicide-map card
+  'Suizidrate': 'Taux de suicide',
+  'Suizidrate weltweit': 'Taux de suicide dans le monde',
+  'World Bank / WHO · Suizidrate je 100k': 'World Bank / OMS · taux de suicide pour 100k',
+  'World Bank / WHO · Suizidrate je 100k Einwohner, live abgerufen; letztes verfügbares Jahr je Land. Modellierte WHO-Schätzung.':
+    'World Bank / OMS · taux de suicide pour 100k habitants, données en direct ; dernière année disponible par pays. Estimation modélisée de l’OMS.',
   'World Prison Brief · Gefangene je 100k Einwohner, Stand 2023–25.': 'World Prison Brief · détenus pour 100k habitants, état 2023–25.',
   'Zentralafr. Republik': 'Rép. centrafricaine',
   'Zusammenstellung nach Daniele Ganser („Imperium USA"). Totenzahlen sind Mittelwerte gängiger Schätzungen, teils stark umstritten — Größenordnungen, keine exakten Zahlen.': 'Compilation d\'après Daniele Ganser (« Imperium USA »). Les bilans de morts sont des moyennes d\'estimations courantes, parfois très contestées — ordres de grandeur, pas des chiffres exacts.',
