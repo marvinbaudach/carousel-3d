@@ -1367,4 +1367,47 @@ export const FR: Record<MessageKey, string> & Record<string, string> = {
     "Directive 2006/24/CE · arrêts CJUE C-293/12 (Digital Rights Ireland), C-203/15 (Tele2), C-511/18 (La Quadrature du Net) · groupe de haut niveau de l'UE « accès aux données pour les autorités répressives » 2024.",
   'VO (EU) 2022/2065 (Digital Services Act) · EU-Kommission, förmliche Verfahren gegen X, TikTok, Meta und AliExpress wegen Moderations- und Transparenzpflichten.':
     "Règl. (UE) 2022/2065 (Digital Services Act) · Commission européenne, procédures formelles contre X, TikTok, Meta et AliExpress pour manquements aux obligations de modération et de transparence.",
+  // climate lukewarmer dossier (sober, honest framing)
+  'Erderwärmung · mit Unsicherheit': 'Réchauffement · avec incertitude',
+  'Globale Temperatur · Δ vs. 1850–1900': 'Température mondiale · Δ vs. 1850–1900',
+  'HadCRUT5 / NASA GISTEMP / Berkeley Earth · globale Oberflächentemperatur, Abweichung vom vorindustriellen Mittel (1850–1900), Dekaden geglättet. Band = ~90-%-Messunsicherheit: im 19. Jh. breit, heute schmal. Einzeljahre erreichen im El-Niño ~+1,5 °C.':
+    "HadCRUT5 / NASA GISTEMP / Berkeley Earth · température de surface mondiale, écart par rapport à la moyenne préindustrielle (1850–1900), lissée par décennie. Bande = incertitude de mesure à ~90 % : large au XIXe siècle, étroite aujourd'hui. Certaines années atteignent ~+1,5 °C lors des forts El Niño.",
+  'Erdmitteltemperatur · absolut': 'Température moyenne de la Terre · absolue',
+  'Globale Mitteltemperatur · °C': 'Température moyenne mondiale · °C',
+  'Berkeley Earth / NASA · absolute globale Mitteltemperatur: ~13,7 °C um 1850 → ~15 °C heute. Der Absolutwert ist über die Datensätze auf ±0,5 °C unsicher (breites Band) — deshalb berichtet die Wissenschaft die Anomalie, deren Trend ~10× genauer bekannt ist. Eisbohrkerne datieren global bis ~800.000 Jahre zurück (EPICA Dome C).':
+    "Berkeley Earth / NASA · température moyenne mondiale absolue : ~13,7 °C vers 1850 → ~15 °C aujourd'hui. La valeur absolue est incertaine à ±0,5 °C selon les jeux de données (bande large) — c'est pourquoi la science rapporte l'anomalie, dont la tendance est connue ~10× plus précisément. Les carottes de glace datent globalement jusqu'à ~800 000 ans (EPICA Dome C).",
+  'Wie stark heizt CO₂?': 'Quel réchauffement par le CO₂ ?',
+  'Klimasensitivität · °C je CO₂-Verdopplung': 'Sensibilité climatique · °C par doublement du CO₂',
+  'obere Grenze': 'borne supérieure',
+  'bester Wert': 'meilleure estimation',
+  'untere Grenze': 'borne inférieure',
+  'IPCC-Sachstandsberichte (Charney 1979, FAR 1990, AR4 2007, AR5 2013, AR6 2021) · „likely"-Bereich der Gleichgewichts-Klimasensitivität (Erwärmung je CO₂-Verdopplung). Der zentrale Wert ~3 °C ist seit 1979 stabil; der Bereich weitete sich bei AR5 wieder und verengte sich erst mit AR6 deutlich (2,5–4 °C).':
+    "Rapports d'évaluation du GIEC (Charney 1979, FAR 1990, AR4 2007, AR5 2013, AR6 2021) · plage « probable » de la sensibilité climatique à l'équilibre (réchauffement par doublement du CO₂). La valeur centrale ~3 °C est stable depuis 1979 ; la plage s'est de nouveau élargie à l'AR5 et ne s'est nettement resserrée qu'avec l'AR6 (2,5–4 °C).",
+  'Klimamodelle vs. Realität': 'Modèles climatiques vs. réalité',
+  'Erwärmung · °C vs. 1850–1900': 'Réchauffement · °C vs. 1850–1900',
+  '🌡️ Beobachtung': '🌡️ Observation',
+  '🖥️ Modelle': '🖥️ Modèles',
+  'Hausfather et al. 2020 (Geophysical Research Letters) · frühe Klimamodell-Projektionen (1970–2007) gegen die beobachtete Erwärmung. 14 von 17 Modellen stimmten mit den Messungen überein — nach Korrektur für die tatsächlichen Antriebe (Emissionen, Vulkanausbrüche). Die Modelle waren nicht übertrieben, sondern ungefähr richtig.':
+    "Hausfather et al. 2020 (Geophysical Research Letters) · projections des premiers modèles climatiques (1970–2007) face au réchauffement observé. 14 des 17 modèles concordaient avec les observations — après correction pour les forçages réellement survenus (émissions, éruptions volcaniques). Les modèles n'étaient pas exagérés, mais à peu près justes.",
+  'Naturkatastrophen · Todesrate': 'Catastrophes naturelles · taux de mortalité',
+  'Tote je 100.000 · Dekadenmittel': 'Morts pour 100 000 · moyenne décennale',
+  '🌊 Hungerdekaden': '🌊 Décennies de famine',
+  'EM-DAT / Our World in Data · Todesfälle durch Naturkatastrophen je 100.000 Menschen, Dekadenmittel. Der ~30-fache Rückgang ist Anpassung (Frühwarnung, Infrastruktur, Wohlstand) — nicht weniger Extremereignisse; die realen Schadenssummen stiegen zugleich.':
+    "EM-DAT / Our World in Data · décès dus aux catastrophes naturelles pour 100 000 habitants, moyenne décennale. La baisse d'un facteur ~30 est due à l'adaptation (alerte précoce, infrastructures, richesse) — non à des événements extrêmes moins nombreux ; les dommages économiques réels ont augmenté dans le même temps.",
+  'Ernteerträge · seit 1961': 'Rendements agricoles · depuis 1961',
+  'Getreideertrag · t/ha': 'Rendement céréalier · t/ha',
+  '🌾 Grüne Revolution': '🌾 Révolution verte',
+  'FAO / Our World in Data · globaler Getreideertrag (t/ha). Verdreifachung seit 1961 vor allem durch Zucht, Dünger und Bewässerung; der CO₂-Düngeeffekt trägt real, aber gering bei. CO₂ stieg zugleich von 280 auf 424 ppm.':
+    "FAO / Our World in Data · rendement céréalier mondial (t/ha). Triplé depuis 1961 surtout grâce à la sélection, aux engrais et à l'irrigation ; l'effet fertilisant du CO₂ contribue réellement mais faiblement. Le CO₂ est passé dans le même temps de 280 à 424 ppm.",
+  // global temperature over 800,000 years (companion to the Antarctic ice-core card)
+  'Globale Temperatur · 800.000 Jahre': 'Température mondiale · 800 000 ans',
+  'Globale Temperatur · Δ vs. vorindustriell': 'Température mondiale · Δ vs. préindustriel',
+  '🔥 heute': "🔥 aujourd'hui",
+  'Snyder 2016 (Nature) / Hansen & Sato · rekonstruierte globale Mitteltemperatur der letzten 800.000 Jahre (Δ vs. vorindustriell), aus marinen Sediment- und Eiskerndaten (EPICA-Chronologie). Acht Eiszeit-Zyklen mit ~5 °C Hub; die Antarktis schwankt ~2× stärker. Heute (~+1,3 °C) liegt am oberen Rand oder über allen Warmzeiten des Zeitraums.':
+    "Snyder 2016 (Nature) / Hansen & Sato · température moyenne mondiale reconstruite des 800 000 dernières années (Δ vs. préindustriel), à partir de sédiments marins et de carottes de glace (chronologie EPICA). Huit cycles glaciaires d'une amplitude de ~5 °C ; l'Antarctique varie ~2× plus. Aujourd'hui (~+1,3 °C) se situe au niveau ou au-dessus de toutes les périodes chaudes de cette archive.",
+  // CO₂ over 800,000 years — the ice-core record that breaks the natural envelope
+  'CO₂ · 800.000 Jahre': 'CO₂ · 800 000 ans',
+  'CO₂-Konzentration · ppm': 'Concentration de CO₂ · ppm',
+  'EPICA Dome C · Lüthi et al. 2008 / Bereiter et al. 2015 · atmosphärisches CO₂ aus antarktischen Eiskernen (Luftblasen), letzte 800.000 Jahre. In acht Eiszeit-Zyklen blieb CO₂ zwischen ~180 ppm (Eiszeit) und ~300 ppm (Warmzeit). Heute: 424 ppm — rund 40 % über jedem natürlichen Höchstwert des Zeitraums, erreicht in ~150 Jahren.':
+    "EPICA Dome C · Lüthi et al. 2008 / Bereiter et al. 2015 · CO₂ atmosphérique issu des carottes de glace antarctiques (bulles d'air piégées), les 800 000 dernières années. Au fil de huit cycles glaciaires, le CO₂ est resté entre ~180 ppm (glaciaire) et ~300 ppm (interglaciaire). Aujourd'hui : 424 ppm — environ 40 % au-dessus de tout maximum naturel de la période, atteint en ~150 ans.",
 };

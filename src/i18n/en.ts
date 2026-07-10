@@ -1305,6 +1305,49 @@ export const EN = {
     'Directive 2006/24/EC · CJEU rulings C-293/12 (Digital Rights Ireland), C-203/15 (Tele2), C-511/18 (La Quadrature du Net) · EU high-level group "access to data for law enforcement" 2024.',
   'VO (EU) 2022/2065 (Digital Services Act) · EU-Kommission, förmliche Verfahren gegen X, TikTok, Meta und AliExpress wegen Moderations- und Transparenzpflichten.':
     'Reg (EU) 2022/2065 (Digital Services Act) · European Commission, formal proceedings against X, TikTok, Meta and AliExpress over moderation and transparency obligations.',
+  // climate lukewarmer dossier (sober, honest framing)
+  'Erderwärmung · mit Unsicherheit': 'Global warming · with uncertainty',
+  'Globale Temperatur · Δ vs. 1850–1900': 'Global temperature · Δ vs. 1850–1900',
+  'HadCRUT5 / NASA GISTEMP / Berkeley Earth · globale Oberflächentemperatur, Abweichung vom vorindustriellen Mittel (1850–1900), Dekaden geglättet. Band = ~90-%-Messunsicherheit: im 19. Jh. breit, heute schmal. Einzeljahre erreichen im El-Niño ~+1,5 °C.':
+    'HadCRUT5 / NASA GISTEMP / Berkeley Earth · global surface temperature, deviation from the pre-industrial mean (1850–1900), decade-smoothed. Band = ~90% measurement uncertainty: wide in the 19th century, narrow today. Individual years reach ~+1.5 °C during strong El Niños.',
+  'Erdmitteltemperatur · absolut': 'Earth mean temperature · absolute',
+  'Globale Mitteltemperatur · °C': 'Global mean temperature · °C',
+  'Berkeley Earth / NASA · absolute globale Mitteltemperatur: ~13,7 °C um 1850 → ~15 °C heute. Der Absolutwert ist über die Datensätze auf ±0,5 °C unsicher (breites Band) — deshalb berichtet die Wissenschaft die Anomalie, deren Trend ~10× genauer bekannt ist. Eisbohrkerne datieren global bis ~800.000 Jahre zurück (EPICA Dome C).':
+    'Berkeley Earth / NASA · absolute global mean temperature: ~13.7 °C around 1850 → ~15 °C today. The absolute value is uncertain to ±0.5 °C across datasets (wide band) — which is why science reports the anomaly, whose trend is known ~10× more precisely. Ice cores date globally back ~800,000 years (EPICA Dome C).',
+  'Wie stark heizt CO₂?': 'How much does CO₂ warm?',
+  'Klimasensitivität · °C je CO₂-Verdopplung': 'Climate sensitivity · °C per CO₂ doubling',
+  'obere Grenze': 'upper bound',
+  'bester Wert': 'best estimate',
+  'untere Grenze': 'lower bound',
+  'IPCC-Sachstandsberichte (Charney 1979, FAR 1990, AR4 2007, AR5 2013, AR6 2021) · „likely"-Bereich der Gleichgewichts-Klimasensitivität (Erwärmung je CO₂-Verdopplung). Der zentrale Wert ~3 °C ist seit 1979 stabil; der Bereich weitete sich bei AR5 wieder und verengte sich erst mit AR6 deutlich (2,5–4 °C).':
+    'IPCC assessment reports (Charney 1979, FAR 1990, AR4 2007, AR5 2013, AR6 2021) · "likely" range of equilibrium climate sensitivity (warming per CO₂ doubling). The central value ~3 °C has been stable since 1979; the range widened again at AR5 and only narrowed markedly with AR6 (2.5–4 °C).',
+  'Klimamodelle vs. Realität': 'Climate models vs. reality',
+  'Erwärmung · °C vs. 1850–1900': 'Warming · °C vs. 1850–1900',
+  '🌡️ Beobachtung': '🌡️ Observed',
+  '🖥️ Modelle': '🖥️ Models',
+  'Hausfather et al. 2020 (Geophysical Research Letters) · frühe Klimamodell-Projektionen (1970–2007) gegen die beobachtete Erwärmung. 14 von 17 Modellen stimmten mit den Messungen überein — nach Korrektur für die tatsächlichen Antriebe (Emissionen, Vulkanausbrüche). Die Modelle waren nicht übertrieben, sondern ungefähr richtig.':
+    'Hausfather et al. 2020 (Geophysical Research Letters) · early climate-model projections (1970–2007) against observed warming. 14 of 17 models matched the observations — after correcting for the forcings that actually occurred (emissions, volcanic eruptions). The models were not exaggerated, but roughly right.',
+  'Naturkatastrophen · Todesrate': 'Natural disasters · death rate',
+  'Tote je 100.000 · Dekadenmittel': 'Deaths per 100,000 · decade average',
+  '🌊 Hungerdekaden': '🌊 Famine decades',
+  'EM-DAT / Our World in Data · Todesfälle durch Naturkatastrophen je 100.000 Menschen, Dekadenmittel. Der ~30-fache Rückgang ist Anpassung (Frühwarnung, Infrastruktur, Wohlstand) — nicht weniger Extremereignisse; die realen Schadenssummen stiegen zugleich.':
+    'EM-DAT / Our World in Data · deaths from natural disasters per 100,000 people, decade average. The ~30-fold decline is adaptation (early warning, infrastructure, wealth) — not fewer extreme events; the real economic damages rose at the same time.',
+  'Ernteerträge · seit 1961': 'Crop yields · since 1961',
+  'Getreideertrag · t/ha': 'Cereal yield · t/ha',
+  '🌾 Grüne Revolution': '🌾 Green Revolution',
+  'FAO / Our World in Data · globaler Getreideertrag (t/ha). Verdreifachung seit 1961 vor allem durch Zucht, Dünger und Bewässerung; der CO₂-Düngeeffekt trägt real, aber gering bei. CO₂ stieg zugleich von 280 auf 424 ppm.':
+    'FAO / Our World in Data · global cereal yield (t/ha). Tripled since 1961 mainly through breeding, fertilizer and irrigation; the CO₂ fertilization effect contributes really but only slightly. CO₂ rose at the same time from 280 to 424 ppm.',
+  // global temperature over 800,000 years (companion to the Antarctic ice-core card)
+  'Globale Temperatur · 800.000 Jahre': 'Global temperature · 800,000 years',
+  'Globale Temperatur · Δ vs. vorindustriell': 'Global temperature · Δ vs. pre-industrial',
+  '🔥 heute': '🔥 today',
+  'Snyder 2016 (Nature) / Hansen & Sato · rekonstruierte globale Mitteltemperatur der letzten 800.000 Jahre (Δ vs. vorindustriell), aus marinen Sediment- und Eiskerndaten (EPICA-Chronologie). Acht Eiszeit-Zyklen mit ~5 °C Hub; die Antarktis schwankt ~2× stärker. Heute (~+1,3 °C) liegt am oberen Rand oder über allen Warmzeiten des Zeitraums.':
+    'Snyder 2016 (Nature) / Hansen & Sato · reconstructed global mean temperature of the last 800,000 years (Δ vs. pre-industrial), from marine-sediment and ice-core data (EPICA chronology). Eight glacial cycles with a ~5 °C swing; Antarctica swings ~2× more. Today (~+1.3 °C) sits at or above every warm period in this record.',
+  // CO₂ over 800,000 years — the ice-core record that breaks the natural envelope
+  'CO₂ · 800.000 Jahre': 'CO₂ · 800,000 years',
+  'CO₂-Konzentration · ppm': 'CO₂ concentration · ppm',
+  'EPICA Dome C · Lüthi et al. 2008 / Bereiter et al. 2015 · atmosphärisches CO₂ aus antarktischen Eiskernen (Luftblasen), letzte 800.000 Jahre. In acht Eiszeit-Zyklen blieb CO₂ zwischen ~180 ppm (Eiszeit) und ~300 ppm (Warmzeit). Heute: 424 ppm — rund 40 % über jedem natürlichen Höchstwert des Zeitraums, erreicht in ~150 Jahren.':
+    'EPICA Dome C · Lüthi et al. 2008 / Bereiter et al. 2015 · atmospheric CO₂ from Antarctic ice cores (trapped air bubbles), the last 800,000 years. Across eight glacial cycles CO₂ stayed between ~180 ppm (glacial) and ~300 ppm (interglacial). Today: 424 ppm — about 40% above every natural peak of the period, reached in ~150 years.',
 } satisfies Record<string, string>;
 
 // The exact set of German source strings that get a non-identity English

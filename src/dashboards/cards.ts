@@ -42,11 +42,19 @@ import { EU_FREEDOM_CARDS } from './euFreedom';
 import { live } from '../data/store';
 import { EXCESS_100K_BY_ISO, VAX_RATE_BY_ISO } from '../data/covidWorld';
 import {
+  ABS_TEMP_PANEL,
+  CO2_800K_PANEL,
+  CROP_YIELD_PANEL,
   DEGLACIATION_PANEL,
+  DISASTER_DEATHS_PANEL,
   FALLBACK_TEMPS,
   FALLBACK_TEMP_ROWS,
+  GLOBAL_800K_PANEL,
+  GLOBAL_TEMP_PANEL,
   ICE_CORE_PANEL,
+  MODELS_OBS_COMPARE,
   SEALEVEL_PANEL,
+  SENSITIVITY_COMPARE,
 } from '../data/climate';
 import {
   AFRICA_ROUTES_COMPARE,
@@ -506,6 +514,142 @@ export const POOL: Dashboard[] = [
       [-7000, '⚖️ stabil'],
     ]),
     'Lambeck et al. 2014 (PNAS) · globaler Meeresspiegel relativ zu heute. +125 m seit der Eiszeit, seit ~7000 Jahren nahezu stabil — der moderne mm-Anstieg ist auf dieser Skala unsichtbar.',
+  ),
+  trendCard(
+    'global-temp-800k',
+    'Globale Temperatur · 800.000 Jahre',
+    'Globale Temperatur · Δ vs. vorindustriell',
+    GLOBAL_800K_PANEL,
+    magenta,
+    (v) => `${v > 0 ? '+' : ''}${localeNum(v, 1)} °C`,
+    80,
+    eraMarkers(-800, 0, [
+      [-125, '☀️ Eem-Warmzeit'],
+      [-20, '❄️ Eiszeit-Maximum'],
+      [0, '🔥 heute'],
+    ]),
+    'Snyder 2016 (Nature) / Hansen & Sato · rekonstruierte globale Mitteltemperatur der letzten 800.000 Jahre (Δ vs. vorindustriell), aus marinen Sediment- und Eiskerndaten (EPICA-Chronologie). Acht Eiszeit-Zyklen mit ~5 °C Hub; die Antarktis schwankt ~2× stärker. Heute (~+1,3 °C) liegt am oberen Rand oder über allen Warmzeiten des Zeitraums.',
+  ),
+  trendCard(
+    'co2-800k',
+    'CO₂ · 800.000 Jahre',
+    'CO₂-Konzentration · ppm',
+    CO2_800K_PANEL,
+    violet,
+    (v) => `${localeNum(v, 0)} ppm`,
+    81,
+    eraMarkers(-800, 0, [
+      [-20, '❄️ Eiszeit-Maximum'],
+      [0, '🔥 heute'],
+    ]),
+    'EPICA Dome C · Lüthi et al. 2008 / Bereiter et al. 2015 · atmosphärisches CO₂ aus antarktischen Eiskernen (Luftblasen), letzte 800.000 Jahre. In acht Eiszeit-Zyklen blieb CO₂ zwischen ~180 ppm (Eiszeit) und ~300 ppm (Warmzeit). Heute: 424 ppm — rund 40 % über jedem natürlichen Höchstwert des Zeitraums, erreicht in ~150 Jahren.',
+  ),
+  {
+    id: 'global-temp-anomaly',
+    title: 'Erderwärmung · mit Unsicherheit',
+    source:
+      'HadCRUT5 / NASA GISTEMP / Berkeley Earth · globale Oberflächentemperatur, Abweichung vom vorindustriellen Mittel (1850–1900), Dekaden geglättet. Band = ~90-%-Messunsicherheit: im 19. Jh. breit, heute schmal. Einzeljahre erreichen im El-Niño ~+1,5 °C.',
+    draw: (f) =>
+      areaChart(f, {
+        // The measured record drawn with its own reported uncertainty rather
+        // than a single false-precision line — the band is the honesty.
+        label: 'Globale Temperatur · Δ vs. 1850–1900',
+        value: GLOBAL_TEMP_PANEL.latest,
+        delta: null,
+        fmt: (v) => `${v > 0 ? '+' : ''}${localeNum(v, 1)} °C`,
+        seed: 141,
+        color: red,
+        data: GLOBAL_TEMP_PANEL.series,
+        band: GLOBAL_TEMP_PANEL.band,
+        ticks: GLOBAL_TEMP_PANEL.ticks,
+        xLabels: GLOBAL_TEMP_PANEL.xLabels,
+      }),
+  },
+  {
+    id: 'abs-temp',
+    title: 'Erdmitteltemperatur · absolut',
+    source:
+      'Berkeley Earth / NASA · absolute globale Mitteltemperatur: ~13,7 °C um 1850 → ~15 °C heute. Der Absolutwert ist über die Datensätze auf ±0,5 °C unsicher (breites Band) — deshalb berichtet die Wissenschaft die Anomalie, deren Trend ~10× genauer bekannt ist. Eisbohrkerne datieren global bis ~800.000 Jahre zurück (EPICA Dome C).',
+    draw: (f) =>
+      areaChart(f, {
+        // The absolute mean on its own axis: the wide ±0.5 °C band is the point
+        // — it dwarfs the anomaly's band, which is why science reports change.
+        label: 'Globale Mitteltemperatur · °C',
+        value: ABS_TEMP_PANEL.latest,
+        delta: null,
+        fmt: (v) => `${localeNum(v, 1)} °C`,
+        seed: 146,
+        color: orange,
+        data: ABS_TEMP_PANEL.series,
+        band: ABS_TEMP_PANEL.band,
+        ticks: ABS_TEMP_PANEL.ticks,
+        xLabels: ABS_TEMP_PANEL.xLabels,
+      }),
+  },
+  {
+    id: 'climate-sensitivity',
+    title: 'Wie stark heizt CO₂?',
+    source:
+      'IPCC-Sachstandsberichte (Charney 1979, FAR 1990, AR4 2007, AR5 2013, AR6 2021) · „likely"-Bereich der Gleichgewichts-Klimasensitivität (Erwärmung je CO₂-Verdopplung). Der zentrale Wert ~3 °C ist seit 1979 stabil; der Bereich weitete sich bei AR5 wieder und verengte sich erst mit AR6 deutlich (2,5–4 °C).',
+    draw: (f) =>
+      lineChart(f, {
+        label: 'Klimasensitivität · °C je CO₂-Verdopplung',
+        value: SENSITIVITY_COMPARE.latest,
+        unit: '',
+        fmt: (v) => `${localeNum(v, 1)} °C`,
+        delta: null,
+        seed: 142,
+        series: [
+          { name: 'obere Grenze', color: red, data: SENSITIVITY_COMPARE.rows[2].data },
+          { name: 'bester Wert', color: yellow, data: SENSITIVITY_COMPARE.rows[1].data },
+          { name: 'untere Grenze', color: blue, data: SENSITIVITY_COMPARE.rows[0].data },
+        ],
+        ticks: SENSITIVITY_COMPARE.ticks,
+        xLabels: ['1979', '1993', '2007', '2021'],
+      }),
+  },
+  {
+    id: 'models-vs-obs',
+    title: 'Klimamodelle vs. Realität',
+    source:
+      'Hausfather et al. 2020 (Geophysical Research Letters) · frühe Klimamodell-Projektionen (1970–2007) gegen die beobachtete Erwärmung. 14 von 17 Modellen stimmten mit den Messungen überein — nach Korrektur für die tatsächlichen Antriebe (Emissionen, Vulkanausbrüche). Die Modelle waren nicht übertrieben, sondern ungefähr richtig.',
+    draw: (f) =>
+      lineChart(f, {
+        label: 'Erwärmung · °C vs. 1850–1900',
+        value: MODELS_OBS_COMPARE.latest,
+        unit: '',
+        fmt: (v) => `${v > 0 ? '+' : ''}${localeNum(v, 1)} °C`,
+        delta: null,
+        seed: 145,
+        series: [
+          { name: '🌡️ Beobachtung', color: red, data: MODELS_OBS_COMPARE.rows[1].data },
+          { name: '🖥️ Modelle', color: blue, data: MODELS_OBS_COMPARE.rows[0].data },
+        ],
+        ticks: MODELS_OBS_COMPARE.ticks,
+        xLabels: ['1970', '1987', '2003', 'heute'],
+      }),
+  },
+  trendCard(
+    'disaster-deaths',
+    'Naturkatastrophen · Todesrate',
+    'Tote je 100.000 · Dekadenmittel',
+    DISASTER_DEATHS_PANEL,
+    green,
+    (v) => localeNum(v, 1),
+    143,
+    eraMarkers(1900, 2020, [[1920, '🌊 Hungerdekaden']]),
+    'EM-DAT / Our World in Data · Todesfälle durch Naturkatastrophen je 100.000 Menschen, Dekadenmittel. Der ~30-fache Rückgang ist Anpassung (Frühwarnung, Infrastruktur, Wohlstand) — nicht weniger Extremereignisse; die realen Schadenssummen stiegen zugleich.',
+  ),
+  trendCard(
+    'crop-yields',
+    'Ernteerträge · seit 1961',
+    'Getreideertrag · t/ha',
+    CROP_YIELD_PANEL,
+    yellow,
+    (v) => `${localeNum(v, 1)} t`,
+    144,
+    eraMarkers(1961, 2022, [[1968, '🌾 Grüne Revolution']]),
+    'FAO / Our World in Data · globaler Getreideertrag (t/ha). Verdreifachung seit 1961 vor allem durch Zucht, Dünger und Bewässerung; der CO₂-Düngeeffekt trägt real, aber gering bei. CO₂ stieg zugleich von 280 auf 424 ppm.',
   ),
   {
     id: 'swiss-pop',
