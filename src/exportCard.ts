@@ -28,7 +28,7 @@ export function cardToPngBlob(dashboard: Dashboard): Promise<Blob | null> {
   if (!ctx) return Promise.resolve(null);
   // Full (non-compact) frame: the export should carry the source line even
   // though the mobile deck hides it behind the info button.
-  const frame: Frame = { ctx, w: EXPORT_W, h: EXPORT_H, t: SETTLED_T, u: EXPORT_W / 512 };
+  const frame: Frame = { ctx, w: EXPORT_W, h: EXPORT_H, t: SETTLED_T, u: EXPORT_W / 512, bleed: true };
   dashboard.draw(frame);
   // A shared PNG travels without the app UI, so it must carry its own
   // attribution: unless the chart painted a source line itself (maps/misc),

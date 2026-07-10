@@ -11,6 +11,7 @@ import {
   SURFACE,
   SURFACE_DEEP,
 } from './theme';
+import { withFlag } from './flags';
 import { localeNum, t as tr } from '../i18n';
 
 /** Deterministic PRNG so every panel shows the same data on every visit. */
@@ -81,13 +82,17 @@ export interface Frame {
   /** Set by drawSource once a source line is on the canvas, so the PNG export
       knows whether it still needs to stamp its own attribution footer. */
   sourceDrawn?: boolean;
+  /** PNG export: the poster is a standalone full-bleed rectangle, so skip the
+      edge-light rim — that rounded inner frame only exists to lift a panel off
+      the 3D backdrop, and reads as a stray border on a shared image. */
+  bleed?: boolean;
 }
 
 /** Panel background: soft vertical gradient, a faint top light, and a hairline
     edge rim. The rim keeps the panel's silhouette crisp against the dark space
     now that the surface itself is nearly black — without it a card at the back
     of the ring would dissolve into the starfield. */
-export function drawSurface({ ctx, w, h }: Frame): void {
+export function drawSurface({ ctx, w, h, bleed }: Frame): void {
   const g = ctx.createLinearGradient(0, 0, 0, h);
   g.addColorStop(0, SURFACE);
   g.addColorStop(1, SURFACE_DEEP);
@@ -98,6 +103,9 @@ export function drawSurface({ ctx, w, h }: Frame): void {
   sheen.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = sheen;
   ctx.fillRect(0, 0, w, h * 0.18);
+  // Full-bleed export has no dark backdrop to separate from — the rim would
+  // just float as a stray rounded frame inside the poster, so drop it.
+  if (bleed) return;
   // Edge light: a thin inner rounded stroke, brightest at the top (same light
   // direction as the sheen) and fading down the sides — reads as light catching
   // a bevelled rim. Inset just inside the Image mask's corner radius (~2.5% of
@@ -283,6 +291,12 @@ export function drawLegend(
   entries: { name: string; color: string }[],
 ): void {
   const { ctx, w, u } = f;
+  // Country series get their flag appended automatically here — same rule as
+  // the ranked lists and bar rows (withFlag) — so a legend can never silently
+  // drop a flag just because the card author didn't hand-type the emoji into
+  // the series name. Non-country labels (and already-flagged names) pass
+  // through withFlag unchanged.
+  const label = (name: string) => withFlag(name);
   // Shrink to fit: translated names plus emoji/flags can outgrow the panel,
   // and a legend running past the left padding would sit over the y-axis
   // labels. Each entry spans its text width plus 30u of dot + gaps; the last
@@ -290,7 +304,7 @@ export function drawLegend(
   const maxW = w - 72 * u;
   let size = 15;
   const rowWidth = () =>
-    entries.reduce((acc, e) => acc + ctx.measureText(tr(e.name)).width + 30 * u, -18 * u);
+    entries.reduce((acc, e) => acc + ctx.measureText(label(e.name)).width + 30 * u, -18 * u);
   ctx.font = `500 ${size * u}px ${FONT}`;
   while (size > 11 && rowWidth() > maxW) {
     size -= 1;
@@ -300,7 +314,7 @@ export function drawLegend(
   let x = w - 36 * u;
   for (let i = entries.length - 1; i >= 0; i--) {
     const e = entries[i];
-    const name = tr(e.name);
+    const name = label(e.name);
     ctx.fillStyle = INK_SECONDARY;
     ctx.fillText(name, x, y);
     x -= ctx.measureText(name).width + 12 * u;
