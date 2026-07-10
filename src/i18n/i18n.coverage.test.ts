@@ -81,8 +81,10 @@ for (const key of KNOWN) {
   if (!normToKey.has(n)) normToKey.set(n, key);
 }
 
-beforeAll(() => {
-  setLocale('en');
+beforeAll(async () => {
+  // Await the dictionary load: each locale's dict is a separate chunk now, so
+  // the recorder would otherwise see everything as an (unloaded) miss.
+  await setLocale('en');
   __setMissRecorder((source, unresolved) => {
     for (const segment of unresolved) misses.push({ source, segment });
   });

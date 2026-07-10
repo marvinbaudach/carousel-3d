@@ -1,4 +1,7 @@
-// Dictionary EN: German source string -> English. Generated from strings.json.
+// Dictionary EN: German source string -> English. Hand-maintained and keyed by
+// the exact German source string. Completeness is enforced by the coverage
+// guard (i18n.coverage.test.ts), which fails the build if a rendered German
+// string has no entry here (or in fr/it, or in identical.ts).
 // `satisfies` (not an annotation) keeps the literal keys, so `keyof typeof EN`
 // below is the exact set of translated strings FR and IT are checked against.
 export const EN = {

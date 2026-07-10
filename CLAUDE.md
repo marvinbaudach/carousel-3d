@@ -73,7 +73,15 @@ Year-axis era markers: use `eraMarkers()`.
   (`drawEyebrow`, `drawSource`, `drawLegend`, `withFlag`, era markers…) — card
   definitions stay German and untouched. When adding/changing German copy, add
   the same key to `src/i18n/{en,fr,it}.ts`; missing keys fall through to
-  German, composed `A · B` labels translate per segment.
+  German, composed `A · B` labels translate per segment. A coverage guard
+  (`i18n.coverage.test.ts`) renders every card with a recorder on `t()` and
+  fails the build if a rendered German string is neither a dictionary key (in
+  any of en/fr/it) nor listed in `identical.ts` — and separately flags *drift*
+  (a string that only differs from an existing key by whitespace/case/dash/
+  quote). So a new/reworded German string must be translated, or, if it truly
+  reads the same in every locale, added to `identical.ts`. Strings whose English
+  is identical but French/Italian differ live in `fr.ts`/`it.ts` only (extra
+  keys), not `en.ts`.
 - React: type props, infer return type, no `React.FC`.
 - `import/no-cycle` is an error — mind the `dashboards` ↔ `data` boundary.
 

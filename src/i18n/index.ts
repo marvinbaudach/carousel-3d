@@ -4,22 +4,52 @@
 // components never deal with translation keys. Unknown strings fall through
 // unchanged, so a missing entry can never blank out a panel.
 
-import { EN, type MessageKey } from './en';
-import { FR } from './fr';
-import { IT } from './it';
-
 export type Locale = 'de' | 'en' | 'fr' | 'it';
 
-// A dictionary must cover every key EN translates (MessageKey) and may carry
-// extras via the index signature. Keying DICTS by the non-German locales makes
-// it explicit that each one needs a full dictionary: add a Locale without a dict
-// and this line stops compiling.
-type Dict = Record<MessageKey, string> & Record<string, string>;
-const DICTS: Record<Exclude<Locale, 'de'>, Dict> = {
-  en: EN,
-  fr: FR,
-  it: IT,
-};
+type Dict = Record<string, string>;
+
+// Each non-German dictionary is its own chunk, imported on demand, so a visitor
+// downloads only the locale they actually view (German downloads none of them).
+// `t()` runs synchronously every frame, so the active dict is loaded up front:
+// the app awaits `ensureLocaleReady()` before the first render (see App.tsx),
+// and `setLocale()` loads the target before it switches. The per-locale type
+// guarantee (FR/IT cover every EN key) lives in fr.ts/it.ts's own annotations.
+function importDict(locale: Exclude<Locale, 'de'>): Promise<Dict> {
+  switch (locale) {
+    case 'en':
+      return import('./en').then((m) => m.EN);
+    case 'fr':
+      return import('./fr').then((m) => m.FR);
+    case 'it':
+      return import('./it').then((m) => m.IT);
+  }
+}
+
+const dictCache = new Map<Locale, Dict>();
+let activeDict: Dict | null = null; // loaded dict for the current LOCALE; null for German
+let switchToken = 0;
+
+/** Resolve (and memoise) the dictionary for a locale; null for German. */
+async function ensureCached(locale: Locale): Promise<Dict | null> {
+  if (locale === 'de') return null;
+  const hit = dictCache.get(locale);
+  if (hit) return hit;
+  const dict = await importDict(locale);
+  dictCache.set(locale, dict);
+  return dict;
+}
+
+/** Load the current locale's dictionary and make it active. Await this before
+    the first render so `t()` resolves synchronously from then on. Resolves
+    immediately for German and for an already-loaded locale, and degrades to the
+    German source text if the chunk fails to load (it never rejects). */
+export async function ensureLocaleReady(): Promise<void> {
+  try {
+    activeDict = await ensureCached(LOCALE);
+  } catch {
+    activeDict = null; // chunk failed → fall back to the German source text
+  }
+}
 
 export const LOCALES: Locale[] = ['de', 'en', 'fr', 'it'];
 const STORE_KEY = 'worldpulse-locale';
@@ -82,12 +112,23 @@ export function onLocaleChange(fn: LocaleListener): () => void {
   return () => listeners.delete(fn);
 }
 
-/** Switch the locale at runtime: persists the pick, retitles the page and
-    notifies subscribers (the app remounts the canvas views so every panel
-    texture redraws in the new language). */
-export function setLocale(next: Locale): void {
-  if (next === LOCALE) return;
+/** Switch the locale at runtime: loads the target dictionary first (so the
+    first post-switch render already has it), then persists the pick, retitles
+    the page and notifies subscribers (the app redraws every panel texture in
+    the new language). Returns a promise callers may ignore. A token guards
+    against a slow load clobbering a newer choice on rapid switches. */
+export async function setLocale(next: Locale): Promise<void> {
+  if (next === LOCALE) return ensureLocaleReady();
+  const token = ++switchToken;
+  let dict: Dict | null;
+  try {
+    dict = await ensureCached(next);
+  } catch {
+    return; // chunk failed to load — keep the current, working locale
+  }
+  if (token !== switchToken) return; // superseded by a later switch
   LOCALE = next;
+  activeDict = dict;
   localStorage.setItem(STORE_KEY, next);
   applyLocale();
   listeners.forEach((fn) => fn(next));
@@ -101,7 +142,7 @@ export function setLocale(next: Locale): void {
  */
 export function t(s: string): string {
   if (LOCALE === 'de' || !s) return s;
-  const dict = DICTS[LOCALE];
+  const dict = activeDict;
   if (!dict) return s;
   const hit = dict[s];
   if (hit) return hit;

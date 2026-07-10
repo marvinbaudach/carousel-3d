@@ -16,72 +16,75 @@ import { IT } from './it';
 // dictionary so the test never hardcodes a translation that might be reworded.
 const [SIMPLE_KEY, SIMPLE_VAL] = Object.entries(EN).find(([k]) => !k.includes(' · ')) ?? ['', ''];
 
+// Each locale's dictionary is a lazily-imported chunk, so `setLocale` is async
+// (it loads the dict before switching). Every test awaits it before asserting.
+
 describe('t()', () => {
-  it('returns the source string unchanged in German', () => {
-    setLocale('de');
+  it('returns the source string unchanged in German', async () => {
+    await setLocale('de');
     expect(t(SIMPLE_KEY)).toBe(SIMPLE_KEY);
   });
 
-  it('translates a known string in a non-German locale', () => {
-    setLocale('en');
+  it('translates a known string in a non-German locale', async () => {
+    await setLocale('en');
     expect(t(SIMPLE_KEY)).toBe(SIMPLE_VAL);
   });
 
-  it('passes an unknown string through untouched (never blanks a panel)', () => {
-    setLocale('en');
+  it('passes an unknown string through untouched (never blanks a panel)', async () => {
+    await setLocale('en');
     expect(t('§ totally unknown string §')).toBe('§ totally unknown string §');
   });
 
-  it('translates the static segments of a composed A · B label', () => {
-    setLocale('en');
+  it('translates the static segments of a composed A · B label', async () => {
+    await setLocale('en');
     // The dynamic tail (a year) has no dict entry and must survive verbatim.
     expect(t(`${SIMPLE_KEY} · 2099`)).toBe(`${SIMPLE_VAL} · 2099`);
   });
 
-  it('leaves a composed label untouched when no segment is known', () => {
-    setLocale('en');
+  it('leaves a composed label untouched when no segment is known', async () => {
+    await setLocale('en');
     expect(t('§foo§ · §bar§')).toBe('§foo§ · §bar§');
   });
 });
 
 describe('locale number formatters', () => {
-  it('groups thousands per locale', () => {
-    setLocale('de');
+  it('groups thousands per locale', async () => {
+    await setLocale('de');
     expect(localeInt(12183)).toBe('12.183');
-    setLocale('en');
+    await setLocale('en');
     expect(localeInt(12183)).toBe('12,183');
   });
 
-  it('rounds to an integer before grouping', () => {
-    setLocale('de');
+  it('rounds to an integer before grouping', async () => {
+    await setLocale('de');
     expect(localeInt(12183.7)).toBe('12.184');
   });
 
-  it('applies fixed decimals with the locale separator', () => {
-    setLocale('de');
+  it('applies fixed decimals with the locale separator', async () => {
+    await setLocale('de');
     expect(localeNum(1.5, 2)).toBe('1,50');
-    setLocale('en');
+    await setLocale('en');
     expect(localeNum(1.5, 2)).toBe('1.50');
   });
 
-  it('adds a no-break space before % for de/fr but not en', () => {
-    setLocale('de');
-    expect(localePct(13.4, 1)).toBe('13,4 %');
-    setLocale('en');
+  it('adds a no-break space before % for de/fr but not en', async () => {
+    await setLocale('de');
+    expect(localePct(13.4, 1)).toBe('13,4\u00A0%'); // U+00A0 no-break space
+    await setLocale('en');
     expect(localePct(13.4, 1)).toBe('13.4%');
   });
 
-  it('trims a redundant trailing-zero decimal but keeps real ones', () => {
-    setLocale('de');
+  it('trims a redundant trailing-zero decimal but keeps real ones', async () => {
+    await setLocale('de');
     expect(localeNumTrim(84)).toBe('84');
     expect(localeNumTrim(84.7)).toBe('84,7');
     expect(localeNumTrim(5.63)).toBe('5,6');
   });
 
-  it('trims the percent form the same way', () => {
-    setLocale('de');
-    expect(localePctTrim(34)).toBe('34 %');
-    setLocale('en');
+  it('trims the percent form the same way', async () => {
+    await setLocale('de');
+    expect(localePctTrim(34)).toBe('34\u00A0%');
+    await setLocale('en');
     expect(localePctTrim(34)).toBe('34%');
   });
 });

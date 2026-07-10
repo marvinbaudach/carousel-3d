@@ -1,4 +1,5 @@
-// Dictionary IT: German source string -> Italian. Generated from strings.json.
+// Dictionary IT: German source string -> Italian. Hand-maintained, keyed by the
+// exact German source string; completeness is enforced by i18n.coverage.test.ts.
 import type { MessageKey } from './en';
 
 // Typed against EN's keys: every string English translates must be present here

@@ -8,7 +8,7 @@ import { LoadingScreen } from './components/LoadingScreen';
 import { GlobalStyle } from './GlobalStyle';
 import { loadLiveData } from './data/sources';
 import { useIsMobile } from './hooks/useIsMobile';
-import { LOCALE, onLocaleChange } from './i18n';
+import { LOCALE, onLocaleChange, ensureLocaleReady } from './i18n';
 
 // "Loading" is a staged boot sequence: it gives the pulse loader one full
 // beat before the iris hands the screen center over to the blooming ring,
@@ -40,6 +40,21 @@ export default function App() {
   const [locale, setLocaleState] = useState(LOCALE);
   useEffect(() => onLocaleChange(setLocaleState), []);
 
+  // The active locale's dictionary is a separate chunk; load it before the ring
+  // blooms so the first texture paint is already translated (German loads none,
+  // so it starts ready). A failed chunk degrades to German rather than hanging.
+  const [dictReady, setDictReady] = useState(LOCALE === 'de');
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      await ensureLocaleReady();
+      if (alive) setDictReady(true);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   useEffect(() => {
     // Fire off the public-API fetches and the price socket during the boot
     // beat, so most panels already hold real data when the ring blooms.
@@ -51,14 +66,18 @@ export default function App() {
     return () => clearTimeout(id);
   }, [isMobile]);
 
+  // Hold the loader until both the boot beat and the dictionary are ready, so a
+  // panel never paints German for a non-German visitor mid-handoff.
+  const ready = done && dictReady;
+
   return (
     <Stage>
       <GlobalStyle />
-      {done && (isMobile ? <MobileDeck key={locale} /> : <Carousel3D />)}
+      {ready && (isMobile ? <MobileDeck key={locale} /> : <Carousel3D />)}
       {!isMobile && <PerfHud />}
 
       {showLoader && (
-        <LoadingScreen done={done} onExited={() => setShowLoader(false)} />
+        <LoadingScreen done={ready} onExited={() => setShowLoader(false)} />
       )}
     </Stage>
   );
