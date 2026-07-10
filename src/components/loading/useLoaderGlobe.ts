@@ -39,6 +39,45 @@ const BUCKETS = 10;
 type Buckets = number[][]; // BUCKETS arrays of flat [x, y, size, ...] triples
 const makeBuckets = (): Buckets => Array.from({ length: BUCKETS }, () => []);
 
+// Piecewise-linear color ramps as [t, r, g, b] stops, t descending 1 → 0.
+type ColorStops = ReadonlyArray<readonly [number, number, number, number]>;
+const rampColor = (stops: ColorStops, t: number): readonly [number, number, number] => {
+  for (let i = 1; i < stops.length; i++) {
+    const lo = stops[i];
+    if (t < lo[0]) continue;
+    const hi = stops[i - 1];
+    const f = (hi[0] - t) / (hi[0] - lo[0]);
+    return [
+      Math.round(hi[1] + (lo[1] - hi[1]) * f),
+      Math.round(hi[2] + (lo[2] - hi[2]) * f),
+      Math.round(hi[3] + (lo[3] - hi[3]) * f),
+    ];
+  }
+  const last = stops[stops.length - 1];
+  return [last[1], last[2], last[3]];
+};
+
+// The exit is one thermal arc in two ramps. IMPLODE: as the globe collapses,
+// the compressing dot field heats from its idle electric blue through the
+// palette's violet into hot red — the tension the white flash then releases.
+// EMBER (blackbody, hotter burns bluer): the ejecta thrown out by the bang
+// falls from blue-white glow through white and gold down to deep ember red.
+const IMPLODE_STOPS: ColorStops = [
+  [1.0, 56, 112, 248],
+  [0.52, 148, 120, 252],
+  [0.14, 255, 92, 66],
+  [0.0, 255, 140, 110],
+];
+const EMBER_STOPS: ColorStops = [
+  [1.0, 208, 224, 255],
+  [0.78, 255, 248, 236],
+  [0.52, 255, 196, 112],
+  [0.26, 246, 112, 58],
+  [0.0, 150, 40, 36],
+];
+const emberColor = (temp: number): readonly [number, number, number] =>
+  rampColor(EMBER_STOPS, temp);
+
 interface GlobeRefs {
   canvasRef: RefObject<HTMLCanvasElement | null>;
   /** Live percentage (0..100); the spin rate scales with it. */
@@ -101,9 +140,11 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
     }));
 
     // Supernova dust: motes hurled outward by the shockwave when the flash
-    // bursts. Each mote gets its own direction, launch delay, speed and a
-    // slight tangential curl so the cloud reads as turbulence, not spokes.
-    // A denser, faster field so the discharge hits with real force.
+    // bursts. Each mote gets its own direction, launch delay, speed, a slight
+    // tangential curl so the cloud reads as turbulence, not spokes — and its
+    // own cooling rate, so the ejecta doesn't march down the blackbody ramp
+    // (see emberColor) in lockstep. A denser, faster field so the discharge
+    // hits with real force.
     const dust = Array.from({ length: 380 }, () => ({
       angle: Math.random() * Math.PI * 2,
       speed: 0.45 + Math.random() ** 1.6 * 0.85,
@@ -111,6 +152,7 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
       delay: Math.random() * 0.12,
       curl: (Math.random() - 0.5) * 0.8,
       glow: Math.random(),
+      cool: 1.15 + Math.random() * 0.9,
     }));
     // The wave fires as the iris starts closing (the moment the flash peaks)
     // and rides out on the screen fade.
@@ -121,9 +163,11 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
     // The sphere splits into a deep-blue body and a white-hot spark set: dots
     // caught mid-flare route into `sparkBk` and flush near-white, so the globe
     // reads as a dark-blue field crackling with electricity rather than a flat
-    // pale-blue cloud.
+    // pale-blue cloud. Every other flaring dot discharges violet instead —
+    // the palette's second hue, otherwise only carried by the ring gradient.
     const sphereBk = makeBuckets();
     const sparkBk = makeBuckets();
+    const violetBk = makeBuckets();
     const gridBk = makeBuckets();
     const arcWarmBk = makeBuckets();
     const arcCoolBk = makeBuckets();
@@ -222,25 +266,37 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
       // electric discharge points against the deep-blue body.
       clear(sphereBk);
       clear(sparkBk);
+      clear(violetBk);
       for (let i = 0; i < N; i++) {
         const q = project(pts[i]);
         const depth = (q.z + 1) / 2;
-        const shade = 0.3 + 0.7 * q.light;
+        // Wider lit/dark spread than a plain 0.3..1 shade: the day side pushes
+        // toward full opacity (saturated blue), the night side falls further
+        // off, so the terminator carries real contrast.
+        const shade = 0.18 + 0.82 * q.light;
         const flare =
           i % 19 === 0
             ? Math.max(0, Math.sin(t * 1.8 + i * 0.911)) ** 24 * (0.3 + 0.7 * depth)
             : 0;
+        // Converge dims only mildly (×0.45): the heat-up recolor must stay
+        // readable while the cluster shrinks into the flash.
         const alpha =
-          Math.min(1, (0.16 + depth * 0.42) * (0.5 + shade) + flare * 0.9) *
+          Math.min(1, (0.15 + depth * 0.45) * (0.45 + shade * 1.25) + flare * 0.9) *
           aEase *
-          (1 - ease * 0.6);
+          (1 - ease * 0.45);
         const bi = alphaBucket(alpha, BUCKETS);
         if (bi === 0) continue;
         const s = 1.6 + depth * 2.0 + flare * 3.2;
-        (flare > 0.12 ? sparkBk : sphereBk)[bi].push(q.x, q.y, s);
+        const bk = flare > 0.12 ? (i % 38 === 0 ? violetBk : sparkBk) : sphereBk;
+        bk[bi].push(q.x, q.y, s);
       }
-      flush(sphereBk, 64, 118, 240); // deep electric blue body
+      // Collapse recolor: the body slides down IMPLODE_STOPS as the implosion
+      // compresses, timed (×1.3) so full red lands while the shrinking cluster
+      // is still readable — the white flash then takes over the center.
+      const [br, bg, bb] = rampColor(IMPLODE_STOPS, Math.max(0, 1 - ease * 1.3));
+      flush(sphereBk, br, bg, bb); // idle: deep electric blue body
       flush(sparkBk, 234, 244, 255); // white-hot discharge points
+      flush(violetBk, 172, 156, 255); // violet discharge points
 
       // Graticule dots — fainter and finer than the sphere fill.
       clear(gridBk);
@@ -303,9 +359,10 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
       });
 
       // Shockwave + dust: once the flash peaks, a pressure ring races outward
-      // and drags a cloud of nebula dust with it. Each mote starts white-hot
-      // and cools to electric blue as it flies — an electrical discharge, not
-      // an ember spray.
+      // and drags a cloud of ejecta with it. Each mote starts blue-white hot
+      // and falls down the blackbody ramp (white → gold → ember red) at its
+      // own cooling rate — the burst reads as matter cooling, thermodynamics
+      // instead of a color crossfade.
       const waveT = !mobileExit && doneAt
         ? Math.min(1, Math.max(0, (now - doneAt - WAVE_DELAY_MS) / WAVE_MS))
         : 0;
@@ -314,9 +371,11 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
         const maxR = Math.min(w, h) * 0.78;
         const fade = 1 - waveT;
 
-        // Pressure front: a hot white ring with a wide electric-blue trailing
-        // band, brightest right as the wave fires.
-        ctx.strokeStyle = `rgba(232, 242, 255, ${0.72 * fade})`;
+        // Pressure front: the hottest surface in the scene — it cools only a
+        // little (blue-white toward warm white) while the electric-blue
+        // trailing band stays the pressure medium, not the fire.
+        const [fr, fg, fb] = emberColor(1 - waveT * 0.45);
+        ctx.strokeStyle = `rgba(${fr}, ${fg}, ${fb}, ${0.72 * fade})`;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(cx, cy, we * maxR, 0, Math.PI * 2);
@@ -333,12 +392,7 @@ export function useLoaderGlobe({ canvasRef, pctRef, doneRef, onLeave }: GlobeRef
           const pe = 1 - Math.pow(1 - p, 2.6);
           const a = d.angle + d.curl * pe;
           const r = pe * maxR * d.speed;
-          // White-hot → electric blue: the hot channels decay as the mote
-          // flies out, leaving a saturated blue core.
-          const hot = Math.max(0, 1 - p * 2.2);
-          const cr = Math.round(90 + 150 * hot);
-          const cg = Math.round(165 + 80 * hot);
-          const cb = 255;
+          const [cr, cg, cb] = emberColor(Math.max(0, 1 - p * d.cool));
           const alpha = (1 - p) * (0.6 + d.glow * 0.4);
           ctx.fillStyle = `rgba(${cr}, ${cg}, ${cb}, ${alpha})`;
           const s = d.size * (1 - p * 0.55);

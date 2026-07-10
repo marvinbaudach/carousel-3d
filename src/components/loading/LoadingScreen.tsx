@@ -483,9 +483,9 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
       }}
       aria-hidden={leaving}
     >
-      <Glow $x="30%" $y="32%" $color="rgba(64, 145, 240, 0.4)" $delay="0s" />
-      <Glow $x="72%" $y="64%" $color="rgba(150, 140, 245, 0.32)" $delay="-3s" />
-      <Glow $x="55%" $y="45%" $color="rgba(28, 170, 122, 0.18)" $delay="-6s" />
+      <Glow $x="30%" $y="32%" $color="rgba(64, 145, 240, 0.44)" $delay="0s" />
+      <Glow $x="72%" $y="64%" $color="rgba(150, 140, 245, 0.38)" $delay="-3s" />
+      <Glow $x="55%" $y="45%" $color="rgba(126, 114, 242, 0.24)" $delay="-6s" />
 
       <StarCanvas ref={starRef} aria-hidden />
       <Vignette aria-hidden />
@@ -505,8 +505,8 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
         <svg viewBox="0 0 100 100">
           <defs>
             <linearGradient id="wp-ring-grad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#3987e5" />
-              <stop offset="100%" stopColor="#9085e9" />
+              <stop offset="0%" stopColor="#48a0f7" />
+              <stop offset="100%" stopColor="#a394ff" />
             </linearGradient>
           </defs>
           <circle
@@ -514,8 +514,23 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
             cy="50"
             r="48"
             fill="none"
-            stroke="rgba(255, 255, 255, 0.07)"
-            strokeWidth="0.3"
+            stroke="rgba(168, 196, 245, 0.16)"
+            strokeWidth="0.4"
+          />
+          {/* Soft halo under the arc: same dash geometry, wide and faint, so
+              the progress reads as a glowing band instead of a hairline. */}
+          <circle
+            cx="50"
+            cy="50"
+            r="48"
+            fill="none"
+            stroke="rgba(87, 132, 244, 0.28)"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={`${pct} ${100 - pct}`}
+            transform="rotate(-90 50 50)"
+            style={{ transition: 'stroke-dasharray 0.25s linear' }}
           />
           <circle
             cx="50"
@@ -523,7 +538,7 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
             r="48"
             fill="none"
             stroke="url(#wp-ring-grad)"
-            strokeWidth="0.45"
+            strokeWidth="0.85"
             strokeLinecap="round"
             pathLength={100}
             strokeDasharray={`${pct} ${100 - pct}`}
@@ -537,8 +552,8 @@ export function LoadingScreen({ done, onExited }: LoadingScreenProps) {
             cy="50"
             r="48"
             fill="none"
-            stroke="rgba(188, 208, 255, 0.5)"
-            strokeWidth="0.3"
+            stroke="rgba(198, 216, 255, 0.65)"
+            strokeWidth="0.45"
             strokeLinecap="round"
             pathLength={100}
             strokeDasharray="4 96"
