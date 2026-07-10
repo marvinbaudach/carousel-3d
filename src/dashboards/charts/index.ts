@@ -19,3 +19,4 @@ export {
   budgetSplit,
   factCheck,
 } from './misc';
+export { type StatusTimelineCfg, type TimelineKind, statusTimeline } from './timeline';

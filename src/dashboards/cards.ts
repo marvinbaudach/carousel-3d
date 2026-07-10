@@ -38,6 +38,7 @@ import {
   US_TROOPS_ABROAD,
 } from './geo';
 import type { Dashboard } from './types';
+import { EU_FREEDOM_CARDS } from './euFreedom';
 import { live } from '../data/store';
 import { EXCESS_100K_BY_ISO, VAX_RATE_BY_ISO } from '../data/covidWorld';
 import {
@@ -204,6 +205,7 @@ import {
  * in geo.ts, the bundled historical series in ../data/bundled.
  */
 export const POOL: Dashboard[] = [
+  ...EU_FREEDOM_CARDS,
   {
     id: 'de-budget-split',
     title: 'Bundeshaushalt: genannte Posten vs. Investition',

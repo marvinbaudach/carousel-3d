@@ -269,6 +269,11 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'de-bank-branches': ['freiheit'],
   'us-middle-wealth': ['geld'],
   'us-consumer-debt': ['geld'],
+  // EU freedom-restriction dossier (legislative timelines) — see euFreedom.ts.
+  chatkontrolle: ['freiheit'],
+  'asset-register': ['freiheit'],
+  'data-retention': ['freiheit'],
+  dsa: ['freiheit'],
 };
 for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
 
@@ -278,6 +283,11 @@ for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
  * the pool ordered newest-first so fresh cards are easy to review.
  */
 const ADDED_BY_ID: Record<string, string> = {
+  // EU freedom-restriction dossier — newest, so it leads the NEU chip.
+  chatkontrolle: '2026-07-10T10:04:00+02:00',
+  'asset-register': '2026-07-10T10:03:00+02:00',
+  'data-retention': '2026-07-10T10:02:00+02:00',
+  dsa: '2026-07-10T10:01:00+02:00',
   'datacenter-map': '2026-07-09T22:30:00+02:00',
   'de-budget-split': '2026-07-09T20:00:00+02:00',
   'de-aid-peru': '2026-07-09T21:30:00+02:00',
@@ -529,6 +539,7 @@ const FEATURED = new Set([
   'sdg-progress', 'who-funding', 'excess-mortality', 'cb-gold', 'gold-reserves', 'farm-decline', 'pisa', 'free-speech-feeling', 'birth-collapse', 'big-three',
   'de-bank-branches', 'us-middle-wealth', 'us-consumer-debt',
   'de-budget-split', 'de-aid-peru', 'de-megaprojects',
+  'chatkontrolle', 'asset-register', 'data-retention', 'dsa',
 ]);
 
 /**
