@@ -55,6 +55,10 @@ export function drawEraMarkers(
   ctx.font = `500 ${13 * u}px ${FONT}`;
   const gap = 6 * u;
   const halfH = 9 * u;
+  // Pitch a nudged label steps by to clear an overlap: the label box plus a
+  // little breathing room, so a cluster of markers (several reforms in one
+  // decade) stacks with air between the rows instead of the lines touching.
+  const vStep = 2 * halfH + 5 * u;
   const yMin = r.y0 + 16 * u;
   const yMax = r.y1 - 12 * u;
   const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
@@ -79,8 +83,8 @@ export function drawEraMarkers(
     const overlaps = (y: number) =>
       placed.some((s) => x0 < s.x1 + gap && x1 + gap > s.x0 && y - halfH < s.y1 && y + halfH > s.y0);
     let ly = Math.min(yMax, Math.max(yMin, curveY(frac)));
-    while (overlaps(ly) && ly + 2 * halfH <= yMax) ly += 2 * halfH;
-    while (overlaps(ly) && ly - 2 * halfH >= yMin) ly -= 2 * halfH;
+    while (overlaps(ly) && ly + vStep <= yMax) ly += vStep;
+    while (overlaps(ly) && ly - vStep >= yMin) ly -= vStep;
     placed.push({ x0, x1, y0: ly - halfH, y1: ly + halfH });
 
     // Fade spans [frac - FADE, frac]: solid by the moment the line arrives.
