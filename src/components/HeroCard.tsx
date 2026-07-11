@@ -166,8 +166,12 @@ export function HeroCard({
     }
 
     const dir = closing ? -1 : 1;
+    // Clamp delta so the flight never leaps: opening pins the dpr and closing
+    // releases it, and that resize hitch right at the first flight frame would
+    // otherwise skip the card several frames ahead in one step.
+    const dt = Math.min(delta, 1 / 30);
     progress.current = MathUtils.clamp(
-      progress.current + (dir * delta) / (closing ? CLOSE_TIME : OPEN_TIME),
+      progress.current + (dir * dt) / (closing ? CLOSE_TIME : OPEN_TIME),
       0,
       1,
     );

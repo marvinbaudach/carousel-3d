@@ -8,11 +8,14 @@ export interface DashboardTexture {
   dispose: () => void;
 }
 
-/** Offscreen canvas + texture for one dashboard, pre-rendered settled. */
+/** Offscreen canvas + texture for one dashboard, pre-rendered settled.
+    `frost` fills the surface translucent for panels backed by a FrostPlate
+    (see Frame.frost in draw.ts). */
 export function createDashboardTexture(
   dashboard: Dashboard,
   width: number,
   height: number,
+  frost = false,
 ): DashboardTexture {
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -23,7 +26,7 @@ export function createDashboardTexture(
 
   const render = (t: number) => {
     if (!ctx) return;
-    dashboard.draw({ ctx, w: width, h: height, t, u: width / 512 });
+    dashboard.draw({ ctx, w: width, h: height, t, u: width / 512, frost });
     tex.needsUpdate = true;
   };
   render(SETTLED_T);

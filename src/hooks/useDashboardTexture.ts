@@ -16,17 +16,19 @@ const MAX_ANISOTROPY = 8;
  * rasterised in its settled state at mount (see createDashboardTexture),
  * given anisotropic filtering, and disposed on unmount. Per-frame redrawing
  * (live ticks, the hero intro) stays with the caller. Memoised on
- * [dashboard, width, height], so only a genuine swap rebuilds the texture.
+ * [dashboard, width, height, frost], so only a genuine swap rebuilds the
+ * texture.
  */
 export function useDashboardTexture(
   dashboard: Dashboard,
   width: number,
   height: number,
+  frost = false,
 ): DashboardTexture {
   const maxAnisotropy = useThree((s) => s.gl.capabilities.getMaxAnisotropy());
   const dash = useMemo(
-    () => createDashboardTexture(dashboard, width, height),
-    [dashboard, width, height],
+    () => createDashboardTexture(dashboard, width, height, frost),
+    [dashboard, width, height, frost],
   );
   useEffect(() => {
     dash.tex.anisotropy = Math.min(MAX_ANISOTROPY, maxAnisotropy);

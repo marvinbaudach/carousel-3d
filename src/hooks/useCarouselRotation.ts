@@ -82,6 +82,11 @@ export function useCarouselRotation({
   const lastMoveTime = useRef(0);
   const moved = useRef(0);
   const assembleStart = useRef<number | null>(null);
+  // Breathing phase, advanced only while the ring is under free control. Tied
+  // to its own accumulator instead of the wall clock: the clock keeps running
+  // while a hero holds the ring still, so a clock-driven sine would snap the
+  // whole ring to a new vertical phase the moment the hero closes.
+  const breathePhase = useRef(0);
   // Front rotation the ring should ease to while it is otherwise held (a hero
   // is open): stepping heroes with the arrow keys sets this to the incoming
   // panel's slot, so the ring turns underneath to keep that card centred.
@@ -254,8 +259,8 @@ export function useCarouselRotation({
     if (groupRef.current) {
       groupRef.current.rotation.y = rotation.current + assembleOffset;
       // Slow vertical breathing so the idle ring is never dead still.
-      groupRef.current.position.y =
-        Math.sin(state.clock.elapsedTime * BREATHE_SPEED) * BREATHE_AMP;
+      breathePhase.current += dt * BREATHE_SPEED;
+      groupRef.current.position.y = Math.sin(breathePhase.current) * BREATHE_AMP;
     }
     if (tiltRef.current) {
       tiltRef.current.rotation.x = tilt.current;

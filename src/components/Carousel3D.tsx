@@ -126,6 +126,13 @@ export function Carousel3D() {
   // static hero upscales the most when the buffer sits below native — but never
   // below 1.75, so standard displays keep their supersampling.
   const maxDpr = isMobile ? 1.5 : Math.min(2, Math.max(1.75, window.devicePixelRatio || 1));
+  // Lower bound the monitor may throttle to. On desktop the canvas-drawn chart
+  // text turns visibly soft below ~1.4 device px per css px, so the floor sits
+  // there: a brief frame-rate dip (e.g. the frost panes on a busy view) dims
+  // the supersampling but never drops the text into a blurry downsample. Mobile
+  // keeps the full 1..maxDpr range — legibility there is a closer call than the
+  // fill-rate headroom a weak GPU needs.
+  const minDpr = isMobile ? 1 : 1.4;
   const [dpr, setDpr] = useState(maxDpr);
 
   const heroTarget = useMemo(() => new Vector3(0, 0, heroZ), [heroZ]);
@@ -231,8 +238,11 @@ export function Carousel3D() {
       // PerformanceMonitor throttled the busy ring view down to (which upscales
       // soft on hi-dpi screens). Capped at 1.75 rather than full native, so the
       // hero is sharp without the fill-rate of a 2x buffer tanking the frame
-      // rate on hi-dpi displays.
-      dpr={heroOpen ? Math.min(maxDpr, 1.75) : dpr}
+      // rate on hi-dpi displays. Like `dressed`, the pin is released the instant
+      // a close *begins*, not when it ends: the scrim is still dark and the card
+      // in flight then, masking the resolution step and its resize hitch — at
+      // landing the scene is calm and a dpr snap would read as a visible jolt.
+      dpr={heroOpen && !closing ? Math.min(maxDpr, 1.75) : dpr}
       camera={{ position: [0, 0, DEFAULT_RADIUS + CAMERA_GAP], fov: 40 }}
       // Canvas MSAA is wasted work: EffectComposer renders offscreen anyway,
       // and the bloom/noise/vignette stack hides the aliasing it would fix.
@@ -243,8 +253,9 @@ export function Carousel3D() {
       <fog attach="fog" args={['#080b14', fogNear, fogFar]} />
 
       <PerformanceMonitor
-        // Step the resolution up/down with the measured frame rate.
-        onChange={({ factor }) => setDpr(1 + factor * (maxDpr - 1))}
+        // Step the resolution up/down with the measured frame rate, between the
+        // legibility floor (minDpr) and the display's native cap (maxDpr).
+        onChange={({ factor }) => setDpr(minDpr + factor * (maxDpr - minDpr))}
       />
 
       <PerfProbe />
@@ -265,7 +276,10 @@ export function Carousel3D() {
         count={Math.max(dashboards.length, MIN_COUNT)}
         guided={!heroOpen}
       />
-      <Aurora accent={accent} />
+      {/* calm releases at close *start*: the 1.6s bloom overlaps the fly-back
+          and the scrim's own fade, so the nebula is mid-swell as the card
+          lands — one continuous gesture instead of a light switching on. */}
+      <Aurora accent={accent} calm={heroOpen && !closing} />
       <Dust radius={radius} count={isMobile ? 120 : 320} />
       <Afterglow radius={radius} />
 
