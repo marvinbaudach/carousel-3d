@@ -74,6 +74,17 @@ export function createLightbox(categoryOf: (tag: string) => Category | undefined
     render();
   }
 
+  // Walk to another card with a fade: advance immediately (so mashing the
+  // arrows stays responsive), then restart the CSS fade-in by re-adding the
+  // class after a forced reflow.
+  function navigate(delta: number): void {
+    if (list.length < 2) return;
+    show(pos + delta);
+    canvas.classList.remove('anim');
+    void canvas.offsetWidth;
+    canvas.classList.add('anim');
+  }
+
   function close(): void {
     isOpen = false;
     root.classList.remove('open');
@@ -96,16 +107,16 @@ export function createLightbox(categoryOf: (tag: string) => Category | undefined
 
   btnClose.addEventListener('click', close);
   btnDownload.addEventListener('click', () => void download());
-  btnPrev.addEventListener('click', () => show(pos - 1));
-  btnNext.addEventListener('click', () => show(pos + 1));
+  btnPrev.addEventListener('click', () => navigate(-1));
+  btnNext.addEventListener('click', () => navigate(1));
   root.addEventListener('click', (e) => {
     if (e.target === root) close();
   });
   window.addEventListener('keydown', (e) => {
     if (!isOpen) return;
     if (e.key === 'Escape') close();
-    else if (e.key === 'ArrowLeft') show(pos - 1);
-    else if (e.key === 'ArrowRight') show(pos + 1);
+    else if (e.key === 'ArrowLeft') navigate(-1);
+    else if (e.key === 'ArrowRight') navigate(1);
   });
 
   return {

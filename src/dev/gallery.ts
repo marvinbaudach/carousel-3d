@@ -1,8 +1,9 @@
 // Dev-only QA/review harness: renders every card into a filterable, sortable
 // grid of thumbnails, with a lightbox for full-size inspection and optional
-// live-data loading. Served only via gallery.html in `npm run dev`
-// (`npm run gallery` opens it directly) — never part of the app bundle, since
-// Vite builds only index.html. Cards fall back to the settled/offline look
+// live-data loading. Served only via gallery.html in `npm run dev` — reach it
+// from the app's dev-only "⧉ Gallery" link (or open /gallery.html directly).
+// Never part of the app bundle, since Vite builds only index.html. Cards fall
+// back to the settled/offline look
 // until (and unless) the live fetchers land real data.
 
 import { live, onLiveUpdate } from '../data/store';

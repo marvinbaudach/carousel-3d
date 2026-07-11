@@ -4,6 +4,7 @@ import { useEnvironment } from '@react-three/drei';
 import { Carousel3D } from './components/Carousel3D';
 import { MobileDeck } from './components/MobileDeck';
 import { PerfHud } from './components/PerfHud';
+import { DevGalleryLink } from './components/DevGalleryLink';
 import { LoadingScreen } from './components/loading/LoadingScreen';
 import { GlobalStyle } from './GlobalStyle';
 import { loadLiveData } from './data/sources';
@@ -75,6 +76,7 @@ export default function App() {
       <GlobalStyle />
       {ready && (isMobile ? <MobileDeck key={locale} /> : <Carousel3D />)}
       {!isMobile && <PerfHud />}
+      <DevGalleryLink />
 
       {showLoader && (
         <LoadingScreen done={ready} onExited={() => setShowLoader(false)} />
