@@ -17,7 +17,7 @@ const MenuButton = styled.button`
   border: none;
   border-radius: 999px;
   color: ${ACCENT_TEXT};
-  font: 700 40px/1 inherit;
+  font: 700 46px/1 inherit;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}
@@ -34,7 +34,7 @@ const MenuButton = styled.button`
     bottom: auto;
     width: 52px;
     height: 52px;
-    font-size: 34px;
+    font-size: 40px;
   }
 `;
 
