@@ -126,6 +126,8 @@ export const IDENTICAL_ACROSS_LOCALES: ReadonlySet<string> = new Set<string>([
   'GPT-4',
   'OpenAI',
   'Claude 3.5',
+  'Claude 3.7',
+  'GPT-2',
   'Anthropic',
   'PaLM',
   'DeepSeek-V3',

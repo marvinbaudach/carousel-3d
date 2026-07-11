@@ -89,6 +89,8 @@ import {
   CONTINENT_FERTILITY,
   INTERNET_PANEL,
   AI_COMPUTE_PANEL,
+  METR_HORIZON_PANEL,
+  minutesFmt,
   MOORE_PANEL,
   PROCESS_NODE_PANEL,
   COMPUTE_COST_PANEL,
@@ -3692,6 +3694,15 @@ export const POOL: Dashboard[] = [
     [2020, 'GPT-3'],
     [2022, '💬 ChatGPT'],
   ]), 'Epoch AI · Trainingsrechenleistung führender KI-Modelle in FLOP, logarithmische Achse; 2025 geschätzt.'),
+  trendCard('metr-horizon', 'KI-Agenten · Aufgaben-Horizont', 'Aufgabenlänge bei 50 % Erfolg · Frontier-Modelle', METR_HORIZON_PANEL, violet, minutesFmt, 419, eraMarkers(2019, 2026, [
+    // Each doubling is a step up the log axis: seconds in 2019, an hour by 2025.
+    [2019, 'GPT-2'],
+    [2023, 'GPT-4'],
+    [2024, 'Claude 3.5'],
+    [2025, 'Claude 3.7'],
+  ]), 'METR „Measuring AI Ability to Complete Long Tasks" (2025) · Aufgabenlänge, die ein Modell noch mit 50 % Erfolg autonom schafft, logarithmische Achse. Verdopplung etwa alle 7 Monate über 2019–2025, rund alle 4 Monate über 2024–2025. Gestrichelt ab 2025: Extrapolation des jüngsten Trends, keine Messung.',
+  // Projection leg on the 2019–2026 axis: dashed + arrow from 2025 on.
+  (2025 - 2019) / (2026 - 2019)),
   trendCard('moore', 'Moores Gesetz · Transistoren pro Chip', 'Transistoren pro Chip · seit 1971', MOORE_PANEL, blue, (v) => `${localeNum(v / 1e9, 0)} ${tr('Mrd')}`, 521, eraMarkers(1971, 2024, [
     // Every gridline is a factor of a thousand — from 2.300 (Intel 4004) to
     // 208 Mrd. (Nvidia B200), the near-straight line is the doubling.

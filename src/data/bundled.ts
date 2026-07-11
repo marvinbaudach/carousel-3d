@@ -1965,6 +1965,37 @@ function nmFmt(real: number): string {
   return real >= 1000 ? `${localeNum(real / 1000, 0)} µm` : `${localeNum(real, 0)} nm`;
 }
 
+/** Task-horizon duration: seconds below a minute, hours above an hour. */
+export function minutesFmt(real: number): string {
+  if (real < 1) return `${localeNum(real * 60, 0)} ${tr('Sek')}`;
+  if (real < 60) return `${localeNum(real, 0)} ${tr('Min')}`;
+  return `${localeNum(real / 60, 0)} ${tr('Std')}`;
+}
+
+// METR "Measuring AI Ability to Complete Long Tasks" (2025): the length of task
+// a frontier model still completes with 50% success — its "task horizon" — from
+// GPT-2 (~3 s, 2019) to Claude 3.7 Sonnet (~1 h, 2025). Kept in log10(minutes),
+// so the geometric growth reads as the near-straight line it is: the horizon
+// doubled roughly every 7 months across the whole span, and about every 4
+// months over 2024–2025. The 2026 anchor is a dashed extrapolation of that
+// recent slope, not a METR measurement; `latest` is pinned to the real 2025
+// value so the headline reads ~1 h rather than the projection. Ticks 1 Sek /
+// 6 Sek / 1 Min / 10 Min / 2 Std / 17 Std.
+export const METR_HORIZON_PANEL: TrendSeries = {
+  ...logPanel(
+    [
+      [2019, 0.05], [2020, 0.15], [2022, 0.5], [2023, 5.5],
+      [2024, 25], [2025, 59], [2026, 139],
+    ],
+    -2,
+    3,
+    1,
+    minutesFmt,
+    ['2019', '2021', '2024', '2026'],
+  ),
+  latest: 59,
+};
+
 // Moore's law: transistors on a single commercial chip, from the Intel 4004
 // (2,300, 1971) to Nvidia's B200 (208 billion, 2024) — a representative rising
 // envelope of flagship parts, not an exhaustive series. ~8 orders of magnitude,
