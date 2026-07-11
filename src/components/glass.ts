@@ -27,6 +27,18 @@ export const RADIUS = {
   pill: '999px',
 } as const;
 
+// Spacing scale (4px base) — one rhythm for gaps and padding across the page.
+// Use these for layout whitespace instead of ad-hoc pixel values.
+export const SPACE = {
+  xs: '4px',
+  sm: '8px',
+  md: '12px',
+  lg: '16px',
+  xl: '24px',
+  xxl: '32px',
+  xxxl: '48px',
+} as const;
+
 // Shared glassmorphism surface for the GUI overlays (control bar, chips,
 // buttons, HUD): a frosted, background-blurring pane in the macOS-vibrancy
 // idiom. backdrop-filter blurs the 3D scene behind it so the aurora reads

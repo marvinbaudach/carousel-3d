@@ -7,7 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { downloadCard } from '../exportCard';
 import { drawCard, type CardEntry, type Category } from './galleryData';
-import { Button, INK, DIM, ACCENT_RGB, glassPanel } from './galleryChrome';
+import { Button, INK, DIM, ACCENT_RGB, SPACE, glassPanel } from './galleryChrome';
 
 const FULL_W = 768;
 const FULL_H = 960;
@@ -51,7 +51,7 @@ const Overlay = styled.div`
 const Stage = styled.div`
   margin: auto;
   display: flex;
-  gap: 24px;
+  gap: ${SPACE.xxl};
   align-items: flex-start;
   padding: 28px 64px;
   max-width: 100%;
@@ -98,7 +98,7 @@ const Stage = styled.div`
 
 const Info = styled.div`
   max-width: 340px;
-  padding: 20px 22px;
+  padding: ${SPACE.xl};
   ${glassPanel}
   font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
 

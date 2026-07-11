@@ -5,6 +5,7 @@
 import { useRef } from 'react';
 import styled from 'styled-components';
 import { GalleryThumb } from './GalleryThumb';
+import { SPACE } from './galleryChrome';
 import type { CardEntry, Category } from './galleryData';
 
 interface GalleryGridProps {
@@ -22,8 +23,8 @@ interface GalleryGridProps {
 const Grid = styled.div<{ $tw: number }>`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(${(p) => p.$tw}px, 1fr));
-  gap: 22px;
-  padding: 22px;
+  gap: ${SPACE.xl} ${SPACE.lg};
+  padding: ${SPACE.xxl};
   align-items: start;
 `;
 

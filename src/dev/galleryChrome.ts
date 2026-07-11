@@ -8,7 +8,7 @@ import styled, { css } from 'styled-components';
 import { glassSurface, ACCENT, ACCENT_RGB, INK, DIM, RADIUS } from '../components/glass';
 
 // Re-export the shared glass tokens so gallery modules keep one import site.
-export { ACCENT, ACCENT_RGB, ACCENT_TEXT, INK, DIM, RADIUS } from '../components/glass';
+export { ACCENT, ACCENT_RGB, ACCENT_TEXT, INK, DIM, RADIUS, SPACE } from '../components/glass';
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
 

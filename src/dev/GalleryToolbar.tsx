@@ -6,7 +6,7 @@
 import styled from 'styled-components';
 import { LOCALES, type Locale } from '../i18n';
 import type { SortKey } from './galleryData';
-import { TextInput, Button, Label, DIM, glassPanel } from './galleryChrome';
+import { TextInput, Button, Label, DIM, SPACE, glassPanel } from './galleryChrome';
 import { GlassSelect, type GlassSelectOption } from './GlassSelect';
 
 export interface CategoryOption {
@@ -54,9 +54,9 @@ const Bar = styled.div`
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 14px;
+  gap: ${SPACE.md} ${SPACE.lg};
   align-items: center;
-  padding: 12px 16px;
+  padding: ${SPACE.md} ${SPACE.xl};
   ${glassPanel}
   border-radius: 0;
   border-width: 0 0 1px 0;

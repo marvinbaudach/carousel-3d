@@ -9,7 +9,7 @@ import { glassSurface, ACCENT, ACCENT_RGB, ACCENT_TEXT, RADIUS } from './glass';
 const Button = styled.button`
   position: fixed;
   left: 16px;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
   z-index: 13;
   padding: 7px 12px;
   border-radius: ${RADIUS.control};
