@@ -47,6 +47,7 @@ import { WORLD } from '../data/world';
 import { EU_FREEDOM_CARDS } from './euFreedom';
 import { COVID_CRITICAL_CARDS } from './covidCritical';
 import { TECH_FUTURE_CARDS } from './techFuture';
+import { CPU_RACE_CARDS } from './cpuRace';
 import { live } from '../data/store';
 import { EXCESS_100K_BY_ISO, VAX_RATE_BY_ISO } from '../data/covidWorld';
 import { FALLBACK_TEMPS, FALLBACK_TEMP_ROWS } from '../data/climate';
@@ -216,6 +217,7 @@ export const POOL: Dashboard[] = [
   ...COVID_CRITICAL_CARDS,
   ...EU_FREEDOM_CARDS,
   ...TECH_FUTURE_CARDS,
+  ...CPU_RACE_CARDS,
   {
     id: 'de-budget-split',
     title: 'Bundeshaushalt: genannte Posten vs. Investition',
@@ -3025,20 +3027,19 @@ export const POOL: Dashboard[] = [
     source: 'Betreiber- und Regulierungsbehörden-Angaben, gerundete Schätzwerte; Fläche laut Weltbank.',
     draw: (f) =>
       hBarChart(f, {
-        // Installed 5G base stations per country (operator/regulator figures,
-        // rounded estimates). China counts base stations in the millions and
-        // dwarfs everyone — well over half the world's total. The per-area
-        // annotation flips the story: South Korea packs ~9× China's density,
-        // the vast USA barely registers.
+        // 5G base stations per area, not the raw count (operator/regulator
+        // figures, rounded estimates; land area per World Bank). Density is the
+        // story: South Korea packs ~9× China's, and the vast USA — huge in
+        // absolute terms — barely registers per 100 km².
         label: '5G-Basisstationen · Schätzwerte',
-        value: 5.1e6,
-        fmt: (v) => `${localeNum(v / 1e6, 1)} ${tr('Mio')}`,
-        rowFmt: (v) => (v >= 1e6 ? `${localeNum(v / 1e6, 2)} ${tr('Mio')}` : `${Math.round(v / 1000)}k`),
+        value: 349,
+        fmt: (v) => `${localeNum(v, 0)} ${tr('je 100 km²')}`,
+        rowFmt: (v) => `${localeNum(v, 0)} ${tr('je 100 km²')}`,
         delta: null,
         color: violet,
         unit: '',
-        // km2 = land area (World Bank, rounded); the density is derived so
-        // the absolute and the per-area reading can never drift apart.
+        // km2 = land area (World Bank, rounded); density is derived per row,
+        // then sorted so the bars rank by per-area coverage.
         rows: [
           { name: 'China 🇨🇳', v: 3_770_000, km2: 9_596_960 },
           { name: 'Indien 🇮🇳', v: 450_000, km2: 3_287_263 },
@@ -3048,11 +3049,9 @@ export const POOL: Dashboard[] = [
           { name: 'Deutschland 🇩🇪', v: 90_000, km2: 357_596 },
           { name: 'Großbritannien 🇬🇧', v: 45_000, km2: 243_610 },
           { name: 'Schweiz 🇨🇭', v: 15_000, km2: 41_291 },
-        ].map(({ name, v, km2 }) => ({
-          name,
-          v,
-          sub: `${localeNum((v / km2) * 100, 0)} ${tr('je 100 km²')}`,
-        })),
+        ]
+          .map(({ name, v, km2 }) => ({ name, v: (v / km2) * 100 }))
+          .sort((a, b) => b.v - a.v),
       }),
   },
   {

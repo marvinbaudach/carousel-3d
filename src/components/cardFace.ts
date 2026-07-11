@@ -22,6 +22,7 @@ const FRAG = /* glsl */ `
   uniform float uGray;       // desaturation of the chart (back panels)
   uniform float uZoom;       // chart zoom (back panels pull back slightly)
   uniform float uFlip;       // 1 on the back face: mirror U so the chart reads right
+  uniform float uOpaque;     // 1 when the panel is settled and renders opaque
   varying vec2 vUv;
 
   // Rounded-rect coverage in world units, so corners stay circular on the 4:5
@@ -44,6 +45,11 @@ const FRAG = /* glsl */ `
     float g = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
     vec3 col = mix(tex.rgb, vec3(g), uGray);
 
+    // Settled panels render opaque so they write depth and the ring's front
+    // cards early-Z the ones behind them: the rounded corner is alpha-tested to
+    // a hard edge (SMAA re-softens the silhouette) and the color is written
+    // solid. Fading panels (entrance/exit/hero) keep the soft alpha blend.
+    if (uOpaque > 0.5 && mask < 0.5) discard;
     gl_FragColor = vec4(col, uCardAlpha * mask * tex.a);
   }
 `;
@@ -55,12 +61,17 @@ export interface CardFaceUniforms {
   uCardAlpha: { value: number };
   uGray: { value: number };
   uZoom: { value: number };
+  uOpaque: { value: number };
 }
 
 export interface CardFaceMaterials {
   front: ShaderMaterial;
   back: ShaderMaterial;
   uniforms: CardFaceUniforms;
+  /** Switch both faces between opaque (settled: depth-writing, hard corners)
+      and transparent (fading: soft-blended). Toggled from the frame loop when
+      the panel reaches / leaves its settled state. */
+  setOpaque: (opaque: boolean) => void;
   dispose: () => void;
 }
 
@@ -75,6 +86,8 @@ export function createCardFaceMaterials(
     uCardAlpha: { value: 0 },
     uGray: { value: 0 },
     uZoom: { value: 1 },
+    // Panels spawn mid-entrance (fading in), so they start transparent.
+    uOpaque: { value: 0 },
   };
   const statics = {
     uMap: { value: texture },
@@ -98,6 +111,16 @@ export function createCardFaceMaterials(
     front,
     back,
     uniforms: shared,
+    // Opaque = drop out of the transparent pass (transparent:false) so the
+    // renderer depth-sorts front-to-back and the GPU early-Zs occluded panels;
+    // uOpaque flips the shader to a hard-cornered, depth-writing draw. three
+    // re-buckets the render lists from `transparent` each frame, so no
+    // needsUpdate is required.
+    setOpaque: (opaque: boolean) => {
+      shared.uOpaque.value = opaque ? 1 : 0;
+      front.transparent = !opaque;
+      back.transparent = !opaque;
+    },
     dispose: () => {
       front.dispose();
       back.dispose();

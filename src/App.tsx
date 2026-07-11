@@ -16,6 +16,13 @@ import { LOCALE, onLocaleChange, ensureLocaleReady } from './i18n';
 // eliminated in production, so neither this chunk nor its imports ever ship.
 const DevGallery = import.meta.env.DEV ? lazy(() => import('./dev/DevGallery')) : null;
 
+// The gallery view is reflected in the URL (`?gallery`) so a dev who refreshes
+// while reviewing cards lands back in the gallery instead of the ring — and the
+// view is linkable. Dev-only, like the gallery itself.
+const GALLERY_PARAM = 'gallery';
+const galleryInUrl = (): boolean =>
+  import.meta.env.DEV && new URLSearchParams(window.location.search).has(GALLERY_PARAM);
+
 // "Loading" is a staged boot sequence: it gives the pulse loader one full
 // beat before the iris hands the screen center over to the blooming ring,
 // while the live-data fetches race ahead in the background.
@@ -37,7 +44,10 @@ const Stage = styled.main`
 
 export default function App() {
   const [done, setDone] = useState(false);
-  const [showLoader, setShowLoader] = useState(true);
+  // The loader's exit is a burst choreographed to hand off to the ring's bloom
+  // (see LoadingScreen). A refresh straight into the dev gallery has no ring to
+  // detonate onto, so skip the loader there — the gallery just fades in.
+  const [showLoader, setShowLoader] = useState(() => !galleryInUrl());
   // Phones skip the WebGL ring entirely for a light 2D-canvas card deck.
   const isMobile = useIsMobile();
   // Language hotkey: a locale switch re-renders the DOM overlays through
@@ -49,7 +59,17 @@ export default function App() {
   // Dev-only, desktop-only: toggle the in-app card gallery. Both views stay
   // mounted; this only flips which one is visible (a crossfade) and freezes the
   // other's render loop, so switching is smooth and loses no state either way.
-  const [showGallery, setShowGallery] = useState(false);
+  const [showGallery, setShowGallery] = useState(galleryInUrl);
+
+  // Keep the URL in sync so the view survives a refresh and is linkable.
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const url = new URL(window.location.href);
+    if (showGallery) url.searchParams.set(GALLERY_PARAM, '1');
+    else url.searchParams.delete(GALLERY_PARAM);
+    window.history.replaceState(null, '', url);
+  }, [showGallery]);
+
   useEffect(() => {
     if (!import.meta.env.DEV || isMobile) return;
     const onKey = (e: KeyboardEvent): void => {
@@ -113,7 +133,10 @@ export default function App() {
       {!isMobile && !showGallery && <PerfHud />}
       {!isMobile && !showGallery && <DevGalleryLink onOpen={() => setShowGallery(true)} />}
 
-      {!isMobile && DevGallery && ready && galleryMounted && (
+      {/* The gallery only needs its own chunk + a ready dictionary — not the
+          ring's boot beat — so a refresh into it (loader skipped) shows the
+          gallery at once instead of blanking through BOOT_MS. */}
+      {!isMobile && DevGallery && dictReady && galleryMounted && (
         <Suspense fallback={null}>
           <DevGallery active={showGallery} onClose={() => setShowGallery(false)} />
         </Suspense>

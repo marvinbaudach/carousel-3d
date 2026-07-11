@@ -21,7 +21,6 @@ import {
   CATEGORIES,
   type CardEntry,
   type Category,
-  type SortKey,
 } from './galleryData';
 import { ACCENT } from './galleryChrome';
 import { GalleryBackdrop } from './GalleryBackdrop';
@@ -70,7 +69,6 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
   const [query, setQuery] = useState('');
   const deferredQuery = useDeferredValue(query);
   const [category, setCategory] = useState('');
-  const [sort, setSort] = useState<SortKey>('newest');
   const [size, setSize] = useState(300);
 
   const [locale, setLoc] = useState<Locale>(LOCALE);
@@ -94,8 +92,8 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
   const redrawToken = `${locale}:${redrawTick}`;
 
   const list = useMemo(
-    () => filterSort(entries, { query: deferredQuery, category, sort }),
-    [entries, deferredQuery, category, sort],
+    () => filterSort(entries, { query: deferredQuery, category, sort: 'newest' }),
+    [entries, deferredQuery, category],
   );
 
   const categories = useMemo<CategoryOption[]>(() => {
@@ -155,8 +153,6 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
           category={category}
           onCategory={setCategory}
           categories={categories}
-          sort={sort}
-          onSort={setSort}
           size={size}
           onSize={setSize}
           locale={locale}

@@ -4,7 +4,7 @@
 // the canvas repaints only when its size or the redraw token (locale switch,
 // live-data landing) changes.
 
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { drawCard, type CardEntry, type Category } from './galleryData';
 import { ACCENT, ACCENT_RGB, INK, DIM } from './galleryChrome';
@@ -22,10 +22,14 @@ interface GalleryThumbProps {
   onContextMenu: (entry: CardEntry, x: number, y: number) => void;
 }
 
-const Figure = styled.figure`
+const Figure = styled.figure<{ $w: number; $h: number }>`
   margin: 0;
   cursor: pointer;
   outline: none;
+  /* Skip layout/paint for tiles scrolled out of view; the intrinsic size (tile
+     width + caption) keeps the scrollbar stable until each row first renders. */
+  content-visibility: auto;
+  contain-intrinsic-size: auto ${(p) => p.$w}px auto ${(p) => p.$h + 54}px;
 
   canvas {
     display: block;
@@ -98,14 +102,43 @@ function GalleryThumbImpl({
   onContextMenu,
 }: GalleryThumbProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const figureRef = useRef<HTMLElement>(null);
+  const [onScreen, setOnScreen] = useState(false);
 
+  // Draw lazily: a tile rasterises its canvas only once it nears the viewport,
+  // so opening the grid paints the visible rows instead of the whole pool at
+  // once. rootMargin gives a screen of lead time so tiles are ready before they
+  // scroll in.
   useEffect(() => {
+    const el = figureRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), {
+      rootMargin: '400px 0px',
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // Paint while on-screen. The drawn signature is remembered so scrolling a tile
+  // out and back doesn't repaint (and flash) an unchanged canvas; a locale
+  // switch or resize changes the signature, so on-screen tiles repaint while
+  // off-screen ones stay stale until they return.
+  const drawnKey = useRef('');
+  useEffect(() => {
+    if (!onScreen) return;
     const canvas = canvasRef.current;
-    if (canvas) drawCard(canvas, entry.card, width, height);
-  }, [entry.card, width, height, redrawToken]);
+    if (!canvas) return;
+    const key = `${entry.card.id}|${width}|${height}|${redrawToken}`;
+    if (drawnKey.current === key) return;
+    drawCard(canvas, entry.card, width, height);
+    drawnKey.current = key;
+  }, [onScreen, entry.card, width, height, redrawToken]);
 
   return (
     <Figure
+      ref={figureRef}
+      $w={width}
+      $h={height}
       tabIndex={0}
       role="button"
       aria-label={`${entry.card.id} öffnen`}

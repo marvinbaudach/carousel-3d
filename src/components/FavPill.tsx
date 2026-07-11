@@ -26,7 +26,7 @@ const Pill = styled.button<{ $active: boolean }>`
   border: none;
   border-radius: 999px;
   color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.7)')};
-  font: 600 26px/1 inherit;
+  font: 600 32px/1 inherit;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}
@@ -44,7 +44,7 @@ const Pill = styled.button<{ $active: boolean }>`
     bottom: auto;
     width: 52px;
     height: 52px;
-    font-size: 23px;
+    font-size: 28px;
   }
 `;
 

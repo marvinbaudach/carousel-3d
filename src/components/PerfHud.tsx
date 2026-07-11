@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import styled from 'styled-components';
-import { glassSurface } from './glass';
+import { glassSurface, controlGlow } from './glass';
+import { useDismissOnOutsideTap } from '../hooks/useDismissOnOutsideTap';
 
 /**
  * Renderer stats sampled inside the Canvas and read by the DOM HUD outside
@@ -70,10 +71,12 @@ const Panel = styled.button`
   text-align: left;
   user-select: none;
   cursor: pointer;
-
-  &:hover {
-    border-color: rgba(255, 255, 255, 0.18);
-  }
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+  /* Same accent glow as the gallery launcher and the settings toggle. */
+  ${controlGlow}
 `;
 
 const FpsRow = styled.div`
@@ -134,6 +137,20 @@ export function PerfHud() {
   const [open, setOpen] = useState(false);
   const [snap, setSnap] = useState<Snapshot | null>(null);
 
+  // Like the settings panel and the theme menu: a tap anywhere outside the HUD
+  // collapses it, so the expanded stats never linger over the scene.
+  useDismissOnOutsideTap(open, 'data-perf-hud', () => setOpen(false));
+
+  // ...and Escape closes it too, the same as the settings panel and theme menu.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open]);
+
   useEffect(() => {
     let frames = 0;
     let last = performance.now();
@@ -174,6 +191,7 @@ export function PerfHud() {
 
   return (
     <Panel
+      data-perf-hud
       onClick={() => setOpen((o) => !o)}
       aria-expanded={open}
       title="Renderer performance"

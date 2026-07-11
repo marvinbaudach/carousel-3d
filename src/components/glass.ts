@@ -63,3 +63,23 @@ export const glassSurface = css`
     inset 0 1px 0 rgba(255, 255, 255, 0.22),
     inset 0 -30px 50px -36px rgba(0, 0, 0, 0.45);
 `;
+
+// Shared hover/focus reaction for the floating glass controls — the gallery
+// launcher, the FPS HUD and the settings toggle. The accent border blooms and
+// an accent glow lifts the control a hair off the scene, identical everywhere
+// so all the corner chrome behaves as one. Pair it with `glassSurface` (which
+// sets the resting border + shadow) and make sure the element's own
+// `transition` lists `transform`, `border-color` and `box-shadow` so the glow
+// eases in. Extra per-control transitions (opacity, color) compose alongside.
+export const controlGlow = css`
+  &:hover,
+  &:focus-visible {
+    outline: none;
+    transform: translateY(-1px);
+    border-color: ${ACCENT};
+    box-shadow:
+      0 14px 44px -14px rgba(0, 0, 0, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      0 0 22px -2px rgba(${ACCENT_RGB}, 0.5);
+  }
+`;

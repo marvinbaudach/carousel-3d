@@ -104,6 +104,9 @@ export function CarouselItem({
   // True on the frame the panel stops being hidden, so it can snap back to full
   // opacity instead of fading in and leaving a transparent gap after the hero.
   const wasHidden = useRef(false);
+  // Whether the faces currently render opaque, so the frame loop flips render
+  // state only on the settle / un-settle transition, not every frame.
+  const opaqueMode = useRef(false);
 
   // The dashboard is rendered once in its settled state (opaque) and only
   // refreshed when live data lands — hovering no longer replays the intro.
@@ -188,6 +191,14 @@ export function CarouselItem({
       const vis = cardAlpha > 0.02;
       img.visible = vis;
       if (back) back.visible = vis;
+      // Fully-present panels render opaque (depth-writing, so the ring's front
+      // cards early-Z the ones behind them); any fade drops back to a blended
+      // draw. Flip only on the transition.
+      const wantOpaque = cardAlpha >= 1;
+      if (wantOpaque !== opaqueMode.current) {
+        faces.setOpaque(wantOpaque);
+        opaqueMode.current = wantOpaque;
+      }
     };
 
     // While the hero copy is on screen the panel is invisible, but it keeps

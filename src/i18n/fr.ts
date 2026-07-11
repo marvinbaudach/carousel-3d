@@ -1640,4 +1640,19 @@ export const FR: Record<MessageKey, string> & Record<string, string> = {
   'DroneII „Drone Market Report“': 'DroneII « Drone Market Report »',
   'globaler ziviler Drohnenmarkt (Hardware, Software, Services; ohne Militär), Basisjahr-Schätzung der jeweiligen Report-Ausgabe: $14,1 Mrd (2018) → $40,6 Mrd (2025). Gestrichelt ab 2025: DroneII-Prognose $83 Mrd bis 2035 (7,2 % p. a.). DJI hält ~70 % des Markts.':
     'marché mondial civil des drones (matériel, logiciels, services ; hors militaire), estimation de l\'année de base de chaque édition du rapport : 14,1 Mds $ (2018) → 40,6 Mds $ (2025). En pointillés à partir de 2025 : prévision DroneII de 83 Mds $ d\'ici 2035 (7,2 % par an). DJI détient ~70 % du marché.',
+
+  // CPU-Rennen (cpuRace.ts)
+  'Schnellste CPU-Kerne 2026': 'Cœurs CPU les plus rapides 2026',
+  'Schnellste Kerne': 'Cœurs les plus rapides',
+  'Meiste CPU-Rechenkraft 2026': 'Puissance CPU maximale 2026',
+  'Meiste Rechenkraft': 'Puissance de calcul maximale',
+  'Das CPU-Comeback-Rennen': 'La course du comeback des CPU',
+  'Das Comeback-Rennen': 'La course du comeback',
+  'Single-Core seit 2016': 'Single-core depuis 2016',
+  'Geekbench 6 · Single-Core-Score der aktuellen Flaggschiff-Chips (Apple M4, Ryzen 9 9950X, Core Ultra 9 285K), M1 als Referenz von 2020. Single-Core misst die Leistung eines einzelnen Kerns (IPC × Takt) — der sauberste Vergleich der Kern-Architektur über Plattformen hinweg; hier führt Apples ARM klar. Der Zusatz je Balken nennt die Fertigungsstruktur des Compute-Chips: Apple, AMD und selbst Intels Neuestes fertigen bei TSMC. Werte gerundet.':
+    'Geekbench 6 · score single-core des puces phares actuelles (Apple M4, Ryzen 9 9950X, Core Ultra 9 285K), M1 comme référence de 2020. Le single-core mesure la performance d\'un seul cœur (IPC × fréquence) — la comparaison la plus propre de l\'architecture des cœurs entre plateformes ; l\'ARM d\'Apple mène nettement ici. La mention sur chaque barre indique la finesse de gravure de la puce de calcul : Apple, AMD et même le plus récent d\'Intel sont fabriqués chez TSMC. Valeurs arrondies.',
+  'Cinebench 2024 · Multi-Core-Score (alle Kerne unter Rendering-Last) der Flaggschiff-Chips. Multi-Core misst den Gesamtdurchsatz — hier führen die Vielkerner von AMD und Intel, Apples Bestes (M4 Max) liegt zurück. Das kehrt das Single-Core-Bild um: es gibt keinen Gesamtsieger, die Frage lautet Kern-Tempo oder Kern-Zahl. Der Zusatz je Balken nennt die Fertigungsstruktur. Werte gerundet.':
+    'Cinebench 2024 · score multi-core (tous les cœurs sous charge de rendu) des puces phares. Le multi-core mesure le débit total — les puces à nombreux cœurs d\'AMD et Intel mènent ici, le meilleur d\'Apple (M4 Max) est en retrait. Cela inverse l\'image du single-core : il n\'y a pas de vainqueur absolu, la question est vitesse des cœurs ou nombre de cœurs. La mention sur chaque barre indique la finesse de gravure. Valeurs arrondies.',
+  'Bestes Single-Core-Ergebnis je Hersteller und Jahr, auf die Geekbench-6-Skala normiert (indikativ — Geekbench 6 gibt es erst seit 2023, ältere Chips zurückgerechnet). Intel führt und stagniert lange auf 14 nm; AMDs Zen-Architektur (ab 2017) überholt 2020 mit Zen 3; Apple steigt 2020 mit dem M1 (ARM) ein und zieht bis 2024 an allen vorbei. Apple-Linie erst ab 2020, nicht rückwärts aufgefüllt.':
+    'Meilleur résultat single-core par fabricant et par an, normalisé sur l\'échelle Geekbench 6 (indicatif — Geekbench 6 ne date que de 2023, les puces plus anciennes sont recalculées). Intel mène et stagne longtemps en 14 nm ; l\'architecture Zen d\'AMD (à partir de 2017) le dépasse en 2020 avec Zen 3 ; Apple entre en 2020 avec le M1 (ARM) et passe devant tout le monde d\'ici 2024. Ligne Apple seulement à partir de 2020, non complétée en arrière.',
 };

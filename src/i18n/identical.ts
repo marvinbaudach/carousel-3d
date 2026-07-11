@@ -17,6 +17,20 @@ export const IDENTICAL_ACROSS_LOCALES: ReadonlySet<string> = new Set<string>([
   'Janssen',
   'Comirnaty',
   'Digital Services Act',
+  // CPU-Rennen (cpuRace.ts): chip/brand names, benchmark labels and the Zen
+  // architecture read identically across de/en/fr/it. The "· TSMC … nm" node
+  // annotations ride the bar rows' `sub`, which bypasses t() entirely.
+  'Apple M4',
+  'Apple M4 Max',
+  'Apple M1',
+  'Apple (ARM)',
+  'AMD',
+  'AMD Ryzen 9 9950X',
+  'Intel',
+  'Intel Core Ultra 9 285K',
+  'Zen',
+  'Geekbench 6 Single-Core',
+  'Cinebench 2024 Multi-Core',
   'Stuttgart 21',
   'Elbphilharmonie',
   'BND-Zentrale',

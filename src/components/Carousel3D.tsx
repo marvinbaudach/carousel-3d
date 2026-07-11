@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { EffectComposer, SMAA, Vignette } from '@react-three/postprocessing';
-import { Environment, PerformanceMonitor } from '@react-three/drei';
+import { PerformanceMonitor } from '@react-three/drei';
 import { Vector3 } from 'three';
 import { CAMERA_GAP, CameraRig } from './CameraRig';
 import type { RingMotion } from './cameraMotion';
 import { PerfProbe } from './PerfHud';
 import { Afterglow } from './Afterglow';
 import { Aurora } from './Aurora';
+import { ClockContinuity } from './ClockContinuity';
 import { Dust } from './Dust';
 import { GrainOverlay } from './GrainOverlay';
 import { HeroCard, type HeroStart } from './HeroCard';
@@ -122,12 +123,15 @@ export function Carousel3D({ paused = false }: Carousel3DProps = {}) {
   const [spinning, setSpinning] = useState(true);
 
   // Adaptive quality: integrated GPUs are fill-rate bound, so the render
-  // resolution is the main lever. PerformanceMonitor samples the frame rate
-  // and walks dpr between the bounds. The cap follows the display's own pixel
-  // ratio (up to 2) so a hi-dpi screen renders at native sharpness — the large
-  // static hero upscales the most when the buffer sits below native — but never
-  // below 1.75, so standard displays keep their supersampling.
-  const maxDpr = isMobile ? 1.5 : Math.min(2, Math.max(1.75, window.devicePixelRatio || 1));
+  // resolution is the main lever. PerformanceMonitor samples the frame rate and
+  // walks dpr between minDpr and maxDpr. The ceiling is capped at 1.5 device px
+  // per CSS px (desktop used to climb to native 2x): every fill-bound pass —
+  // Aurora's fullscreen shader, SMAA, the vignette and the ring's transparent
+  // overdraw — scales with pixel count, so on a hi-dpi screen 2.0 -> 1.5 is
+  // ~44% fewer pixels per frame. 1.5 still supersamples the canvas-drawn chart
+  // text on standard displays; the adaptive floor sits at the ~1.4 legibility
+  // edge below.
+  const maxDpr = 1.5;
   // Lower bound the monitor may throttle to. On desktop the canvas-drawn chart
   // text turns visibly soft below ~1.4 device px per css px, so the floor sits
   // there: a brief frame-rate dip (e.g. the frost panes on a busy view) dims
@@ -235,21 +239,25 @@ export function Carousel3D({ paused = false }: Carousel3DProps = {}) {
       // scene stays mounted so returning is instant and lossless.
       frameloop={paused ? 'never' : 'always'}
       // While a hero is open the heavy effect passes are dropped, so pin the
-      // dpr up to a crisp fixed level instead of leaving it at whatever
+      // dpr up to the resolution ceiling instead of leaving it at whatever
       // PerformanceMonitor throttled the busy ring view down to (which upscales
-      // soft on hi-dpi screens). Capped at 1.75 rather than full native, so the
-      // hero is sharp without the fill-rate of a 2x buffer tanking the frame
-      // rate on hi-dpi displays. Like `dressed`, the pin is released the instant
-      // a close *begins*, not when it ends: the scrim is still dark and the card
-      // in flight then, masking the resolution step and its resize hitch — at
-      // landing the scene is calm and a dpr snap would read as a visible jolt.
-      dpr={heroOpen && !closing ? Math.min(maxDpr, 1.75) : dpr}
+      // soft on hi-dpi screens). Pinning to maxDpr keeps the hero as sharp as
+      // the scene ever renders without a native 2x buffer tanking the frame
+      // rate. Like `dressed`, the pin is released the instant a close *begins*,
+      // not when it ends: the scrim is still dark and the card in flight then,
+      // masking the resolution step and its resize hitch — at landing the scene
+      // is calm and a dpr snap would read as a visible jolt.
+      dpr={heroOpen && !closing ? maxDpr : dpr}
       camera={{ position: [0, 0, DEFAULT_RADIUS + CAMERA_GAP], fov: 40 }}
       // Canvas MSAA is wasted work: EffectComposer renders offscreen anyway,
       // and the bloom/noise/vignette stack hides the aliasing it would fix.
       gl={{ antialias: false }}
       onPointerMissed={requestClose}
     >
+      {/* First child, so it fixes the clock before any other useFrame reads it:
+          keeps elapsedTime monotonic across the gallery's frameloop pause. */}
+      <ClockContinuity />
+
       <color attach="background" args={['#080b14']} />
       <fog attach="fog" args={['#080b14', fogNear, fogFar]} />
 
@@ -261,7 +269,6 @@ export function Carousel3D({ paused = false }: Carousel3DProps = {}) {
 
       <PerfProbe />
       <ambientLight intensity={0.6} />
-      <Environment preset="night" />
 
       <CameraRig
         radius={radius}

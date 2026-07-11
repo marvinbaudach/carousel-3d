@@ -1,11 +1,10 @@
-// Dev-only review gallery — the frosted toolbar: search, category, sort, size
-// and locale, plus the count and the way back to the app. One glass bar over
-// the aurora; every control shares the app's accent focus and the same glass
+// Dev-only review gallery — the frosted toolbar: search, category, size and
+// locale, plus the count and the way back to the app. One glass bar over the
+// aurora; every control shares the app's accent focus and the same glass
 // dropdown, so the whole toolbar reads as one component system.
 
 import styled from 'styled-components';
 import { LOCALES, type Locale } from '../i18n';
-import type { SortKey } from './galleryData';
 import { TextInput, Button, Label, DIM, SPACE, glassPanel } from './galleryChrome';
 import { GlassSelect, type GlassSelectOption } from './GlassSelect';
 
@@ -21,8 +20,6 @@ interface GalleryToolbarProps {
   category: string;
   onCategory: (v: string) => void;
   categories: CategoryOption[];
-  sort: SortKey;
-  onSort: (v: SortKey) => void;
   size: number;
   onSize: (v: number) => void;
   locale: Locale;
@@ -30,12 +27,6 @@ interface GalleryToolbarProps {
   count: number;
   onClose: () => void;
 }
-
-const SORTS: GlassSelectOption[] = [
-  { value: 'newest', label: 'neueste' },
-  { value: 'category', label: 'Kategorie' },
-  { value: 'id', label: 'A–Z (id)' },
-];
 
 const SIZES: GlassSelectOption[] = [
   { value: '220', label: 'S' },
@@ -54,9 +45,9 @@ const Bar = styled.div`
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: ${SPACE.md} ${SPACE.lg};
+  gap: ${SPACE.md} ${SPACE.xl};
   align-items: center;
-  padding: ${SPACE.md} ${SPACE.xl};
+  padding: ${SPACE.lg} ${SPACE.xxl};
   ${glassPanel}
   border-radius: 0;
   border-width: 0 0 1px 0;
@@ -74,8 +65,6 @@ export function GalleryToolbar({
   category,
   onCategory,
   categories,
-  sort,
-  onSort,
   size,
   onSize,
   locale,
@@ -108,16 +97,6 @@ export function GalleryToolbar({
           onChange={onCategory}
           ariaLabel="Kategorie filtern"
           minWidth={150}
-        />
-      </Label>
-      <Label>
-        Sortierung
-        <GlassSelect
-          value={sort}
-          options={SORTS}
-          onChange={(v) => onSort(v as SortKey)}
-          ariaLabel="Sortierung"
-          minWidth={130}
         />
       </Label>
       <Label>

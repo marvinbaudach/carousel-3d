@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { LOCALE, setLocale, t as tr, type Locale } from '../i18n';
 import styled from 'styled-components';
 import { LAYOUT_MODES, type LayoutMode } from '../layouts';
-import { ACCENT_TEXT, glassSurface } from './glass';
+import { ACCENT_TEXT, glassSurface, controlGlow } from './glass';
 
 interface HotkeyPanelProps {
   layout: LayoutMode;
@@ -170,14 +170,12 @@ const Toggle = styled.button<{ $open: boolean }>`
   letter-spacing: 0.04em;
   cursor: pointer;
   transition:
-    background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-
-  &:hover {
-    background: rgba(20, 28, 46, 0.7);
-    border-color: rgba(255, 255, 255, 0.35);
-  }
+    color 0.18s ease,
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    transform 0.14s ease;
+  /* Same accent glow as the gallery launcher and the FPS HUD. */
+  ${controlGlow}
 `;
 
 // Static shortcuts the app already listens for elsewhere (Carousel3D). Listed
@@ -234,6 +232,12 @@ export function HotkeyPanel({ layout, onChange, hidden }: HotkeyPanelProps) {
       // formation invisibly — swallow them until the hero closes.
       if (hidden) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
+      // Escape closes the panel, matching the FPS HUD and the theme menu (and
+      // the "Esc → Panel schließen" hint this panel already advertises).
+      if (e.key === 'Escape') {
+        setOpen(false);
+        return;
+      }
       // "?" (or "/") folds the panel open/closed so it is discoverable
       // without ever reaching for the mouse.
       if (e.key === '?' || e.key === '/') {
