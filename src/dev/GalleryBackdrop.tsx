@@ -24,10 +24,18 @@ export function GalleryBackdrop({ accent, active }: GalleryBackdropProps) {
       // camera/gl settings don't matter — antialias off since a full-screen
       // gradient has no edges to smooth.
       frameloop={active ? 'always' : 'never'}
+      // `flat` disables ACES tone mapping. The app renders Aurora through an
+      // EffectComposer whose output pass leaves the nebula un-tone-mapped, so a
+      // bare Canvas applying ACES here would crush and desaturate the exact same
+      // shader into flat navy — `flat` keeps the gallery's backdrop as luminous
+      // as the ring's.
+      flat
       gl={{ antialias: false }}
       style={{ position: 'absolute', inset: 0 }}
     >
-      <Aurora accent={accent} />
+      {/* encode: no EffectComposer here to sRGB-encode the linear shader, so
+          Aurora applies the transfer itself and stays as bright as the ring. */}
+      <Aurora accent={accent} encode />
     </Canvas>
   );
 }

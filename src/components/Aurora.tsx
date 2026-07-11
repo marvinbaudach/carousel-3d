@@ -46,10 +46,13 @@ const FRAG = /* glsl */ `
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
   }
 
+  // 3 octaves: the 4th (amp 0.125 at 8x frequency) is high-frequency detail
+  // that reads as invisible behind the dark cards — dropping it shaves ~25% of
+  // this fullscreen shader's dominant noise cost for no perceptible change.
   float fbm(vec2 p) {
     float v = 0.0;
     float amp = 0.5;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
       v += amp * noise(p);
       p *= 2.0;
       amp *= 0.5;
@@ -115,6 +118,19 @@ const FRAG = /* glsl */ `
     float s = starLayer(uv, 55.0, 2.2) + starLayer(uv, 90.0, 1.4) * 0.7;
     col += vec3(0.75, 0.82, 1.0) * s * 1.05;
 
+    // The nebula is authored in linear space. In the ring the EffectComposer's
+    // output pass encodes linear -> sRGB on the way to the screen; the gallery
+    // renders this quad straight to the framebuffer, so with ENCODE_OUTPUT it
+    // applies the same sRGB transfer itself — otherwise the un-encoded linear
+    // values read ~3x too dark and lose their blue.
+    #ifdef ENCODE_OUTPUT
+      col = mix(
+        1.055 * pow(col, vec3(1.0 / 2.4)) - 0.055,
+        col * 12.92,
+        step(col, vec3(0.0031308))
+      );
+    #endif
+
     gl_FragColor = vec4(col, 1.0);
   }
 `;
@@ -125,7 +141,15 @@ interface AuroraProps {
   /** True while a hero owns the screen: the nebula recedes to a dim floor and
       swells back with an eased bloom once released. */
   calm?: boolean;
+  /** Apply the linear->sRGB output transfer in-shader. Set when rendered to a
+      bare Canvas (the gallery) with no EffectComposer output pass to do it. */
+  encode?: boolean;
 }
+
+// Empty object is a stable identity across renders, so the material isn't
+// needlessly recompiled when `encode` is false.
+const NO_DEFINES = {};
+const ENCODE_DEFINES = { ENCODE_OUTPUT: '' };
 
 // The accents are bright chart colors; scaled down to nebula luminance so the
 // tinted layers sit in the same band as the base blue (max ~0.40).
@@ -145,7 +169,7 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-export function Aurora({ accent, calm = false }: AuroraProps) {
+export function Aurora({ accent, calm = false, encode = false }: AuroraProps) {
   const mat = useRef<ShaderMaterial>(null);
   // Lit progress (1 = full nebula, 0 = calm floor), advanced linearly per
   // frame and shaped by the ease below — no React state per frame.
@@ -188,6 +212,7 @@ export function Aurora({ accent, calm = false }: AuroraProps) {
       <shaderMaterial
         ref={mat}
         uniforms={uniforms}
+        defines={encode ? ENCODE_DEFINES : NO_DEFINES}
         vertexShader={VERT}
         fragmentShader={FRAG}
         depthTest={false}
