@@ -19,7 +19,9 @@ const MenuButton = styled.button`
   color: ${ACCENT_TEXT};
   /* Like the star pill: the ⋯ glyph's ink is small within its em box, so the
      font size runs close to the 60px button for the icon to read app-scale. */
-  font: 700 56px/1 inherit;
+  font-weight: 700;
+  font-size: 56px;
+  line-height: 1;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}
@@ -82,7 +84,9 @@ const Item = styled.button`
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   color: rgba(255, 255, 255, 0.85);
-  font: 600 14px/1 inherit;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
   letter-spacing: 0.06em;
   text-align: left;
   cursor: pointer;
@@ -103,7 +107,9 @@ const LangButton = styled.button<{ $active: boolean }>`
   border-radius: 10px;
   background: ${(p) => (p.$active ? 'rgba(57, 135, 229, 0.28)' : 'rgba(255, 255, 255, 0.05)')};
   color: ${(p) => (p.$active ? ACCENT_TEXT : 'rgba(255, 255, 255, 0.7)')};
-  font: 600 13px/1 inherit;
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1;
   letter-spacing: 0.08em;
   cursor: pointer;
 `;

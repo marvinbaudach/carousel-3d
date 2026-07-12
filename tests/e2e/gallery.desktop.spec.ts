@@ -18,27 +18,25 @@ test.describe('desktop gallery', () => {
     await expect(page.getByRole('button', { name: /öffnen/ }).first()).toBeVisible();
   });
 
-  test('search narrows the visible set', async ({ page }) => {
+  test('search narrows the set and reveals the count as filter feedback', async ({ page }) => {
     await bootWithLocale(page, 'de');
     const count = page.getByText(/\d+ Karten/);
-    await expect(count).toBeVisible();
-    const before = await count.textContent();
+    // Unfiltered, the count would only restate the pool size — it stays hidden.
+    await expect(page.getByPlaceholder('Suche…')).toBeVisible();
+    await expect(count).toHaveCount(0);
 
     await page.getByPlaceholder('Suche…').fill('cpu');
-    await expect(count).not.toHaveText(before ?? '', { timeout: 5000 });
+    await expect(count).toBeVisible();
     // The CPU cards exist, so the filtered set is non-empty.
     await expect(page.getByRole('button', { name: /cpu-single-core/ })).toBeVisible();
   });
 
-  test('category filter narrows the set', async ({ page }) => {
+  test('category filter narrows the set and shows the count', async ({ page }) => {
     await bootWithLocale(page, 'de');
-    const count = page.getByText(/\d+ Karten/);
-    const before = await count.textContent();
-
     await page.getByRole('button', { name: 'Kategorie filtern' }).click();
     await page.getByRole('option', { name: /tech/ }).click();
 
-    await expect(count).not.toHaveText(before ?? '');
+    await expect(page.getByText(/\d+ Karten/)).toBeVisible();
   });
 
   test('lightbox opens from a tile and closes on Esc', async ({ page }) => {

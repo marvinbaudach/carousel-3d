@@ -63,7 +63,9 @@ const Option = styled.button<{ $active: boolean }>`
   border-radius: 12px;
   background: ${(p) => (p.$active ? 'rgba(57, 135, 229, 0.28)' : 'rgba(255, 255, 255, 0.05)')};
   color: ${(p) => (p.$active ? ACCENT_TEXT : 'rgba(255, 255, 255, 0.75)')};
-  font: 600 14px/1 inherit;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
   letter-spacing: 0.1em;
   text-align: left;
   cursor: pointer;

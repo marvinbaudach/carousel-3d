@@ -51,7 +51,9 @@ const FilterButton = styled.button`
   border: none;
   border-radius: 999px;
   color: ${ACCENT_TEXT};
-  font: 600 17px/1 inherit;
+  font-weight: 600;
+  font-size: 17px;
+  line-height: 1;
   letter-spacing: 0.14em;
   cursor: pointer;
   transition: transform 120ms ease;
@@ -73,7 +75,9 @@ const Hint = styled.div<{ $gone: boolean }>`
   padding: 9px 16px;
   border-radius: 999px;
   color: rgba(255, 255, 255, 0.7);
-  font: 600 12px/1 inherit;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
   letter-spacing: 0.08em;
   white-space: nowrap;
   pointer-events: none;
@@ -94,7 +98,9 @@ const RefreshPill = styled.div<{ $error?: boolean }>`
   padding: 9px 16px;
   border-radius: 999px;
   color: ${(p) => (p.$error ? '#ffb3ab' : ACCENT_TEXT)};
-  font: 600 12px/1 inherit;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
   letter-spacing: 0.1em;
   white-space: nowrap;
   pointer-events: none;
@@ -144,7 +150,9 @@ const SourceNote = styled.div`
   padding: 12px 14px;
   border-radius: 14px;
   color: rgba(255, 255, 255, 0.85);
-  font: 400 13px/1.5 inherit;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 1.5;
   /* Cards with a structured detail block grow into a scrollable sheet; the
      one-line source note is unaffected by the cap. */
   max-height: min(55vh, 460px);
@@ -156,7 +164,9 @@ const SourceNote = styled.div`
 const DetailKontext = styled.p`
   margin: 0 0 10px;
   color: rgba(255, 255, 255, 0.92);
-  font: 500 13.5px/1.5 inherit;
+  font-weight: 500;
+  font-size: 13.5px;
+  line-height: 1.5;
 `;
 
 // Section tones are semantic (supports / limits / caveats), softened for the
@@ -164,7 +174,9 @@ const DetailKontext = styled.p`
 const DetailLabel = styled.div<{ $tone: 'pro' | 'kontra' | 'hinweis' }>`
   margin: 10px 0 4px;
   color: ${(p) => (p.$tone === 'pro' ? '#8fd694' : p.$tone === 'kontra' ? '#ffb3ab' : '#ffd98a')};
-  font: 700 11px/1 inherit;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 `;
@@ -181,7 +193,9 @@ const DetailList = styled.ul`
 const SourceLine = styled.p`
   margin: 10px 0 0;
   color: rgba(255, 255, 255, 0.6);
-  font: 400 12px/1.5 inherit;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.5;
 `;
 
 /**

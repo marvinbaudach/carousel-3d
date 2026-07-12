@@ -29,7 +29,9 @@ const Pill = styled.button<{ $active: boolean }>`
   /* The ☆ glyph carries a lot of empty space in its em box — its visible ink
      is far smaller than the font size, so the size runs close to the 60px
      button for the icon to read app-scale. */
-  font: 600 48px/1 inherit;
+  font-weight: 600;
+  font-size: 48px;
+  line-height: 1;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}

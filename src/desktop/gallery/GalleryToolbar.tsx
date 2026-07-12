@@ -115,9 +115,13 @@ export function GalleryToolbar({
           minWidth={56}
         />
       </Label>
-      <Count>
-        {count} {tr('Karten')}
-      </Count>
+      {/* The count is only meaningful as filter feedback — with nothing
+          filtered it just restates the pool size, so it stays hidden. */}
+      {(query !== '' || category !== '') && (
+        <Count>
+          {count} {tr('Karten')}
+        </Count>
+      )}
     </Bar>
   );
 }

@@ -165,7 +165,9 @@ const Toggle = styled.button<{ $open: boolean }>`
   border-radius: 999px;
   ${glassSurface}
   color: ${(p) => (p.$open ? ACCENT_TEXT : 'rgba(255, 255, 255, 0.85)')};
-  font: 500 12px/1 inherit;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 1;
   font-family: inherit;
   letter-spacing: 0.04em;
   cursor: pointer;
