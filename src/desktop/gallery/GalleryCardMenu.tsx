@@ -5,8 +5,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import type { Dashboard } from '../dashboards/types';
-import { cardToPngBlob } from '../exportCard';
+import type { Dashboard } from '../../dashboards/types';
+import { cardToPngBlob } from '../../exportCard';
 import { INK, ACCENT_RGB, RADIUS, glassPanel } from './galleryChrome';
 
 async function copyText(text: string): Promise<boolean> {

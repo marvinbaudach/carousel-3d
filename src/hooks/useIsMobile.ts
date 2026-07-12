@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { readViewOverride } from './viewOverride';
 
 // Small phones or any touch device: the scene trims its heavy post-processing
 // and pixel ratio here to stay smooth on mobile GPUs. Exported for one-shot
@@ -7,14 +8,17 @@ export const MOBILE_QUERY = '(max-width: 820px), (pointer: coarse)';
 const QUERY = MOBILE_QUERY;
 
 function match(): boolean {
+  const override = readViewOverride();
+  if (override) return override === 'mobile';
   return typeof window !== 'undefined' && window.matchMedia(QUERY).matches;
 }
 
-/** True on touch phones / small screens, re-evaluated on viewport changes. */
+/** True on touch phones / small screens (or forced via `?view=`). */
 export function useIsMobile(): boolean {
   const [mobile, setMobile] = useState(match);
 
   useEffect(() => {
+    if (readViewOverride()) return;
     const mq = window.matchMedia(QUERY);
     const onChange = () => setMobile(mq.matches);
     mq.addEventListener('change', onChange);

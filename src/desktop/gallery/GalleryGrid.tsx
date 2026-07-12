@@ -18,6 +18,7 @@ interface GalleryGridProps {
   keyboardActive: boolean;
   onOpen: (entry: CardEntry) => void;
   onContextMenu: (entry: CardEntry, x: number, y: number) => void;
+  onRendered?: (id: string) => void;
 }
 
 const Grid = styled.div<{ $tw: number }>`
@@ -44,6 +45,7 @@ export function GalleryGrid({
   keyboardActive,
   onOpen,
   onContextMenu,
+  onRendered,
 }: GalleryGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -93,6 +95,7 @@ export function GalleryGrid({
           redrawToken={redrawToken}
           onOpen={onOpen}
           onContextMenu={onContextMenu}
+          onRendered={onRendered}
         />
       ))}
     </Grid>

@@ -13,8 +13,8 @@
 
 import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
-import { onLiveUpdate } from '../data/store';
-import { LOCALE, onLocaleChange, setLocale, type Locale } from '../i18n';
+import { onLiveUpdate } from '../../data/store';
+import { LOCALE, onLocaleChange, setLocale, type Locale } from '../../i18n';
 import {
   buildEntries,
   filterSort,
@@ -23,34 +23,21 @@ import {
   type Category,
 } from './galleryData';
 import { ACCENT } from './galleryChrome';
-import { GalleryBackdrop } from './GalleryBackdrop';
 import { GalleryToolbar, type CategoryOption } from './GalleryToolbar';
 import { GalleryGrid } from './GalleryGrid';
 import { GalleryLightbox } from './GalleryLightbox';
 import { GalleryCardMenu, GalleryToast, type CardMenuState } from './GalleryCardMenu';
 
-interface DevGalleryProps {
-  /** True while the gallery is the visible view; false freezes and fades it. */
-  active: boolean;
-  onClose: () => void;
+interface GalleryProps {
+  onThumbRendered?: (id: string) => void;
+  onAccentChange?: (accent: string) => void;
 }
 
-const Root = styled.div<{ $active: boolean }>`
+const Root = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 12;
+  z-index: 1;
   color-scheme: dark;
-  opacity: ${(p) => (p.$active ? 1 : 0)};
-  visibility: ${(p) => (p.$active ? 'visible' : 'hidden')};
-  pointer-events: ${(p) => (p.$active ? 'auto' : 'none')};
-  /* Crossfade in; on hide, defer the visibility flip until the fade finishes. */
-  transition:
-    opacity 280ms ease,
-    visibility 0s linear ${(p) => (p.$active ? '0s' : '280ms')};
-
-  @media (prefers-reduced-motion: reduce) {
-    transition: none;
-  }
 `;
 
 const Scroll = styled.div`
@@ -63,7 +50,7 @@ const Scroll = styled.div`
 const FULL_RATIO = 960 / 768;
 const TOAST_MS = 1400;
 
-export default function DevGallery({ active, onClose }: DevGalleryProps) {
+export default function Gallery({ onThumbRendered, onAccentChange }: GalleryProps) {
   const entries = useMemo(() => buildEntries(), []);
 
   const [query, setQuery] = useState('');
@@ -109,6 +96,7 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
 
   const categoryOf = useCallback((tag: string): Category | undefined => CATEGORIES.get(tag), []);
   const accent = (category && CATEGORIES.get(category)?.accent) || ACCENT;
+  useEffect(() => onAccentChange?.(accent), [accent, onAccentChange]);
 
   // Lightbox: an index into the current filtered list (null = closed).
   const [lbIndex, setLbIndex] = useState<number | null>(null);
@@ -144,8 +132,7 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
   // import), so there's nothing to defer here — everything below is live from
   // the first paint, and stays mounted for lossless re-toggling.
   return (
-    <Root $active={active} aria-hidden={!active}>
-      <GalleryBackdrop accent={accent} active={active} />
+    <Root>
       <Scroll>
         <GalleryToolbar
           query={query}
@@ -158,7 +145,6 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
           locale={locale}
           onLocale={onLocale}
           count={list.length}
-          onClose={onClose}
         />
         <GalleryGrid
           list={list}
@@ -169,6 +155,7 @@ export default function DevGallery({ active, onClose }: DevGalleryProps) {
           keyboardActive={lbIndex === null}
           onOpen={openCard}
           onContextMenu={openMenu}
+          onRendered={onThumbRendered}
         />
       </Scroll>
       {lbIndex !== null && list.length > 0 && (

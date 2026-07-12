@@ -5,8 +5,8 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { downloadCard } from '../exportCard';
-import { t as tr } from '../i18n';
+import { downloadCard } from '../../exportCard';
+import { t as tr } from '../../i18n';
 import { drawCard, type CardEntry, type Category } from './galleryData';
 import { Button, INK, DIM, ACCENT_RGB, SPACE, glassPanel } from './galleryChrome';
 

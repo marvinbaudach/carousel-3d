@@ -3,13 +3,13 @@
 // UI-agnostic (no DOM), consumed by the React gallery (see DevGallery). Never
 // part of the app bundle — DevGallery is code-split behind import.meta.env.DEV.
 
-import { POOL } from '../dashboards/cards';
+import { POOL } from '../../dashboards/cards';
 // Importing the registry runs its side effects, which assign `tags` and `added`
 // onto the very POOL objects read below (ES modules share one instance), so the
 // gallery sees the same metadata the app does.
-import { TAGS } from '../dashboards';
-import type { Dashboard } from '../dashboards/types';
-import { SETTLED_T } from '../dashboards/types';
+import { TAGS } from '../../dashboards';
+import type { Dashboard } from '../../dashboards/types';
+import { SETTLED_T } from '../../dashboards/types';
 
 export interface CardEntry {
   card: Dashboard;

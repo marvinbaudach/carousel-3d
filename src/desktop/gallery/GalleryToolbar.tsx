@@ -4,8 +4,8 @@
 // dropdown, so the whole toolbar reads as one component system.
 
 import styled from 'styled-components';
-import { LOCALES, type Locale } from '../i18n';
-import { TextInput, Button, Label, DIM, SPACE, glassPanel } from './galleryChrome';
+import { LOCALES, type Locale } from '../../i18n';
+import { TextInput, Label, DIM, SPACE, glassPanel } from './galleryChrome';
 import { GlassSelect, type GlassSelectOption } from './GlassSelect';
 
 export interface CategoryOption {
@@ -25,7 +25,6 @@ interface GalleryToolbarProps {
   locale: Locale;
   onLocale: (v: Locale) => void;
   count: number;
-  onClose: () => void;
 }
 
 const SIZES: GlassSelectOption[] = [
@@ -70,7 +69,6 @@ export function GalleryToolbar({
   locale,
   onLocale,
   count,
-  onClose,
 }: GalleryToolbarProps) {
   const categoryOptions: GlassSelectOption[] = categories.map((c) => ({
     value: c.value,
@@ -79,9 +77,6 @@ export function GalleryToolbar({
 
   return (
     <Bar>
-      <Button type="button" onClick={onClose} aria-label="Zurück zur App">
-        ← App
-      </Button>
       <TextInput
         type="search"
         placeholder="Suche id / Titel…"

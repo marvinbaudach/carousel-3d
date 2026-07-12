@@ -9,7 +9,6 @@ import { KONTEXT_BY_ID } from './detailKontext';
 import { SERIES } from './theme';
 
 export { type Dashboard, SETTLED_T } from './types';
-export { type DashboardTexture, createDashboardTexture } from './texture';
 
 /**
  * Filter chips shown in the bottom bar, in display order. Each theme carries

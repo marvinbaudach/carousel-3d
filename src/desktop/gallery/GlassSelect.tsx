@@ -11,7 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { glassSurface, RADIUS } from '../components/glass';
+import { glassSurface, RADIUS } from '../../components/glass';
 import { controlCss, ACCENT, ACCENT_RGB, INK } from './galleryChrome';
 
 const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';

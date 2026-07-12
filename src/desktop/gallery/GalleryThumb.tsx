@@ -20,6 +20,7 @@ interface GalleryThumbProps {
   redrawToken: string;
   onOpen: (entry: CardEntry) => void;
   onContextMenu: (entry: CardEntry, x: number, y: number) => void;
+  onRendered?: (id: string) => void;
 }
 
 const Figure = styled.figure<{ $w: number; $h: number }>`
@@ -92,6 +93,25 @@ const Caption = styled.figcaption`
   }
 `;
 
+const CanvasWrap = styled.div`
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+`;
+
+const Skeleton = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, #ffffff08 30%, #ffffff18 50%, #ffffff08 70%);
+  background-size: 200% 100%;
+  animation: thumb-shimmer 1.4s ease-in-out infinite;
+  @keyframes thumb-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+`;
+
 function GalleryThumbImpl({
   entry,
   category,
@@ -100,24 +120,21 @@ function GalleryThumbImpl({
   redrawToken,
   onOpen,
   onContextMenu,
+  onRendered,
 }: GalleryThumbProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const figureRef = useRef<HTMLElement>(null);
   const [onScreen, setOnScreen] = useState(false);
+  const [rendered, setRendered] = useState(false);
+  const reported = useRef(false);
 
-  // Draw lazily: a tile rasterises its canvas only once it nears the viewport,
-  // so opening the grid paints the visible rows instead of the whole pool at
-  // once. rootMargin gives a screen of lead time so tiles are ready before they
-  // scroll in.
+  // Stagger first paint across the full grid. This keeps the shell responsive,
+  // makes each skeleton meaningful, and lets the determinate global progress
+  // bar honestly reach 100% without requiring the visitor to scroll first.
   useEffect(() => {
-    const el = figureRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), {
-      rootMargin: '400px 0px',
-    });
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    const id = window.setTimeout(() => setOnScreen(true), Math.min(entry.idx * 8, 1200));
+    return () => window.clearTimeout(id);
+  }, [entry.idx]);
 
   // Paint while on-screen. The drawn signature is remembered so scrolling a tile
   // out and back doesn't repaint (and flash) an unchanged canvas; a locale
@@ -132,7 +149,12 @@ function GalleryThumbImpl({
     if (drawnKey.current === key) return;
     drawCard(canvas, entry.card, width, height);
     drawnKey.current = key;
-  }, [onScreen, entry.card, width, height, redrawToken]);
+    setRendered(true);
+    if (!reported.current) {
+      reported.current = true;
+      onRendered?.(entry.card.id);
+    }
+  }, [onScreen, entry.card, width, height, redrawToken, onRendered]);
 
   return (
     <Figure
@@ -148,7 +170,10 @@ function GalleryThumbImpl({
         onContextMenu(entry, e.clientX, e.clientY);
       }}
     >
-      <canvas ref={canvasRef} />
+      <CanvasWrap>
+        <canvas ref={canvasRef} />
+        {!rendered && <Skeleton aria-hidden />}
+      </CanvasWrap>
       <Caption>
         <div className="top">
           <span className="idx">#{entry.idx} </span>
