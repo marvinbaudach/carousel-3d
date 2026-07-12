@@ -17,10 +17,12 @@ import {
 import { ACCENT } from './galleryChrome';
 import { GalleryToolbar, type CategoryOption } from './GalleryToolbar';
 import { GalleryGrid } from './GalleryGrid';
+import { GalleryEmptyState } from './GalleryEmptyState';
 import { GalleryLightbox } from './GalleryLightbox';
 import { GalleryCardMenu, GalleryToast, type CardMenuState } from './GalleryCardMenu';
 import { ProgressBar } from './GallerySkeletons';
 import { progressPct } from './progress';
+import { publishGalleryScroll } from './galleryScroll';
 
 interface GalleryProps {
   /** Fired from the category handler so DesktopApp can tint the backdrop. */
@@ -130,6 +132,13 @@ export default function Gallery({ onAccentChange }: GalleryProps) {
 
   const categoryOf = useCallback((tag: string): Category | undefined => CATEGORIES.get(tag), []);
 
+  // Clears both filter axes at once; routed through changeCategory so the
+  // backdrop tint resets along with the chip.
+  const resetFilters = useCallback(() => {
+    setQuery('');
+    changeCategory('');
+  }, [changeCategory]);
+
   // Lightbox: an index into the current filtered list (null = closed).
   const [lbIndex, setLbIndex] = useState<number | null>(null);
   const openCard = useCallback((entry: CardEntry) => setLbIndex(list.indexOf(entry)), [list]);
@@ -163,7 +172,8 @@ export default function Gallery({ onAccentChange }: GalleryProps) {
   return (
     <Root>
       <ProgressBar pct={pct} />
-      <Scroll>
+      {/* Feeds the backdrop's scroll parallax (see AubergineBackdrop). */}
+      <Scroll onScroll={(e) => publishGalleryScroll(e.currentTarget.scrollTop)}>
         <GalleryToolbar
           query={query}
           onQuery={setQuery}
@@ -176,17 +186,25 @@ export default function Gallery({ onAccentChange }: GalleryProps) {
           onLocale={onLocale}
           count={list.length}
         />
-        <GalleryGrid
-          list={list}
-          width={size}
-          height={height}
-          redrawToken={redrawToken}
-          categoryOf={categoryOf}
-          keyboardActive={lbIndex === null}
-          onOpen={openCard}
-          onContextMenu={openMenu}
-          onRendered={onThumbRendered}
-        />
+        {list.length === 0 ? (
+          <GalleryEmptyState
+            query={deferredQuery}
+            categoryLabel={category ? CATEGORIES.get(category)?.label : undefined}
+            onReset={resetFilters}
+          />
+        ) : (
+          <GalleryGrid
+            list={list}
+            width={size}
+            height={height}
+            redrawToken={redrawToken}
+            categoryOf={categoryOf}
+            keyboardActive={lbIndex === null}
+            onOpen={openCard}
+            onContextMenu={openMenu}
+            onRendered={onThumbRendered}
+          />
+        )}
       </Scroll>
       {lbIndex !== null && list.length > 0 && (
         <GalleryLightbox

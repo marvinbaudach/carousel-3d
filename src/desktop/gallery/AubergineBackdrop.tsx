@@ -1,31 +1,40 @@
-// The desktop gallery's backdrop: an Ubuntu-aubergine gradient mesh that
-// flows like a slow lava lamp, with a per-category accent bloom in the
-// top-right. Pure CSS — no WebGL ships to the desktop chunk.
+// The desktop gallery's backdrop: an Ubuntu-aubergine lava lamp — compact
+// colour blobs that visibly travel behind the card grid, with a per-category
+// accent bloom in the top-right. Pure CSS — no WebGL ships to the desktop
+// chunk. The base blobs stay strictly within the aubergine hue and differ
+// only in brightness (deep → plum → bloom → lifted bloom); the one foreign
+// hue allowed is the category accent, which carries the mood cross-fade.
 //
-// Fluidity comes from RELATIVE motion: each colour bloom rides its own
-// oversized layer on its own closed multi-waypoint path with its own period
-// (42s/56s/70s — deliberately non-harmonic so the constellation never
-// visibly repeats). A single sheet of gradients sliding together reads as
-// mechanical; blooms overtaking and parting from each other read as liquid.
+// Two things make the lava-lamp read work (v1 failed both and looked static):
+// - CONTRAST: the blobs are compact with a defined falloff. A viewport-sized
+//   ultra-soft gradient can move all it wants — without a visible edge there
+//   is nothing for the eye to track.
+// - TRAVEL: each blob journeys a real fraction of the viewport (~20-30%) on
+//   its own closed multi-waypoint path with its own period (22s/30s/36s/40s —
+//   non-harmonic, so the constellation never visibly repeats). Relative
+//   motion between blobs is what reads as liquid; gentle per-segment
+//   ease-in-out keeps it calm rather than busy.
 //
-// Compositor discipline: each gradient is painted ONCE onto its layer and
-// the flow animates `transform` (translate3d/scale/rotate) and `opacity`
-// only — never `background-position`, which would re-rasterize the
-// full-viewport gradient every frame. The slight rotation matters: the
-// gradients are elliptical, so rotating them morphs the bloom's silhouette
+// Compositor discipline: each gradient is painted ONCE onto its oversized
+// layer and the flow animates `transform` (translate3d/scale/rotate) and
+// `opacity` only — never `background-position`, which would re-rasterize the
+// full-viewport gradient every frame. The rotation matters visually: the
+// gradients are elliptical, so rotating them morphs the blob's silhouette
 // without any repaint. The accent mood change is a real cross-fade via
-// mount-time `opacity` keyframes (a transition on a custom property inside
-// a gradient would snap — not animatable without @property): the incoming
+// mount-time `opacity` keyframes (a transition on a custom property inside a
+// gradient would snap — not animatable without @property): the incoming
 // bloom fades in while the outgoing layer, kept mounted for the fade's
 // duration, fades out.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { AUBERGINE } from './galleryChrome';
+import { onGalleryScroll } from './galleryScroll';
 
-// Oversize the drifting layers past every viewport edge so the translate
-// drift never exposes a blank border.
-const BLEED = '-20%';
+// Oversize the drifting layers well past every viewport edge: translate % is
+// relative to the layer box, so the wide bleed is what buys the blobs their
+// long journeys without ever exposing a layer border.
+const BLEED = '-30%';
 const FADE_MS = 600;
 
 const Viewport = styled.div`
@@ -48,7 +57,7 @@ const Ground = styled.div`
   );
 `;
 
-// Shared skeleton for the free-floating colour blooms. Path keyframes live on
+// Shared skeleton for the free-floating colour blobs. Path keyframes live on
 // the concrete blobs below — each needs its own uniquely named loop.
 const Blob = styled.div`
   position: absolute;
@@ -59,88 +68,127 @@ const Blob = styled.div`
   }
 `;
 
-// Bright magenta bloom, upper left. Closed loop (last frame = first) so the
+// Bright magenta blob — the lead voice. Starts upper-left, swings deep into
+// the centre of the frame and back. Closed loop (last frame = first) so the
 // motion never ping-pongs; per-segment ease-in-out gives it a breathing gait.
 const BloomBlob = styled(Blob)`
   background: radial-gradient(
-    60% 80% at 18% 12%,
+    42% 34% at 24% 22%,
     ${AUBERGINE.bloom},
-    transparent 55%
+    color-mix(in oklab, ${AUBERGINE.bloom} 45%, transparent) 45%,
+    transparent 68%
   );
-  animation: aubergine-bloom-flow 42s ease-in-out infinite;
+  animation: aubergine-bloom-flow 22s ease-in-out infinite;
   @keyframes aubergine-bloom-flow {
     0%,
     100% {
-      transform: translate3d(-5%, -3%, 0) rotate(0deg) scale(1);
+      transform: translate3d(-8%, -6%, 0) rotate(0deg) scale(1);
       opacity: 0.9;
     }
     25% {
-      transform: translate3d(3%, 2%, 0) rotate(4deg) scale(1.12);
+      transform: translate3d(6%, 4%, 0) rotate(6deg) scale(1.18);
       opacity: 1;
     }
     50% {
-      transform: translate3d(7%, -2%, 0) rotate(-2deg) scale(1.04);
-      opacity: 0.85;
+      transform: translate3d(14%, -4%, 0) rotate(-4deg) scale(1.05);
+      opacity: 0.8;
     }
     75% {
-      transform: translate3d(-1%, 4%, 0) rotate(3deg) scale(1.15);
+      transform: translate3d(2%, 9%, 0) rotate(5deg) scale(1.22);
       opacity: 1;
     }
   }
 `;
 
-// Plum bloom, upper right — counter-phased against the magenta so the two
-// approach and part instead of travelling in formation.
+// Plum blob, upper right — counter-phased against the magenta so the two
+// approach, merge and part instead of travelling in formation.
 const PlumBlob = styled(Blob)`
   background: radial-gradient(
-    55% 70% at 88% 22%,
+    38% 32% at 74% 26%,
     ${AUBERGINE.plum},
-    transparent 60%
+    color-mix(in oklab, ${AUBERGINE.plum} 50%, transparent) 48%,
+    transparent 70%
   );
-  animation: aubergine-plum-flow 56s ease-in-out infinite;
+  animation: aubergine-plum-flow 30s ease-in-out infinite;
   @keyframes aubergine-plum-flow {
     0%,
     100% {
-      transform: translate3d(4%, 3%, 0) rotate(0deg) scale(1.05);
+      transform: translate3d(8%, 5%, 0) rotate(0deg) scale(1.08);
       opacity: 1;
     }
     25% {
-      transform: translate3d(-4%, -2%, 0) rotate(-4deg) scale(1);
-      opacity: 0.85;
+      transform: translate3d(-7%, -5%, 0) rotate(-6deg) scale(0.94);
+      opacity: 0.8;
     }
     50% {
-      transform: translate3d(-7%, 4%, 0) rotate(2deg) scale(1.14);
+      transform: translate3d(-14%, 7%, 0) rotate(4deg) scale(1.2);
       opacity: 1;
     }
     75% {
-      transform: translate3d(2%, -4%, 0) rotate(-3deg) scale(1.02);
-      opacity: 0.9;
+      transform: translate3d(4%, -8%, 0) rotate(-5deg) scale(1);
+      opacity: 0.85;
     }
   }
 `;
 
-// Deep violet ground-swell along the bottom — the slowest layer, so the
-// lower half of the frame stays calm while the top breathes.
+// Deep violet ground-swell along the bottom — the slowest, broadest layer:
+// the lower half stays calmer while the upper blobs do the travelling.
 const DeepBlob = styled(Blob)`
   background: radial-gradient(
-    70% 90% at 72% 100%,
+    60% 48% at 60% 92%,
     ${AUBERGINE.deep},
-    transparent 60%
+    color-mix(in oklab, ${AUBERGINE.deep} 55%, transparent) 50%,
+    transparent 72%
   );
-  animation: aubergine-deep-flow 70s ease-in-out infinite;
+  animation: aubergine-deep-flow 40s ease-in-out infinite;
   @keyframes aubergine-deep-flow {
     0%,
     100% {
-      transform: translate3d(0%, 2%, 0) rotate(0deg) scale(1);
+      transform: translate3d(0%, 3%, 0) rotate(0deg) scale(1);
       opacity: 1;
     }
     33% {
-      transform: translate3d(-6%, -2%, 0) rotate(3deg) scale(1.1);
-      opacity: 0.88;
+      transform: translate3d(-11%, -3%, 0) rotate(4deg) scale(1.15);
+      opacity: 0.85;
     }
     66% {
-      transform: translate3d(5%, 0%, 0) rotate(-3deg) scale(1.05);
+      transform: translate3d(9%, 0%, 0) rotate(-4deg) scale(1.06);
       opacity: 1;
+    }
+  }
+`;
+
+// A small bright-lila wisp on a long diagonal wander. The palette stays
+// strictly in the aubergine family — this is the same magenta lifted towards
+// white (a brightness step, not a new hue), so its lightness contrast against
+// the darker blobs is what makes the flow unmistakable even in the thin gaps
+// between cards.
+const LIFTED_BLOOM = `color-mix(in oklab, ${AUBERGINE.bloom} 72%, white)`;
+
+const BrightWisp = styled(Blob)`
+  background: radial-gradient(
+    22% 18% at 42% 58%,
+    color-mix(in oklab, ${LIFTED_BLOOM} 32%, transparent),
+    transparent 70%
+  );
+  animation: aubergine-wisp-flow 36s ease-in-out infinite;
+  @keyframes aubergine-wisp-flow {
+    0%,
+    100% {
+      transform: translate3d(-12%, 10%, 0) rotate(0deg) scale(1);
+      opacity: 0.75;
+    }
+    30% {
+      transform: translate3d(2%, -2%, 0) rotate(8deg) scale(1.25);
+      opacity: 1;
+    }
+    55% {
+      transform: translate3d(13%, -9%, 0) rotate(-6deg) scale(1.05);
+      opacity: 0.7;
+    }
+    80% {
+      transform: translate3d(0%, 4%, 0) rotate(4deg) scale(1.18);
+      opacity: 0.95;
     }
   }
 `;
@@ -153,24 +201,24 @@ const AccentBloom = styled.div<{ $accent: string; $out: boolean }>`
   position: absolute;
   inset: ${BLEED};
   background: radial-gradient(
-    50% 65% at 84% 16%,
-    color-mix(in oklab, ${(p) => p.$accent} 40%, transparent),
-    transparent 60%
+    36% 30% at 78% 18%,
+    color-mix(in oklab, ${(p) => p.$accent} 42%, transparent),
+    transparent 68%
   );
   animation:
     ${(p) => (p.$out ? 'bloom-out' : 'bloom-in')} ${FADE_MS}ms ease forwards,
-    accent-flow 48s ease-in-out infinite;
+    accent-flow 26s ease-in-out infinite;
   will-change: transform, opacity;
   @keyframes accent-flow {
     0%,
     100% {
-      transform: translate3d(3%, -3%, 0) rotate(0deg) scale(1.04);
+      transform: translate3d(5%, -5%, 0) rotate(0deg) scale(1.06);
     }
     33% {
-      transform: translate3d(-3%, 3%, 0) rotate(-3deg) scale(1);
+      transform: translate3d(-6%, 6%, 0) rotate(-5deg) scale(0.96);
     }
     66% {
-      transform: translate3d(-5%, -1%, 0) rotate(2deg) scale(1.1);
+      transform: translate3d(-10%, -2%, 0) rotate(4deg) scale(1.16);
     }
   }
   @keyframes bloom-in {
@@ -195,6 +243,29 @@ const AccentBloom = styled.div<{ $accent: string; $out: boolean }>`
   }
 `;
 
+// Scroll parallax: scrolling the gallery "stirs" the lava. Each layer follows
+// a sine orbit over scroll depth (own amplitude/wavelength/phase, x and y
+// wavelengths deliberately different), so the constellation reorganises at
+// every scroll position and never runs off-screen no matter how deep the grid
+// scrolls — a plain linear factor would have pushed the blobs out of frame
+// after a few thousand px. Offsets are written to the individual `translate`
+// property, which composes with the keyframe-animated `transform` instead of
+// fighting it; both stay compositor-only.
+const PARALLAX = [
+  { amp: 26, wlx: 900, wly: 1300, phase: 0 }, // deep
+  { amp: 42, wlx: 700, wly: 1100, phase: 2.1 }, // plum
+  { amp: 60, wlx: 600, wly: 950, phase: 4.2 }, // bloom
+  { amp: 80, wlx: 520, wly: 820, phase: 1.3 }, // wisp
+  { amp: 36, wlx: 780, wly: 1200, phase: 3.4 }, // accent bloom(s)
+] as const;
+const ACCENT_LAYER = PARALLAX.length - 1;
+
+function parallaxTranslate(y: number, c: (typeof PARALLAX)[number]): string {
+  const dx = c.amp * Math.sin(y / c.wlx + c.phase);
+  const dy = -c.amp * Math.cos(y / c.wly + c.phase);
+  return `${dx.toFixed(1)}px ${dy.toFixed(1)}px`;
+}
+
 export function AubergineBackdrop({ accent }: { accent: string }) {
   // The previously shown accent, kept mounted (fading out) for FADE_MS after a
   // category switch so the mood cross-fades instead of snapping.
@@ -205,14 +276,53 @@ export function AubergineBackdrop({ accent }: { accent: string }) {
     return () => window.clearTimeout(id);
   }, [prev, accent]);
 
+  // Layer elements, indexed to PARALLAX rows; both accent layers (during a
+  // cross-fade) share the last row. Scroll writes go straight to the DOM,
+  // coalesced to one write per frame — never through React state.
+  const layers = useRef<(HTMLDivElement | null)[]>([]);
+  const layerRef = (i: number) => (el: HTMLDivElement | null) => {
+    layers.current[i] = el;
+  };
+  const refresh = useRef<() => void>(() => {});
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let raf = 0;
+    let y = 0;
+    const apply = () => {
+      raf = 0;
+      layers.current.forEach((el, i) => {
+        if (!el) return;
+        el.style.translate = parallaxTranslate(y, PARALLAX[Math.min(i, ACCENT_LAYER)]);
+      });
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
+    refresh.current = schedule;
+    const off = onGalleryScroll((next) => {
+      y = next;
+      schedule();
+    });
+    return () => {
+      off();
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+  // Freshly (re)mounted accent layers carry no translate yet — reapply after
+  // every accent change so they don't snap in at zero offset mid-scroll.
+  useEffect(() => refresh.current(), [accent, prev]);
+
   return (
     <Viewport aria-hidden>
       <Ground />
-      <DeepBlob />
-      <PlumBlob />
-      <BloomBlob />
-      {prev !== accent && <AccentBloom key={prev} $accent={prev} $out />}
-      <AccentBloom key={accent} $accent={accent} $out={false} />
+      <DeepBlob ref={layerRef(0)} />
+      <PlumBlob ref={layerRef(1)} />
+      <BloomBlob ref={layerRef(2)} />
+      <BrightWisp ref={layerRef(3)} />
+      {prev !== accent && (
+        <AccentBloom key={prev} ref={layerRef(ACCENT_LAYER + 1)} $accent={prev} $out />
+      )}
+      <AccentBloom key={accent} ref={layerRef(ACCENT_LAYER)} $accent={accent} $out={false} />
     </Viewport>
   );
 }
