@@ -1965,36 +1965,76 @@ function nmFmt(real: number): string {
   return real >= 1000 ? `${localeNum(real / 1000, 0)} µm` : `${localeNum(real, 0)} nm`;
 }
 
-/** Task-horizon duration: seconds below a minute, hours above an hour. */
+/** Task-horizon duration: seconds below a minute, hours above an hour,
+    days above 24 h (the 2026 axis reaches the week scale). */
 export function minutesFmt(real: number): string {
   if (real < 1) return `${localeNum(real * 60, 0)} ${tr('Sek')}`;
   if (real < 60) return `${localeNum(real, 0)} ${tr('Min')}`;
-  return `${localeNum(real / 60, 0)} ${tr('Std')}`;
+  if (real < 1440) return `${localeNum(real / 60, 0)} ${tr('Std')}`;
+  return `${localeNum(real / 1440, 0)} ${tr('Tage')}`;
 }
 
-// METR "Measuring AI Ability to Complete Long Tasks" (2025): the length of task
-// a frontier model still completes with 50% success — its "task horizon" — from
-// GPT-2 (~3 s, 2019) to Claude 3.7 Sonnet (~1 h, 2025). Kept in log10(minutes),
-// so the geometric growth reads as the near-straight line it is: the horizon
-// doubled roughly every 7 months across the whole span, and about every 4
-// months over 2024–2025. The 2026 anchor is a dashed extrapolation of that
-// recent slope, not a METR measurement; `latest` is pinned to the real 2025
-// value so the headline reads ~1 h rather than the projection. Ticks 1 Sek /
-// 6 Sek / 1 Min / 10 Min / 2 Std / 17 Std.
-export const METR_HORIZON_PANEL: TrendSeries = {
-  ...logPanel(
-    [
-      [2019, 0.05], [2020, 0.15], [2022, 0.5], [2023, 5.5],
-      [2024, 25], [2025, 59], [2026, 139],
-    ],
-    -2,
-    3,
-    1,
-    minutesFmt,
-    ['2019', '2021', '2024', '2026'],
-  ),
-  latest: 59,
-};
+/**
+ * Like {@link logPanel}, but each anchor carries a confidence interval:
+ * [year, estimate, ciLow, ciHigh]. Estimate and both bounds are interpolated
+ * in log10 space on the same yearly grid and normalised against the same
+ * decade window, so the band stays aligned with the line at every sample.
+ */
+export function logBandPanel(
+  points: [number, number, number, number][],
+  loDec: number,
+  hiDec: number,
+  stepDec: number,
+  tickFmt: (real: number) => string,
+  xLabels: string[],
+): TrendSeries & { band: { lo: number[]; hi: number[] } } {
+  const pick = (idx: 1 | 2 | 3) =>
+    norm(
+      resample(yearly(points.map((p) => [p[0], Math.log10(p[idx])] as [number, number])), 40),
+      loDec,
+      hiDec,
+    );
+  const est = points.map(([yr, v]) => [yr, v] as [number, number]);
+  const ticks: string[] = [];
+  for (let d = loDec; d <= hiDec + 1e-9; d += stepDec) ticks.push(tickFmt(10 ** d));
+  return {
+    series: pick(1),
+    band: { lo: pick(2), hi: pick(3) },
+    ticks,
+    latest: est[est.length - 1][1],
+    yoyPct: 0,
+    xLabels,
+  };
+}
+
+// METR Time Horizon 1.1 (benchmark_results_1_1.yaml, fetched 2026-07-11): the
+// length of task a frontier model still completes with 50% success — its "task
+// horizon" — as the SOTA envelope from GPT-2 (~3 s, 2019) to Claude Opus 4.6
+// (~12 h, 02/2026), each anchor the strongest measured model of its year with
+// METR's bootstrap CI. Kept in log10(minutes) so the geometric growth reads as
+// the near-straight line it is (doubling every ~129 days post-2023). Every
+// value is a METR measurement — no extrapolated leg: with that doubling time a
+// projection leaves METR's own trustable range (>16 h "unreliable with our
+// current task suite") within months, so the trend continues in the source
+// note instead of as a fake-precise dashed line. The CI band widening into
+// 2026 (Opus 4.6: 5¼ h – 60 h) IS that saturation, drawn honestly.
+// Ticks 0,6 Sek / 6 Sek / 1 Min / 10 Min / 2 Std / 17 Std / 7 Tage.
+export const METR_HORIZON_PANEL = logBandPanel(
+  [
+    [2019, 0.054, 0.01, 0.142], // GPT-2
+    [2020, 0.144, 0.093, 0.221], // GPT-3 (davinci)
+    [2022, 0.6, 0.3, 1.1], // GPT-3.5 Turbo
+    [2023, 3.99, 1.9, 8.0], // GPT-4
+    [2024, 38.8, 21.2, 65.0], // o1 (Dec 2024)
+    [2025, 352, 198, 815], // GPT-5.2 (Dec 2025)
+    [2026, 719, 317, 3634], // Claude Opus 4.6 (Feb 2026)
+  ],
+  -2,
+  4,
+  1,
+  minutesFmt,
+  ['2019', '2021', '2024', 'heute'],
+);
 
 // Moore's law: transistors on a single commercial chip, from the Intel 4004
 // (2,300, 1971) to Nvidia's B200 (208 billion, 2024) — a representative rising

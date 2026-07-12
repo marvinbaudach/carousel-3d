@@ -26,6 +26,8 @@ export function trendCard(
   source?: string,
   /** Projection start (0..1 of the x-range) — dashed line + arrow beyond. */
   projectFrom?: number,
+  /** Uncertainty band (normalized, aligned with the panel series). */
+  band?: { lo: number[]; hi: number[] },
 ): Dashboard {
   return {
     id,
@@ -44,6 +46,7 @@ export function trendCard(
         xLabels: panel.xLabels,
         markers,
         projectFrom,
+        band,
       }),
   };
 }

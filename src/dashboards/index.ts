@@ -4,6 +4,8 @@
 
 import type { Dashboard } from './types';
 import { POOL } from './cards';
+import { DETAILS_BY_ID } from './details';
+import { KONTEXT_BY_ID } from './detailKontext';
 import { SERIES } from './theme';
 
 export { type Dashboard, SETTLED_T } from './types';
@@ -100,7 +102,10 @@ const TAGS_BY_ID: Record<string, string[]> = {
   'ai-users': ['tech'],
   'ai-benchmarks': ['tech'],
   'ai-vs-human': ['tech'],
+  'ai-dev-rct': ['tech'],
+  'ai-one-factor': ['tech'],
   'agi-path': ['tech'],
+  kurzweil: ['tech'],
   humanoids: ['tech'],
   'cpu-single-core': ['tech'],
   'cpu-multi-core': ['tech'],
@@ -291,6 +296,11 @@ for (const d of POOL) d.tags = TAGS_BY_ID[d.id] ?? [];
  * review gallery (src/dev/gallery.ts) so freshly added cards are easy to find.
  */
 const ADDED_BY_ID: Record<string, string> = {
+  // METR / Epoch / Kurzweil: AI-performance set (the METR horizon card was
+  // reworked the same day — deliberately not re-flagged as new).
+  'ai-dev-rct': '2026-07-11T22:10:00+02:00',
+  'ai-one-factor': '2026-07-11T22:11:00+02:00',
+  kurzweil: '2026-07-11T22:12:00+02:00',
   // CPU-Rennen: ARM vs x86 (single-core, multi-core, the 2016→2025 race).
   'cpu-single-core': '2026-07-11T14:00:00+02:00',
   'cpu-multi-core': '2026-07-11T14:01:00+02:00',
@@ -520,6 +530,12 @@ const ADDED_BY_ID: Record<string, string> = {
   'us-consumer-debt': '2026-07-09T18:02:00+02:00',
 };
 for (const d of POOL) d.added = ADDED_BY_ID[d.id];
+// Hand-curated study details win; every other card gets its generated
+// short context note, so the mobile detail sheet is never empty.
+for (const d of POOL) {
+  const kontext = KONTEXT_BY_ID[d.id];
+  d.detail = DETAILS_BY_ID[d.id] ?? (kontext ? { kontext } : undefined);
+}
 
 /** Full pool ordered newest-first (cards without a date trail at the end).
     Consumed by the dev review gallery's "newest" sort. */

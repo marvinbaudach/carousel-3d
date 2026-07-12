@@ -17,7 +17,8 @@ import { t as tr } from '../../i18n';
 
 /** proposed → tabled · adopted → passed · inforce → active restriction ·
     blocked → stalled/withdrawn · court → judicial ruling ·
-    past → documented history · now → "we are here" · forecast → projection. */
+    past → documented history · now → "we are here" · forecast → projection ·
+    hit/miss/partial → a resolved prediction, graded against what happened. */
 export type TimelineKind =
   | 'proposed'
   | 'adopted'
@@ -26,7 +27,10 @@ export type TimelineKind =
   | 'court'
   | 'past'
   | 'now'
-  | 'forecast';
+  | 'forecast'
+  | 'hit'
+  | 'miss'
+  | 'partial';
 
 const KIND_COLOR: Record<TimelineKind, string> = {
   proposed: SERIES[0], // blue
@@ -37,6 +41,9 @@ const KIND_COLOR: Record<TimelineKind, string> = {
   past: SERIES[0], // blue — it happened, it's documented
   now: SERIES[1], // aqua — the "we are here" anchor
   forecast: SERIES[2], // yellow — a prediction, rendered dashed/hollow
+  hit: GOOD, // green — the prediction came true
+  miss: CRITICAL, // red — it did not
+  partial: SERIES[2], // yellow — late or only partly true
 };
 
 export interface StatusTimelineCfg {

@@ -1,5 +1,22 @@
 import type { Frame } from './draw';
 
+/**
+ * Structured background for the detail view (mobile info sheet, gallery
+ * lightbox). German source strings, translated via t() at render time.
+ * `kontext` is the short "what am I looking at" framing every card should
+ * carry; the study-backed cards add pro/kontra/hinweise.
+ */
+export interface CardDetail {
+  /** 1–2 sentences: what the card shows and why it matters. */
+  kontext?: string;
+  /** What the underlying data genuinely supports. */
+  pro?: string[];
+  /** What it does not show — limits, gaps, common over-readings. */
+  kontra?: string[];
+  /** The study authors' own caveats, kept in their spirit. */
+  hinweise?: string[];
+}
+
 export interface Dashboard {
   id: string;
   title: string;
@@ -16,6 +33,9 @@ export interface Dashboard {
   added?: string;
   /** Data source and key caveats, shown behind the mobile info button. */
   source?: string;
+  /** Detail-view background (kontext, pro/kontra, author caveats); assigned
+      from DETAILS_BY_ID so card definitions stay lean. */
+  detail?: CardDetail;
   draw: (f: Frame) => void;
 }
 

@@ -6,6 +6,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { downloadCard } from '../exportCard';
+import { t as tr } from '../i18n';
 import { drawCard, type CardEntry, type Category } from './galleryData';
 import { Button, INK, DIM, ACCENT_RGB, SPACE, glassPanel } from './galleryChrome';
 
@@ -123,6 +124,35 @@ const Info = styled.div`
     color: ${DIM};
     font-size: 12px;
     line-height: 1.5;
+  }
+  .detail {
+    max-height: 30vh;
+    overflow-y: auto;
+    margin-top: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .detail p {
+    margin: 0 0 6px;
+    color: ${INK};
+  }
+  /* Same semantic tones as the mobile detail sheet. */
+  .dl {
+    margin: 8px 0 2px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .dl.pro { color: #8fd694; }
+  .dl.kontra { color: #ffb3ab; }
+  .dl.hinweis { color: #ffd98a; }
+  .detail ul {
+    margin: 0;
+    padding-left: 16px;
+    color: ${INK};
+  }
+  .detail li {
+    margin: 2px 0;
   }
 `;
 
@@ -264,6 +294,41 @@ export function GalleryLightbox({
               {index + 1} / {list.length}
             </div>
           </div>
+          {entry.card.detail && (
+            <div className="detail">
+              {entry.card.detail.kontext && <p>{tr(entry.card.detail.kontext)}</p>}
+              {entry.card.detail.pro?.length ? (
+                <>
+                  <div className="dl pro">{tr('Was die Daten zeigen')}</div>
+                  <ul>
+                    {entry.card.detail.pro.map((p) => (
+                      <li key={p}>{tr(p)}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              {entry.card.detail.kontra?.length ? (
+                <>
+                  <div className="dl kontra">{tr('Was sie nicht zeigen')}</div>
+                  <ul>
+                    {entry.card.detail.kontra.map((k) => (
+                      <li key={k}>{tr(k)}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+              {entry.card.detail.hinweise?.length ? (
+                <>
+                  <div className="dl hinweis">{tr('Hinweise der Autoren')}</div>
+                  <ul>
+                    {entry.card.detail.hinweise.map((h) => (
+                      <li key={h}>{tr(h)}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
+            </div>
+          )}
           {entry.card.source && <div className="src">{entry.card.source}</div>}
         </Info>
       </Stage>

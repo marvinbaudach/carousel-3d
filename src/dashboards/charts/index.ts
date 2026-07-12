@@ -3,7 +3,7 @@
 // live motion afterwards, so hovering a panel feels like it wakes up.
 
 export { type LineCfg, type AreaCfg, lineChart, areaChart } from './line';
-export { type BarCfg, type HBarCfg, type WarLossesCfg, barChart, hBarChart, warLosses } from './bar';
+export { type BarCfg, type HBarCfg, type WarLossesCfg, type DivergingBarCfg, barChart, hBarChart, warLosses, divergingBarChart } from './bar';
 export { type NukeMapCfg, type ChoroplethCfg, type TempMapCfg, type MideastCfg, type DataCenterMapCfg, nukeMap, choroplethMap, tempMap, mideastMap, dataCenterMap } from './map';
 export {
   type WealthSplitCfg,

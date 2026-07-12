@@ -145,7 +145,43 @@ const SourceNote = styled.div`
   border-radius: 14px;
   color: rgba(255, 255, 255, 0.85);
   font: 400 13px/1.5 inherit;
+  /* Cards with a structured detail block grow into a scrollable sheet; the
+     one-line source note is unaffected by the cap. */
+  max-height: min(55vh, 460px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   ${glassSurface}
+`;
+
+const DetailKontext = styled.p`
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.92);
+  font: 500 13.5px/1.5 inherit;
+`;
+
+// Section tones are semantic (supports / limits / caveats), softened for the
+// glass surface — the saturated canvas GOOD/CRITICAL would glare here.
+const DetailLabel = styled.div<{ $tone: 'pro' | 'kontra' | 'hinweis' }>`
+  margin: 10px 0 4px;
+  color: ${(p) => (p.$tone === 'pro' ? '#8fd694' : p.$tone === 'kontra' ? '#ffb3ab' : '#ffd98a')};
+  font: 700 11px/1 inherit;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+`;
+
+const DetailList = styled.ul`
+  margin: 0;
+  padding: 0 0 0 16px;
+
+  li {
+    margin: 3px 0;
+  }
+`;
+
+const SourceLine = styled.p`
+  margin: 10px 0 0;
+  color: rgba(255, 255, 255, 0.6);
+  font: 400 12px/1.5 inherit;
 `;
 
 /**
@@ -317,9 +353,44 @@ export function MobileDeck() {
         onShowSource={() => setInfoOpen(true)}
         onAskMotion={motion === 'ask' ? () => void askMotion() : null}
       />
-      {infoOpen && source && (
+      {infoOpen && (source || current?.detail) && (
         <SourceNote data-source-ui onClick={closeInfo}>
-          {trans('Quelle')}: {trans(source)}
+          {current?.detail?.kontext && <DetailKontext>{trans(current.detail.kontext)}</DetailKontext>}
+          {current?.detail?.pro?.length ? (
+            <>
+              <DetailLabel $tone="pro">{trans('Was die Daten zeigen')}</DetailLabel>
+              <DetailList>
+                {current.detail.pro.map((p) => (
+                  <li key={p}>{trans(p)}</li>
+                ))}
+              </DetailList>
+            </>
+          ) : null}
+          {current?.detail?.kontra?.length ? (
+            <>
+              <DetailLabel $tone="kontra">{trans('Was sie nicht zeigen')}</DetailLabel>
+              <DetailList>
+                {current.detail.kontra.map((k) => (
+                  <li key={k}>{trans(k)}</li>
+                ))}
+              </DetailList>
+            </>
+          ) : null}
+          {current?.detail?.hinweise?.length ? (
+            <>
+              <DetailLabel $tone="hinweis">{trans('Hinweise der Autoren')}</DetailLabel>
+              <DetailList>
+                {current.detail.hinweise.map((h) => (
+                  <li key={h}>{trans(h)}</li>
+                ))}
+              </DetailList>
+            </>
+          ) : null}
+          {source && (
+            <SourceLine>
+              {trans('Quelle')}: {trans(source)}
+            </SourceLine>
+          )}
         </SourceNote>
       )}
 

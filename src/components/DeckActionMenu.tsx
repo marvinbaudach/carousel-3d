@@ -154,14 +154,14 @@ export function DeckActionMenu({
               {trans(canShareFiles() ? 'Teilen' : 'Bild speichern')}
             </Item>
           )}
-          {current?.source && (
+          {(current?.source || current?.detail) && (
             <Item
               onClick={() => {
                 onClose();
                 onShowSource();
               }}
             >
-              {trans('Quelle anzeigen')}
+              {trans(current?.detail ? 'Details anzeigen' : 'Quelle anzeigen')}
             </Item>
           )}
           {onAskMotion && (

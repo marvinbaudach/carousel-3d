@@ -360,3 +360,121 @@ export function warLosses(f: Frame, cfg: WarLossesCfg): void {
 
   drawSource(f, cfg.source);
 }
+
+/** Position of `v` on a [min, max] axis mapped into [x0, x1], clamped. */
+export function divergingX(v: number, min: number, max: number, x0: number, x1: number): number {
+  const c = Math.min(max, Math.max(min, v));
+  return x0 + ((c - min) / Math.max(1e-9, max - min)) * (x1 - x0);
+}
+
+export interface DivergingBarCfg {
+  label: string;
+  value: number;
+  delta: null;
+  rowFmt: (v: number) => string;
+  /** Fixed axis bounds; must bracket every row's v and CI. */
+  min: number;
+  max: number;
+  /** Small label under the zero line, e.g. "0 % = keine Wirkung". */
+  zeroLabel: string;
+  /** Signed rows around zero; lo/hi draw a CI whisker — omit only when the
+      source published no interval (never invent one). */
+  rows: { name: string; v: number; color: string; lo?: number; hi?: number; sub?: string }[];
+}
+
+/**
+ * Horizontal bars diverging from a shared zero line — for signed effects
+ * (a time saving vs. a slowdown) where the sign IS the story. Each bar grows
+ * from zero toward its value; a thin whisker marks the published confidence
+ * interval, so an effect whose CI crosses zero visibly straddles the line.
+ */
+export function divergingBarChart(f: Frame, cfg: DivergingBarCfg): void {
+  const { ctx, u, t, w, h } = f;
+  drawSurface(f);
+  const top = drawHeader(f, cfg.label);
+  const pad = 36 * u;
+  const areaTop = top + 10 * u;
+  const areaH = h - 60 * u - areaTop;
+  const MAX_ROW_H = 96 * u;
+  const rowH = Math.min(areaH / cfg.rows.length, MAX_ROW_H);
+  const blockTop = areaTop + Math.max(0, (areaH - rowH * cfg.rows.length) / 2);
+  const blockH = rowH * cfg.rows.length;
+  const x0 = pad;
+  const x1 = w - pad;
+  const xAt = (v: number) => divergingX(v, cfg.min, cfg.max, x0, x1);
+  const xZero = xAt(0);
+
+  // Zero line first, bars over it, label beneath the block.
+  ctx.strokeStyle = withAlpha(INK_SECONDARY, 0.55);
+  ctx.lineWidth = 1.5 * u;
+  ctx.setLineDash([6 * u, 5 * u]);
+  ctx.beginPath();
+  ctx.moveTo(xZero, blockTop - 4 * u);
+  ctx.lineTo(xZero, blockTop + blockH + 4 * u);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  const groupH = 42 * u;
+  cfg.rows.forEach((d, i) => {
+    const p = stagger(t, i, 0.08);
+    const y = blockTop + rowH * i + Math.max(0, (rowH - groupH) / 2);
+    const barH = 18 * u;
+    const barY = y + 20 * u;
+
+    // Name (+ muted annotation) above the bar, anchored to the left edge.
+    ctx.fillStyle = INK_SECONDARY;
+    ctx.font = `500 ${15 * u}px ${FONT}`;
+    const name = tr(d.name);
+    ctx.textAlign = 'left';
+    const nameW = ctx.measureText(name).width;
+    ctx.fillText(ellipsize(ctx, name, w - 2 * pad), pad, y + 12 * u);
+    if (d.sub) {
+      // `sub` arrives pre-translated (hBarChart convention) — compose with
+      // tr() in the card definition.
+      ctx.fillStyle = MUTED;
+      ctx.font = `400 ${13 * u}px ${FONT}`;
+      ctx.fillText(ellipsize(ctx, ` · ${d.sub}`, w - 2 * pad - nameW - 8 * u), pad + nameW, y + 12 * u);
+    }
+
+    // Bar from zero toward the (animated) value.
+    const vAnim = d.v * p;
+    const xV = xAt(vAnim);
+    const left = Math.min(xZero, xV);
+    const bw = Math.max(Math.abs(xV - xZero), 3 * u);
+    ctx.fillStyle = withAlpha(d.color, 0.9);
+    roundRect(ctx, left, barY, bw, barH, 4 * u);
+    ctx.fill();
+
+    // CI whisker with end caps, once the bar has settled. Neutral ink, not
+    // the bar color — it is a range statement, not more bar.
+    if (p >= 1 && d.lo !== undefined && d.hi !== undefined) {
+      const wy = barY + barH / 2;
+      ctx.strokeStyle = withAlpha(INK_SECONDARY, 0.7);
+      ctx.lineWidth = 1.5 * u;
+      ctx.beginPath();
+      ctx.moveTo(xAt(d.lo), wy);
+      ctx.lineTo(xAt(d.hi), wy);
+      for (const vx of [d.lo, d.hi]) {
+        ctx.moveTo(xAt(vx), wy - 4 * u);
+        ctx.lineTo(xAt(vx), wy + 4 * u);
+      }
+      ctx.stroke();
+    }
+
+    // Value at the bar tip, outside the bar, side matching the sign.
+    ctx.fillStyle = INK;
+    ctx.font = `600 ${15 * u}px ${FONT}`;
+    ctx.textAlign = d.v >= 0 ? 'left' : 'right';
+    const tipPad = 8 * u * (d.v >= 0 ? 1 : -1);
+    ctx.fillText(cfg.rowFmt(vAnim), xV + tipPad, barY + barH / 2 + 5 * u);
+    ctx.textAlign = 'left';
+  });
+
+  ctx.fillStyle = withAlpha(INK_SECONDARY, 0.85);
+  ctx.font = `500 ${12 * u}px ${FONT}`;
+  ctx.textAlign = 'center';
+  const zl = tr(cfg.zeroLabel);
+  const half = ctx.measureText(zl).width / 2;
+  ctx.fillText(zl, Math.min(Math.max(xZero, pad + half), w - pad - half), blockTop + blockH + 18 * u);
+  ctx.textAlign = 'left';
+}

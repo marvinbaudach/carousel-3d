@@ -9,6 +9,7 @@ import {
   choroplethMap,
   dataCenterMap,
   debtClock,
+  divergingBarChart,
   hBarChart,
   lineChart,
   mideastMap,
@@ -3693,15 +3694,18 @@ export const POOL: Dashboard[] = [
     [2020, 'GPT-3'],
     [2022, '💬 ChatGPT'],
   ]), 'Epoch AI · Trainingsrechenleistung führender KI-Modelle in FLOP, logarithmische Achse; 2025 geschätzt.'),
-  trendCard('metr-horizon', 'KI-Agenten · Aufgaben-Horizont', 'Aufgabenlänge bei 50 % Erfolg · Frontier-Modelle', METR_HORIZON_PANEL, violet, minutesFmt, 419, eraMarkers(2019, 2026, [
-    // Each doubling is a step up the log axis: seconds in 2019, an hour by 2025.
-    [2019, 'GPT-2'],
+  trendCard('metr-horizon', 'KI-Agenten · Wie lange am Stück?', 'Aufgabenlänge bei 50 % Erfolg · Frontier-Modelle', METR_HORIZON_PANEL, violet, minutesFmt, 419, eraMarkers(2019, 2026, [
+    // Each doubling is a step up the log axis: seconds in 2019, ~12 h in 2026.
+    [2020, 'GPT-3'],
     [2023, 'GPT-4'],
-    [2024, 'Claude 3.5'],
     [2025, 'Claude 3.7'],
-  ]), 'METR „Measuring AI Ability to Complete Long Tasks" (2025) · Aufgabenlänge, die ein Modell noch mit 50 % Erfolg autonom schafft, logarithmische Achse. Verdopplung etwa alle 7 Monate über 2019–2025, rund alle 4 Monate über 2024–2025. Gestrichelt ab 2025: Extrapolation des jüngsten Trends, keine Messung.',
-  // Projection leg on the 2019–2026 axis: dashed + arrow from 2025 on.
-  (2025 - 2019) / (2026 - 2019)),
+    [2026, 'Opus 4.6'],
+  ]), 'METR „Time Horizon 1.1" (01/2026) · Aufgabenlänge, die ein KI-Agent noch mit 50 % Erfolg autonom schafft, logarithmische Achse; Band = METRs Bootstrap-Konfidenzintervall je Modell (Opus 4.6: 5¼–60 Std). Verdopplung etwa alle 129 Tage seit 2023. Keine Projektion: Messungen über 16 Std nennt METR mit der aktuellen Task-Suite unzuverlässig — die Mythos-Preview (~17 Std, 04/2026) bleibt darum draußen. Bei 80 % Erfolgsschwelle: ~70 Min statt ~12 Std.',
+  // No projection leg: with a ~129-day doubling any dashed extrapolation
+  // leaves METR's own trustable range (>16 h) within months — the widening
+  // CI band carries the "measurement is straining" story instead.
+  undefined,
+  METR_HORIZON_PANEL.band),
   trendCard('moore', 'Moores Gesetz · Transistoren pro Chip', 'Transistoren pro Chip · seit 1971', MOORE_PANEL, blue, (v) => `${localeNum(v / 1e9, 0)} ${tr('Mrd')}`, 521, eraMarkers(1971, 2024, [
     // Every gridline is a factor of a thousand — from 2.300 (Intel 4004) to
     // 208 Mrd. (Nvidia B200), the near-straight line is the doubling.
@@ -3863,6 +3867,55 @@ export const POOL: Dashboard[] = [
           { name: 'Uhren lesen', v: 56, sub: 'ClockBench' },
           { name: 'Physische Arbeit', v: 12, sub: tr('Haushalt, real') },
           { name: 'Interaktives Lernen', v: 8, sub: 'ARC-AGI-3' },
+        ],
+      }),
+  },
+  {
+    id: 'ai-dev-rct',
+    title: 'KI-Coding · gefühlt vs. gemessen',
+    source:
+      'METR-RCT (07/2025): 16 erfahrene Open-Source-Entwickler, 246 echte Issues, randomisiert mit/ohne KI (Cursor + Claude 3.5/3.7) — mit KI 19 % langsamer, erwartet hatten sie +24 %, hinterher glaubten sie noch +20 %. Follow-up (02/2026): 57 Devs, 800+ Tasks; Alt-Kohorte +18 %, neue Devs +4 % — beide Konfidenzintervalle kreuzen die Null. METR selbst nennt das Follow-up wegen Selektionseffekten „nur sehr schwache Evidenz" und baut das Studiendesign um.',
+    draw: (f) =>
+      divergingBarChart(f, {
+        // The gap between belief and measurement IS the card: developers felt
+        // 20% faster in the very study that clocked them 19% slower.
+        label: 'Zeitersparnis mit KI · erwartet vs. gemessen',
+        value: -19,
+        delta: null,
+        rowFmt: (v) => `${v > 0 ? '+' : ''}${localeNum(v, 0)} %`,
+        min: -45,
+        max: 45,
+        zeroLabel: '0 % = keine Wirkung',
+        rows: [
+          { name: 'Prognose vorher', v: 24, color: blue },
+          { name: 'Gefühl danach', v: 20, color: blue, sub: tr('dieselben Devs') },
+          { name: 'Messung 2025', v: -19, lo: -39, hi: -2, color: CRITICAL, sub: tr('16 Devs · 246 Issues') },
+          { name: 'Ende 2025 · Alt-Kohorte', v: 18, lo: -9, hi: 38, color: GOOD, sub: tr('10 Devs') },
+          { name: 'Ende 2025 · neue Devs', v: 4, lo: -9, hi: 15, color: GOOD, sub: tr('47 Devs') },
+        ],
+      }),
+  },
+  {
+    id: 'ai-one-factor',
+    title: 'KI-Benchmarks · eine Fähigkeit dahinter?',
+    source:
+      'Epoch AI „Benchmark correlations" (01/2026, CC-BY) · Spearman-Rangkorrelationen zwischen Frontier-Benchmarks (Mathe, Coding, Reasoning …): Median aller Paare 0,73 (17 Benchmarks mit ≥5 gemeinsamen Modellen); innerhalb einer Domäne 0,79, domänenübergreifend 0,68 (15-Benchmark-Subset). Korrelation mit dem Epoch Capabilities Index 0,90 — erwartbar hoch, da der ECI aus diesen Benchmarks gebaut wird. Kurz: Wer Mathe kann, kann meist auch Coding — die Fähigkeiten steigen gemeinsam.',
+    draw: (f) =>
+      hBarChart(f, {
+        // Rank correlations, not magnitudes: the four bars say capabilities
+        // move together — one latent factor, not isolated party tricks.
+        label: 'Rangkorrelation zwischen KI-Benchmarks',
+        value: 0.9,
+        delta: null,
+        color: violet,
+        unit: '',
+        fmt: (v) => localeNumTrim(v, 2),
+        rowFmt: (v) => localeNumTrim(v, 2),
+        rows: [
+          { name: 'Benchmarks ↔ Fähigkeits-Index', v: 0.9, sub: 'ECI' },
+          { name: 'Innerhalb einer Domäne', v: 0.79 },
+          { name: 'Alle Benchmark-Paare', v: 0.73, sub: tr('Median') },
+          { name: 'Domänenübergreifend', v: 0.68 },
         ],
       }),
   },

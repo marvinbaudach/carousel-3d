@@ -175,4 +175,14 @@ export const IDENTICAL_ACROSS_LOCALES: ReadonlySet<string> = new Set<string>([
   'IFR World Robotics 2025',
   'Stanford AI Index 2024/2025',
   'log',
+  // METR / Epoch / Kurzweil cards — model names, study handles, dev counts.
+  'Opus 4.6',
+  'Ray Kurzweil',
+  'Kurzweil 2010',
+  'Armstrong/LessWrong',
+  'Long Bets',
+  '10 Devs',
+  '16 Devs',
+  '47 Devs',
+  '246 Issues',
 ]);

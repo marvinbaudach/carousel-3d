@@ -55,4 +55,29 @@ export const TECH_FUTURE_CARDS: Dashboard[] = [
         source: 'Hersteller-Archive · Omdia · Goldman Sachs · Morgan Stanley',
       }),
   },
+  {
+    id: 'kurzweil',
+    title: 'Kurzweil-Prognosen · die Bilanz',
+    source:
+      'Prognosen: Kurzweil „The Age of Intelligent Machines" (1990), „The Age of Spiritual Machines" (1999), „The Singularity Is Near(er)" (2005/2024), Long Bet #1 (2002), Interviews 2024–2026 · Bewertung: eigene Bilanz 2010 „86 % korrekt" (127 von 147 Prognosen für 2009); unabhängige Nachprüfung (Armstrong/LessWrong) kommt auf ~42 % wahr für 2009 und ~24 % für 2019. Das LEV-Ziel wanderte 2024–2026 von 2029 auf ~2032; AGI 2029 und Singularität 2045 hält er unverändert.',
+    draw: (f) =>
+      statusTimeline(f, {
+        // Resolved predictions graded green/yellow/red, open ones dashed —
+        // and the self-score vs. independent-score gap sits in the pill,
+        // because that gap is the real finding.
+        label: 'Ray Kurzweil · Prognose vs. Realität',
+        status: { text: 'Selbstnote 86 % · unabhängig ~42 %', kind: 'partial' },
+        milestones: [
+          { date: '1997', text: 'Schach-Weltmeister fällt — „bis 1998" traf', kind: 'hit' },
+          { date: '2008', text: 'Tragbare Computer Standard — Ziel 2009 traf', kind: 'hit' },
+          { date: '2009', text: 'Selbstfahrende Autos — verfehlt, kamen ~2020', kind: 'miss' },
+          { date: '2014', text: 'Echtzeit-Übersetzung — Ziel 2009, 5 Jahre spät', kind: 'partial' },
+          { date: '2026', text: 'Agenten-Ära — AGI-Datum hält er seit 1999', kind: 'now' },
+          { date: '2029', text: 'Turing-Test & AGI? — Long-Bet läuft', kind: 'forecast' },
+          { date: '~2032', text: 'Longevity Escape Velocity? — war „2029"', kind: 'forecast' },
+          { date: '2045', text: 'Singularität? — unverändert seit 2005', kind: 'forecast' },
+        ],
+        source: 'Kurzweil 2010 · Armstrong/LessWrong · Long Bets',
+      }),
+  },
 ];
