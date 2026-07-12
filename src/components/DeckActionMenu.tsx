@@ -17,7 +17,9 @@ const MenuButton = styled.button`
   border: none;
   border-radius: 999px;
   color: ${ACCENT_TEXT};
-  font: 700 46px/1 inherit;
+  /* Like the star pill: the ⋯ glyph's ink is small within its em box, so the
+     font size runs close to the 60px button for the icon to read app-scale. */
+  font: 700 56px/1 inherit;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}
@@ -34,7 +36,7 @@ const MenuButton = styled.button`
     bottom: auto;
     width: 52px;
     height: 52px;
-    font-size: 40px;
+    font-size: 48px;
   }
 `;
 

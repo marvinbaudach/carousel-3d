@@ -28,22 +28,40 @@ const Viewport = styled.div`
   background: ${AUBERGINE.ground2}; /* paints the frame before the layers mount */
 `;
 
+// The near-black ground stays put; the colour blooms ride their own oversized
+// layer that wanders visibly (translate + gentle scale breathing), so the
+// purples flow into each other instead of sitting still. Two motions —
+// the bloom layer and the accent layer drift on different paths/periods —
+// keep the movement organic rather than a single sliding sheet.
+const Ground = styled.div`
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    150deg,
+    ${AUBERGINE.ground0},
+    ${AUBERGINE.ground1} 55%,
+    ${AUBERGINE.ground2}
+  );
+`;
+
 const Drift = styled.div`
   position: absolute;
   inset: ${BLEED};
   background:
     radial-gradient(60% 80% at 18% 12%, ${AUBERGINE.bloom}, transparent 55%),
     radial-gradient(55% 70% at 88% 22%, ${AUBERGINE.plum}, transparent 60%),
-    radial-gradient(70% 90% at 72% 100%, ${AUBERGINE.deep}, transparent 60%),
-    linear-gradient(150deg, ${AUBERGINE.ground0}, ${AUBERGINE.ground1} 55%, ${AUBERGINE.ground2});
-  animation: aubergine-drift 28s ease-in-out infinite alternate;
+    radial-gradient(70% 90% at 72% 100%, ${AUBERGINE.deep}, transparent 60%);
+  animation: aubergine-drift 16s ease-in-out infinite alternate;
   will-change: transform;
   @keyframes aubergine-drift {
     from {
-      transform: translate3d(0, 0, 0);
+      transform: translate3d(-4%, -2%, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(2%, 3%, 0) scale(1.08);
     }
     to {
-      transform: translate3d(6%, 3%, 0);
+      transform: translate3d(7%, -3%, 0) scale(1.02);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -64,8 +82,16 @@ const AccentBloom = styled.div<{ $accent: string; $out: boolean }>`
   );
   animation:
     ${(p) => (p.$out ? 'bloom-out' : 'bloom-in')} ${FADE_MS}ms ease forwards,
-    aubergine-drift 28s ease-in-out infinite alternate;
+    accent-drift 21s ease-in-out infinite alternate;
   will-change: transform, opacity;
+  @keyframes accent-drift {
+    from {
+      transform: translate3d(3%, -3%, 0) scale(1.04);
+    }
+    to {
+      transform: translate3d(-5%, 4%, 0) scale(1);
+    }
+  }
   @keyframes bloom-in {
     from {
       opacity: 0;
@@ -100,6 +126,7 @@ export function AubergineBackdrop({ accent }: { accent: string }) {
 
   return (
     <Viewport aria-hidden>
+      <Ground />
       <Drift />
       {prev !== accent && <AccentBloom key={prev} $accent={prev} $out />}
       <AccentBloom key={accent} $accent={accent} $out={false} />

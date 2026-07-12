@@ -94,30 +94,49 @@ const Caption = styled.figcaption`
   }
 `;
 
-const CanvasWrap = styled.div`
+// Sized by aspect ratio, not by the canvas: an unpainted <canvas> reports the
+// browser default 300×150, so a height:auto tile would mount collapsed and
+// jump to full height on first paint. Every card shares one ratio — locking it
+// here means skeletons occupy the tile's final size from the first frame.
+const CanvasWrap = styled.div<{ $w: number; $h: number }>`
   position: relative;
+  aspect-ratio: ${(p) => p.$w} / ${(p) => p.$h};
   border-radius: 12px;
   overflow: hidden;
+  background: #000;
 `;
 
-// Shimmer as an opacity pulse (compositor-only), not a background-position
-// sweep — a dozen visible skeletons animating a paint property would repaint
-// continuously during the one window where the grid is already busy drawing.
+// Shimmer as a translateX sweep (compositor-only): a soft light band glides
+// across the placeholder. Deliberately NOT a background-position animation —
+// that would repaint every skeleton continuously during the one window where
+// the grid is already busy drawing; transform stays off the paint path.
 const Skeleton = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, #ffffff08 30%, #ffffff14 50%, #ffffff08 70%);
-  animation: thumb-shimmer 1.4s ease-in-out infinite alternate;
-  @keyframes thumb-shimmer {
+  overflow: hidden;
+  background: #ffffff0a;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 55%;
+    background: linear-gradient(100deg, transparent, #ffffff24 50%, transparent);
+    animation: thumb-sweep 1.6s ease-in-out infinite;
+    will-change: transform;
+  }
+  @keyframes thumb-sweep {
     from {
-      opacity: 0.55;
+      transform: translateX(-110%);
     }
     to {
-      opacity: 1;
+      transform: translateX(300%);
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    animation: none;
+    &::after {
+      animation: none;
+    }
   }
 `;
 
@@ -177,7 +196,7 @@ function GalleryThumbImpl({
         onContextMenu(entry, e.clientX, e.clientY);
       }}
     >
-      <CanvasWrap>
+      <CanvasWrap $w={width} $h={height}>
         <canvas ref={canvasRef} />
         {!rendered && <Skeleton aria-hidden />}
       </CanvasWrap>

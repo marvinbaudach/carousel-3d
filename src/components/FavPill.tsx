@@ -26,7 +26,10 @@ const Pill = styled.button<{ $active: boolean }>`
   border: none;
   border-radius: 999px;
   color: ${(p) => (p.$active ? SERIES[2] : 'rgba(255, 255, 255, 0.7)')};
-  font: 600 40px/1 inherit;
+  /* The ☆ glyph carries a lot of empty space in its em box — its visible ink
+     is far smaller than the font size, so the size runs close to the 60px
+     button for the icon to read app-scale. */
+  font: 600 48px/1 inherit;
   cursor: pointer;
   transition: transform 120ms ease;
   ${glassSurface}
@@ -44,7 +47,7 @@ const Pill = styled.button<{ $active: boolean }>`
     bottom: auto;
     width: 52px;
     height: 52px;
-    font-size: 34px;
+    font-size: 41px;
   }
 `;
 
