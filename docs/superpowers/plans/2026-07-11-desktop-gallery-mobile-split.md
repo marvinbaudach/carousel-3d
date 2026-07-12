@@ -1,6 +1,6 @@
 # Desktop-Gallery / Mobile-App Split — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Ship the card gallery as the production desktop UI (calm aubergine backdrop, skeletons + progress, no loader, no 3D carousel), while the mobile/tablet deck + loader stay byte-for-behaviour identical — split cleanly into two lazy-loaded chunks.
 
@@ -65,7 +65,7 @@
 - Produces: `readViewOverride(): 'mobile' | 'desktop' | null` — reads `?view=` from `window.location.search`.
 - `useIsMobile()` return unchanged (`boolean`), but override wins when present.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // src/hooks/viewOverride.test.ts
@@ -98,12 +98,12 @@ describe('readViewOverride', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test, verify it fails**
+- [x] **Step 2: Run the test, verify it fails**
 
 Run: `npx vitest run src/hooks/viewOverride.test.ts`
 Expected: FAIL — cannot resolve `./viewOverride`.
 
-- [ ] **Step 3: Implement `readViewOverride`**
+- [x] **Step 3: Implement `readViewOverride`**
 
 ```ts
 // src/hooks/viewOverride.ts
@@ -118,7 +118,7 @@ export function readViewOverride(): ViewOverride | null {
 }
 ```
 
-- [ ] **Step 4: Wire the override into `useIsMobile`**
+- [x] **Step 4: Wire the override into `useIsMobile`**
 
 In `src/hooks/useIsMobile.ts`, import the helper and let it win. Replace the body of `useIsMobile` so the override short-circuits the media query:
 
@@ -152,12 +152,12 @@ export function useIsMobile(): boolean {
 }
 ```
 
-- [ ] **Step 5: Run tests + typecheck**
+- [x] **Step 5: Run tests + typecheck**
 
 Run: `npx vitest run src/hooks/viewOverride.test.ts && npx tsc -b`
 Expected: PASS; tsc clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/hooks/viewOverride.ts src/hooks/viewOverride.test.ts src/hooks/useIsMobile.ts
@@ -175,7 +175,7 @@ git commit -m "feat(routing): ?view= override for the device switch"
 **Interfaces:**
 - Produces: `export default function MobileApp()` — self-contained mobile experience (loader + deck + boot beat + `loadLiveData`).
 
-- [ ] **Step 1: Create `MobileApp` with today's mobile behaviour**
+- [x] **Step 1: Create `MobileApp` with today's mobile behaviour**
 
 ```tsx
 // src/mobile/MobileApp.tsx
@@ -225,7 +225,7 @@ export default function MobileApp() {
 }
 ```
 
-- [ ] **Step 2: Point `App.tsx`'s mobile branch at `MobileApp` (temporary, non-lazy)**
+- [x] **Step 2: Point `App.tsx`'s mobile branch at `MobileApp` (temporary, non-lazy)**
 
 In `src/App.tsx`, import `MobileApp` and render it where the mobile branch used to inline `MobileDeck`. Leave the desktop carousel branch untouched for now (still builds). Minimal change — replace the mobile side of the ternary at line 132 area:
 
@@ -254,19 +254,19 @@ Concretely, change the render block to:
 
 and set `const [showLoader, setShowLoader] = useState(() => !galleryInUrl());` (unchanged) — it is now only rendered on desktop.
 
-- [ ] **Step 3: Build + existing tests as guardrail**
+- [x] **Step 3: Build + existing tests as guardrail**
 
 Run: `npm run build && npm run test`
 Expected: build clean; all tests pass (`cards.smoke`, `i18n.coverage`, etc.).
 
-- [ ] **Step 4: Headless check — mobile unchanged**
+- [x] **Step 4: Headless check — mobile unchanged**
 
 ```bash
 npm run dev &   # note the port
 ```
 Drive Chrome at 390×844 → confirm the loader plays then the deck appears exactly as before. Screenshot. Kill dev.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/mobile/MobileApp.tsx src/App.tsx
@@ -286,7 +286,7 @@ git commit -m "refactor(mobile): extract MobileApp wrapping today's loader + dec
   `type GalleryProps = { onThumbRendered?: (id: string) => void }` — no more
   `active`/`onClose` (there is no carousel to fade to/from).
 
-- [ ] **Step 1: Move the files with git**
+- [x] **Step 1: Move the files with git**
 
 ```bash
 mkdir -p src/desktop/gallery
@@ -301,7 +301,7 @@ git mv src/dev/galleryData.ts     src/desktop/gallery/galleryData.ts
 git mv src/dev/galleryChrome.ts   src/desktop/gallery/galleryChrome.ts
 ```
 
-- [ ] **Step 2: Fix imports (one level deeper)**
+- [x] **Step 2: Fix imports (one level deeper)**
 
 The folder went from depth 2 (`src/dev/`) to depth 3 (`src/desktop/gallery/`). Every import that reached the `src/` root gains one `../`. Intra-folder (`./…`) imports are unchanged. Apply across the moved files:
 
@@ -314,7 +314,7 @@ sed -i -E "s#(['\"])\.\./(data|i18n|dashboards|components|hooks)/#\1../../\2/#g"
 
 Then run `npx tsc -b` and fix any import it still flags by hand.
 
-- [ ] **Step 3: Strip dev-only surface from `Gallery.tsx`**
+- [x] **Step 3: Strip dev-only surface from `Gallery.tsx`**
 
 In `src/desktop/gallery/Gallery.tsx`:
 - Rename the component `DevGallery` → `Gallery`; keep `export default`.
@@ -360,13 +360,13 @@ const Root = styled.div`
 `;
 ```
 
-- [ ] **Step 4: Update `GalleryToolbar` — remove the back-to-app control**
+- [x] **Step 4: Update `GalleryToolbar` — remove the back-to-app control**
 
 In `src/desktop/gallery/GalleryToolbar.tsx`, delete the `onClose` prop and the
 `← App` / close button that used it. Keep search, category, size, language, count.
 Verify any button label removed didn't leave an orphaned i18n key in use.
 
-- [ ] **Step 5: Update `App.tsx`'s dev-gallery import path (keep it building)**
+- [x] **Step 5: Update `App.tsx`'s dev-gallery import path (keep it building)**
 
 `App.tsx` still references the old dev gallery via `import('./dev/DevGallery')`.
 Temporarily update that dynamic import to `import('./desktop/gallery/Gallery')`
@@ -377,12 +377,12 @@ Prefer removing the `App`-level gallery mount now:
   effect, `showGallery`/`galleryMounted` state, and the `<Suspense><DevGallery/></Suspense>`
   block. Desktop keeps rendering `Carousel3D` (unpaused) + `PerfHud` for now.
 
-- [ ] **Step 6: Build + i18n coverage guardrail**
+- [x] **Step 6: Build + i18n coverage guardrail**
 
 Run: `npm run build && npm run test`
 Expected: build clean; `i18n.coverage` green (gallery copy still covered).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add -A
@@ -400,7 +400,7 @@ git commit -m "refactor(gallery): promote dev gallery to src/desktop/gallery (pr
 **Interfaces:**
 - Produces: `progressPct(rendered: number, total: number): number` — clamped 0–100 integer; `total <= 0` → 100 (nothing to wait for).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // src/desktop/gallery/progress.test.ts
@@ -423,12 +423,12 @@ describe('progressPct', () => {
 });
 ```
 
-- [ ] **Step 2: Run, verify it fails**
+- [x] **Step 2: Run, verify it fails**
 
 Run: `npx vitest run src/desktop/gallery/progress.test.ts`
 Expected: FAIL — cannot resolve `./progress`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 // src/desktop/gallery/progress.ts
@@ -440,12 +440,12 @@ export function progressPct(rendered: number, total: number): number {
 }
 ```
 
-- [ ] **Step 4: Run, verify it passes**
+- [x] **Step 4: Run, verify it passes**
 
 Run: `npx vitest run src/desktop/gallery/progress.test.ts`
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/desktop/gallery/progress.ts src/desktop/gallery/progress.test.ts
@@ -468,7 +468,7 @@ git commit -m "feat(gallery): progressPct helper for the load bar"
 - Produces: `export function ProgressBar({ pct }: { pct: number })` in
   `GallerySkeletons.tsx` — a thin top bar, hidden at 100%.
 
-- [ ] **Step 1: Add the skeleton overlay + first-paint callback to `GalleryThumb`**
+- [x] **Step 1: Add the skeleton overlay + first-paint callback to `GalleryThumb`**
 
 In `src/desktop/gallery/GalleryThumb.tsx`, add a `rendered` state that flips true
 after the first draw effect completes, call `onRendered(id)` once, and overlay a
@@ -496,12 +496,12 @@ const Skeleton = styled.div`
 Fire `onRendered` exactly once (guard with a ref) so the global counter is not
 double-incremented on redraws (locale/live-data ticks).
 
-- [ ] **Step 2: Forward `onRendered` through `GalleryGrid`**
+- [x] **Step 2: Forward `onRendered` through `GalleryGrid`**
 
 Add `onRendered?: (id: string) => void` to `GalleryGrid`'s props and pass it to
 each `<GalleryThumb onRendered={onRendered} … />`.
 
-- [ ] **Step 3: Add the `ProgressBar`**
+- [x] **Step 3: Add the `ProgressBar`**
 
 ```tsx
 // src/desktop/gallery/GallerySkeletons.tsx
@@ -536,12 +536,12 @@ export function ProgressBar({ pct }: { pct: number }) {
 }
 ```
 
-- [ ] **Step 4: Build + tests**
+- [x] **Step 4: Build + tests**
 
 Run: `npm run build && npm run test`
 Expected: clean/green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/desktop/gallery/GalleryThumb.tsx src/desktop/gallery/GalleryGrid.tsx src/desktop/gallery/GallerySkeletons.tsx
@@ -562,7 +562,7 @@ git commit -m "feat(gallery): per-thumb skeletons + first-paint signal + progres
   hex; the component blends a faint tint of it into the aubergine base and
   cross-fades when it changes.
 
-- [ ] **Step 1: Implement the backdrop**
+- [x] **Step 1: Implement the backdrop**
 
 ```tsx
 // src/desktop/gallery/AubergineBackdrop.tsx
@@ -599,19 +599,19 @@ export function AubergineBackdrop({ accent }: { accent: string }) {
 }
 ```
 
-- [ ] **Step 2: Delete the WebGL backdrop (if it survived the move)**
+- [x] **Step 2: Delete the WebGL backdrop (if it survived the move)**
 
 ```bash
 git rm -f src/dev/GalleryBackdrop.tsx 2>/dev/null || true
 ```
 
-- [ ] **Step 3: Build**
+- [x] **Step 3: Build**
 
 Run: `npm run build`
 Expected: clean (component compiles; note `color-mix`/`--accent` transition are
 progressive-enhancement — static fallback is fine on older engines).
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add -A
@@ -639,12 +639,12 @@ already computes `accent`; expose the active category upward via an
 `Gallery`, firing in an effect on `accent` change), so `DesktopApp` can pass it to
 the backdrop. Default before any change: `ACCENT` from `galleryChrome`.
 
-- [ ] **Step 1: Add `onAccentChange` to `Gallery`**
+- [x] **Step 1: Add `onAccentChange` to `Gallery`**
 
 In `Gallery.tsx`, add `onAccentChange?: (accent: string) => void` to `GalleryProps`
 and, after computing `accent`, `useEffect(() => onAccentChange?.(accent), [accent, onAccentChange])`.
 
-- [ ] **Step 2: Implement `DesktopApp`**
+- [x] **Step 2: Implement `DesktopApp`**
 
 ```tsx
 // src/desktop/DesktopApp.tsx
@@ -702,12 +702,12 @@ export default function DesktopApp() {
 }
 ```
 
-- [ ] **Step 3: Build + tests**
+- [x] **Step 3: Build + tests**
 
 Run: `npm run build && npm run test`
 Expected: clean/green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add src/desktop/DesktopApp.tsx src/desktop/gallery/Gallery.tsx
@@ -724,7 +724,7 @@ git commit -m "feat(desktop): DesktopApp shell — backdrop, gallery, progress, 
 **Interfaces:**
 - Consumes: `useIsMobile` (Task 1), `MobileApp` (Task 2), `DesktopApp` (Task 7).
 
-- [ ] **Step 1: Replace `App.tsx` wholesale**
+- [x] **Step 1: Replace `App.tsx` wholesale**
 
 ```tsx
 // src/App.tsx
@@ -762,7 +762,7 @@ export default function App() {
 }
 ```
 
-- [ ] **Step 2: Build + tests**
+- [x] **Step 2: Build + tests**
 
 Run: `npm run build && npm run test`
 Expected: build FAILS to resolve the now-unused carousel imports IF any remain —
@@ -770,7 +770,7 @@ that is expected; they are deleted in Task 9. If the build fails only on
 `Carousel3D`/`PerfHud`/`DevGalleryLink` being unused/broken, proceed to Task 9
 before re-running. (Better: do Task 9 immediately after this step, then build.)
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/App.tsx
@@ -785,7 +785,7 @@ git commit -m "refactor(app): thin device switch, lazy-load MobileApp | DesktopA
 - Delete: the carousel scene, hooks, texture, and the empty `src/dev/`.
 - Modify: `package.json` (remove `three`/R3F deps once unreferenced).
 
-- [ ] **Step 1: Delete the carousel scene and its exclusive helpers**
+- [x] **Step 1: Delete the carousel scene and its exclusive helpers**
 
 ```bash
 git rm src/components/Carousel3D.tsx src/components/CarouselItem.tsx \
@@ -800,7 +800,7 @@ git rm src/components/Carousel3D.tsx src/components/CarouselItem.tsx \
 rmdir src/dev 2>/dev/null || true
 ```
 
-- [ ] **Step 2: Grep for stragglers**
+- [x] **Step 2: Grep for stragglers**
 
 ```bash
 grep -rnE "from 'three'|@react-three|useEnvironment|dashboards/texture|Carousel3D|PerfHud|DevGalleryLink" src/
@@ -809,7 +809,7 @@ Expected: **no matches** in shipped `src/` (test-only helpers already removed). 
 any remaining import (e.g. a re-export in `dashboards/index.ts`) by deleting the
 dead reference.
 
-- [ ] **Step 3: Drop the WebGL dependencies**
+- [x] **Step 3: Drop the WebGL dependencies**
 
 Only after Step 2 is clean:
 
@@ -817,13 +817,13 @@ Only after Step 2 is clean:
 npm rm three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing @types/three
 ```
 
-- [ ] **Step 4: Full build + tests**
+- [x] **Step 4: Full build + tests**
 
 Run: `npm run lint && npm run build && npm run test`
 Expected: all clean/green. The desktop chunk no longer contains `three`
 (spot-check `dist/assets/*` sizes drop substantially).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add -A
@@ -837,7 +837,7 @@ git commit -m "refactor: retire the 3D carousel scene and drop three/R3F deps"
 **Files:**
 - Modify: `package.json` (`scripts`)
 
-- [ ] **Step 1: Add convenience scripts**
+- [x] **Step 1: Add convenience scripts**
 
 Add to `scripts` (the existing `dev` opens via the IDE BROWSER env; these append the override param):
 
@@ -846,12 +846,12 @@ Add to `scripts` (the existing `dev` opens via the IDE BROWSER env; these append
 "dev:desktop": "BROWSER=code BROWSER_ARGS=--open-url vite --open '/?view=desktop'"
 ```
 
-- [ ] **Step 2: Sanity check**
+- [x] **Step 2: Sanity check**
 
 Run: `npm run dev:desktop` → browser opens at `/?view=desktop` (gallery). Ctrl-C.
 Run: `npm run dev:mobile` → opens at `/?view=mobile` (loader + deck). Ctrl-C.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add package.json
@@ -864,36 +864,36 @@ git commit -m "chore(dev): dev:mobile / dev:desktop preview scripts"
 
 **Files:** none (verification only; fixes committed as found).
 
-- [ ] **Step 1: Desktop headless (Playwright, 1440×900)**
+- [x] **Step 1: Desktop headless (Playwright, 1440×900)**
 
 Start dev, drive Chrome desktop. Confirm: gallery renders, aubergine backdrop
 present and **drifting**, skeletons appear then cross-fade to thumbnails, the top
 progress bar advances then hides, **no full-screen loader**, no console errors.
 Switch the category filter → backdrop mood shifts (accent tint changes). Screenshot.
 
-- [ ] **Step 2: Mobile headless (390×844)**
+- [x] **Step 2: Mobile headless (390×844)**
 
 Confirm loader plays then `MobileDeck` appears — identical to today, enlarged
 star/⋯ icons intact. Screenshot.
 
-- [ ] **Step 3: `?view=` override**
+- [x] **Step 3: `?view=` override**
 
 At 1440×900 open `/?view=mobile` → mobile experience; `/?view=desktop` at 390×844
 → desktop gallery. Confirms the override.
 
-- [ ] **Step 4: PWA installability**
+- [x] **Step 4: PWA installability**
 
 Build + preview (`npm run build && npm run preview`). In Chrome DevTools →
 Application: manifest parsed (name, icons, `display: standalone`, `start_url`),
 service worker registered, and the install criteria are met (installable). Note
 the result; if a criterion regressed, fix `index.html`/manifest and re-check.
 
-- [ ] **Step 5: Final gate**
+- [x] **Step 5: Final gate**
 
 Run: `npm run lint && npm run build && npm run test`
 Expected: all clean/green.
 
-- [ ] **Step 6: Commit any verification fixes**
+- [x] **Step 6: Commit any verification fixes**
 
 ```bash
 git add -A

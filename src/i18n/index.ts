@@ -90,10 +90,10 @@ export function __setMissRecorder(fn: MissRecorder | null): void {
 }
 
 const TAGLINE: Record<Locale, string> = {
-  de: '3D-Datenkarussell',
-  en: '3D data carousel',
-  fr: 'Carrousel de données 3D',
-  it: 'Carosello di dati 3D',
+  de: 'Live-Dashboards',
+  en: 'Live dashboards',
+  fr: 'Tableaux de bord en direct',
+  it: 'Dashboard in tempo reale',
 };
 
 function applyLocale(): void {
