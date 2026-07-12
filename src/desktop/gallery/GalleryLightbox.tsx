@@ -203,14 +203,22 @@ export function GalleryLightbox({
       isSettled.current = true;
       return;
     }
-    drawCard(canvas, entry.card, FULL_W, FULL_H, 0);
+    // The canvas displays well below its 768×960 intrinsic size (CSS caps it
+    // at min(58vw, 640px) / 88vh), so animating the full backing store rasters
+    // and uploads ~4× more pixels per frame than are visible — enough to
+    // stutter. Intro frames render at the displayed size instead (the vector
+    // draws scale via `u`); only the settled lock renders the full backing.
+    // Captured once so the intrinsic-size change can't feed back into layout.
+    const introW = canvas.clientWidth || FULL_W;
+    const introH = canvas.clientHeight || FULL_H;
+    drawCard(canvas, entry.card, introW, introH, 0);
     let raf = 0;
     let start = 0;
     const tick = (now: number): void => {
       if (!start) start = now;
       const t = (now - start) / 1000;
       if (t < INTRO_S) {
-        drawCard(canvas, entry.card, FULL_W, FULL_H, t);
+        drawCard(canvas, entry.card, introW, introH, t);
         raf = requestAnimationFrame(tick);
       } else {
         drawCard(canvas, entry.card, FULL_W, FULL_H); // lock the settled frame

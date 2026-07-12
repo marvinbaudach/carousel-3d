@@ -27,7 +27,7 @@
 // duration, fades out.
 
 import { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { AUBERGINE } from './galleryChrome';
 import { onGalleryScroll } from './galleryScroll';
 
@@ -57,6 +57,20 @@ const Ground = styled.div`
   );
 `;
 
+// Freeze all backdrop motion while the lightbox is open: its full-viewport
+// backdrop-filter must re-blur the whole backdrop on every frame anything
+// behind it moves, which starves the card fly-in of its frame budget
+// (measured 5× frame time in the settled lightbox). Behind blur(24px) + the
+// dim the freeze is imperceptible, and a static backdrop lets the compositor
+// cache the blurred result. Accent cross-fades can't be interrupted by this:
+// the accent only changes via toolbar category picks, unreachable while the
+// modal is open.
+const pauseWhileLightboxOpen = css`
+  body:has([aria-modal='true']) & {
+    animation-play-state: paused;
+  }
+`;
+
 // Shared skeleton for the free-floating colour blobs. Path keyframes live on
 // the concrete blobs below — each needs its own uniquely named loop.
 const Blob = styled.div`
@@ -66,6 +80,7 @@ const Blob = styled.div`
   @media (prefers-reduced-motion: reduce) {
     animation: none !important;
   }
+  ${pauseWhileLightboxOpen}
 `;
 
 // Bright magenta blob — the lead voice. Starts upper-left, swings deep into
@@ -241,6 +256,7 @@ const AccentBloom = styled.div<{ $accent: string; $out: boolean }>`
     animation: none;
     opacity: ${(p) => (p.$out ? 0 : 1)};
   }
+  ${pauseWhileLightboxOpen}
 `;
 
 // Scroll parallax: scrolling the gallery "stirs" the lava. Each layer follows
