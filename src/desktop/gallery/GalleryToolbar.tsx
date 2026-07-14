@@ -45,9 +45,9 @@ const Bar = styled.div`
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
-  gap: ${SPACE.md} ${SPACE.xl};
+  gap: ${SPACE.lg} ${SPACE.xl};
   align-items: center;
-  padding: ${SPACE.lg} ${SPACE.xxl};
+  padding: ${SPACE.xl} ${SPACE.xxl};
   ${glassPanel}
   border-radius: 0;
   border-width: 0 0 1px 0;

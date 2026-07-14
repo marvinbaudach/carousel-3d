@@ -45,6 +45,18 @@ const Viewport = styled.div`
   background: ${AUBERGINE.ground2}; /* paints the frame before the layers mount */
 `;
 
+// A calming scrim over the whole lava, under the card grid: the blobs and the
+// category accent are vivid, and the cards carry their own saturated charts, so
+// left at full strength the backdrop competed with the content. This mutes the
+// colour and lightness of everything below it uniformly while leaving the drift
+// motion intact — dial STRENGTH up to calm it further, down to let it sing.
+const Veil = styled.div`
+  position: absolute;
+  inset: 0;
+  background: ${AUBERGINE.ground2};
+  opacity: 0.44;
+`;
+
 // The near-black ground stays put; everything above it flows.
 const Ground = styled.div`
   position: absolute;
@@ -216,7 +228,7 @@ const AccentBloom = styled.div<{ $accent: string; $out: boolean }>`
   inset: ${BLEED};
   background: radial-gradient(
     36% 30% at 78% 18%,
-    color-mix(in oklab, ${(p) => p.$accent} 42%, transparent),
+    color-mix(in oklab, ${(p) => p.$accent} 26%, transparent),
     transparent 68%
   );
   animation:
@@ -338,6 +350,7 @@ export function AubergineBackdrop({ accent }: { accent: string }) {
         <AccentBloom key={prev} ref={layerRef(ACCENT_LAYER + 1)} $accent={prev} $out />
       )}
       <AccentBloom key={accent} ref={layerRef(ACCENT_LAYER)} $accent={accent} $out={false} />
+      <Veil />
     </Viewport>
   );
 }
