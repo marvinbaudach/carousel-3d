@@ -47,14 +47,16 @@ const Viewport = styled.div`
 
 // A calming scrim over the whole lava, under the card grid: the blobs and the
 // category accent are vivid, and the cards carry their own saturated charts, so
-// left at full strength the backdrop competed with the content. This mutes the
-// colour and lightness of everything below it uniformly while leaving the drift
-// motion intact — dial STRENGTH up to calm it further, down to let it sing.
+// left at full strength the backdrop competed with the content. The veil tone
+// is the ground lifted towards white — a grey-plum that desaturates everything
+// below it WITHOUT darkening it (a pure ground2 veil pushed the backdrop into
+// the near-black of the cards and the two surfaces merged). Dial the opacity
+// up to calm the lava further, down to let it sing.
 const Veil = styled.div`
   position: absolute;
   inset: 0;
-  background: ${AUBERGINE.ground2};
-  opacity: 0.44;
+  background: color-mix(in oklab, ${AUBERGINE.ground2} 62%, white);
+  opacity: 0.32;
 `;
 
 // The near-black ground stays put; everything above it flows.
