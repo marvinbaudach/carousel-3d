@@ -77,15 +77,19 @@ const Stage = styled.div`
     height: auto;
     max-width: min(58vw, 640px);
     max-height: 88vh;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.25);
     border-radius: 12px;
     background: #000;
-    /* Crisp rim + deep drop + a soft accent halo so the card glows off the
-       glass instead of sitting flat on it. */
+    /* Crisp rim + deep drop + a soft accent halo + a cold ambient glow. The
+       dim behind is near-black, so a dark drop alone does nothing there — the
+       two white glows (tight rim light + wide halo) are what actually lift
+       the card's silhouette off it. */
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.08),
       0 30px 80px -20px rgba(0, 0, 0, 0.7),
-      0 0 72px -12px rgba(${ACCENT_RGB}, 0.34);
+      0 0 96px -12px rgba(${ACCENT_RGB}, 0.4),
+      0 0 34px rgba(255, 255, 255, 0.16),
+      0 0 150px rgba(255, 255, 255, 0.1);
     animation: lbCardIn 220ms cubic-bezier(0.16, 1, 0.3, 1);
   }
   @keyframes lbCardIn {
